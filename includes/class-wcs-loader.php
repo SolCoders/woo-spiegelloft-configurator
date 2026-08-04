@@ -37,6 +37,7 @@ class WCS_Loader {
 		'WCS_Template_Admin'          => 'includes/admin/class-wcs-template-admin.php',
 		'WCS_Product_Meta'            => 'includes/admin/class-wcs-product-meta.php',
 		'WCS_REST_Controller'         => 'includes/api/class-wcs-rest-controller.php',
+		'WCS_Storefront'              => 'includes/woocommerce/class-wcs-storefront.php',
 		'WCS_Cart'                    => 'includes/woocommerce/class-wcs-cart.php',
 		'WCS_Order'                   => 'includes/woocommerce/class-wcs-order.php',
 	);

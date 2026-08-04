@@ -81,6 +81,9 @@ class WCS_Plugin {
 		$rest = new WCS_REST_Controller( $config_builder, $validation );
 		$rest->register();
 
+		$storefront = new WCS_Storefront( $config_builder );
+		$storefront->register();
+
 		$cart = new WCS_Cart( $validation );
 		$cart->register();
 
