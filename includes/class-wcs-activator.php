@@ -37,8 +37,8 @@ class WCS_Activator {
 			'wcs_extra_option',
 			array(
 				'labels'       => array(
-					'name'          => __( 'Extra Options', 'woo-spiegelloft-configurator' ),
-					'singular_name' => __( 'Extra Option', 'woo-spiegelloft-configurator' ),
+					'name'          => __( 'Customization choices', 'woo-spiegelloft-configurator' ),
+					'singular_name' => __( 'Customization choice', 'woo-spiegelloft-configurator' ),
 				),
 				'public'       => false,
 				'show_ui'      => true,
@@ -52,8 +52,8 @@ class WCS_Activator {
 			'wcs_template',
 			array(
 				'labels'       => array(
-					'name'          => __( 'Configurator Templates', 'woo-spiegelloft-configurator' ),
-					'singular_name' => __( 'Configurator Template', 'woo-spiegelloft-configurator' ),
+					'name'          => __( 'Mirror templates', 'woo-spiegelloft-configurator' ),
+					'singular_name' => __( 'Mirror template', 'woo-spiegelloft-configurator' ),
 				),
 				'public'       => false,
 				'show_ui'      => true,
@@ -73,8 +73,8 @@ class WCS_Activator {
 			'wcs_extra_option',
 			array(
 				'labels'       => array(
-					'name'          => __( 'Extra Groups', 'woo-spiegelloft-configurator' ),
-					'singular_name' => __( 'Extra Group', 'woo-spiegelloft-configurator' ),
+					'name'          => __( 'Choice categories', 'woo-spiegelloft-configurator' ),
+					'singular_name' => __( 'Choice category', 'woo-spiegelloft-configurator' ),
 				),
 				'public'       => false,
 				'show_ui'      => false,
@@ -93,77 +93,110 @@ class WCS_Activator {
 			return;
 		}
 
-		/** @var array<string, mixed> $seed */
+		/** @var array<int, array<string, mixed>> $seed */
 		$seed = include $seed_file;
 		if ( empty( $seed ) || ! is_array( $seed ) ) {
 			return;
 		}
 
-		foreach ( $seed as $group_slug => $options ) {
-			if ( ! is_array( $options ) ) {
+		$term_cache = array();
+		$batch      = array();
+
+		foreach ( $seed as $option ) {
+			if ( ! is_array( $option ) || empty( $option['title'] ) || empty( $option['group'] ) ) {
 				continue;
 			}
 
-			$term = term_exists( $group_slug, 'wcs_extra_group' );
-			if ( ! $term ) {
-				$term = wp_insert_term( $group_slug, 'wcs_extra_group', array( 'slug' => $group_slug ) );
+			$group_slug = sanitize_title( (string) $option['group'] );
+
+			if ( ! isset( $term_cache[ $group_slug ] ) ) {
+				$term = term_exists( $group_slug, 'wcs_extra_group' );
+				if ( ! $term ) {
+					$term = wp_insert_term( $group_slug, 'wcs_extra_group', array( 'slug' => $group_slug ) );
+				}
+				$term_id = is_array( $term ) ? (int) ( $term['term_id'] ?? 0 ) : (int) $term;
+				$term_cache[ $group_slug ] = $term_id;
 			}
-			$term_id = is_array( $term ) ? (int) ( $term['term_id'] ?? 0 ) : (int) $term;
+
+			$term_id = (int) $term_cache[ $group_slug ];
 			if ( $term_id <= 0 ) {
 				continue;
 			}
 
-			foreach ( $options as $option ) {
-				if ( ! is_array( $option ) || empty( $option['title'] ) ) {
-					continue;
-				}
+			$legacy_id = (int) ( $option['legacy_id'] ?? 0 );
+			$value     = sanitize_title( (string) ( $option['value'] ?? '' ) );
 
-				$existing = get_posts(
-					array(
-						'post_type'      => 'wcs_extra_option',
-						'post_status'    => 'publish',
-						'title'          => $option['title'],
-						'posts_per_page' => 1,
-						'tax_query'      => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-							array(
-								'taxonomy' => 'wcs_extra_group',
-								'field'     => 'term_id',
-								'terms'     => $term_id,
-							),
+			$existing = get_posts(
+				array(
+					'post_type'      => 'wcs_extra_option',
+					'post_status'    => 'any',
+					'posts_per_page' => 1,
+					'fields'         => 'ids',
+					'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+						'relation' => 'AND',
+						array(
+							'key'   => '_wcs_option_slug',
+							'value' => $value,
 						),
-						'fields'         => 'ids',
-					)
-				);
-
-				if ( ! empty( $existing ) ) {
-					continue;
-				}
-
-				$post_id = wp_insert_post(
-					array(
-						'post_type'   => 'wcs_extra_option',
-						'post_title'  => sanitize_text_field( (string) $option['title'] ),
-						'post_status' => 'publish',
 					),
-					true
-				);
+					'tax_query'      => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+						array(
+							'taxonomy' => 'wcs_extra_group',
+							'field'    => 'term_id',
+							'terms'    => $term_id,
+						),
+					),
+				)
+			);
 
-				if ( is_wp_error( $post_id ) || ! $post_id ) {
-					continue;
-				}
+			if ( ! empty( $existing ) ) {
+				continue;
+			}
 
-				wp_set_object_terms( (int) $post_id, array( $term_id ), 'wcs_extra_group' );
+			$option_data = array(
+				'name'  => sanitize_text_field( (string) $option['title'] ),
+				'value' => $value,
+				'price' => (float) ( $option['price'] ?? 0 ),
+				'image' => esc_url_raw( (string) ( $option['image'] ?? '' ) ),
+			);
 
-				if ( isset( $option['meta'] ) && is_array( $option['meta'] ) ) {
-					foreach ( $option['meta'] as $meta_key => $meta_value ) {
-						update_post_meta( (int) $post_id, sanitize_key( (string) $meta_key ), $meta_value );
-					}
-				}
-
-				if ( isset( $option['slug'] ) ) {
-					update_post_meta( (int) $post_id, '_wcs_option_slug', sanitize_title( (string) $option['slug'] ) );
+			if ( ! empty( $option['nested'] ) && is_array( $option['nested'] ) ) {
+				foreach ( $option['nested'] as $nested_key => $nested_value ) {
+					$option_data[ sanitize_key( (string) $nested_key ) ] = $nested_value;
 				}
 			}
+
+			$batch[] = array(
+				'title'       => sanitize_text_field( (string) $option['title'] ),
+				'term_id'     => $term_id,
+				'value'       => $value,
+				'legacy_id'   => $legacy_id,
+				'price'       => wc_format_decimal( (string) ( $option['price'] ?? 0 ) ),
+				'image'       => esc_url_raw( (string) ( $option['image'] ?? '' ) ),
+				'option_data' => $option_data,
+			);
+		}
+
+		foreach ( $batch as $item ) {
+			$post_id = wp_insert_post(
+				array(
+					'post_type'   => 'wcs_extra_option',
+					'post_title'  => $item['title'],
+					'post_status' => 'publish',
+				),
+				true
+			);
+
+			if ( is_wp_error( $post_id ) || ! $post_id ) {
+				continue;
+			}
+
+			wp_set_object_terms( (int) $post_id, array( (int) $item['term_id'] ), 'wcs_extra_group' );
+			update_post_meta( (int) $post_id, '_wcs_option_data', $item['option_data'] );
+			update_post_meta( (int) $post_id, '_wcs_option_slug', $item['value'] );
+			update_post_meta( (int) $post_id, '_wcs_legacy_id', (int) $item['legacy_id'] );
+			update_post_meta( (int) $post_id, '_wcs_price', $item['price'] );
+			update_post_meta( (int) $post_id, '_wcs_image', $item['image'] );
 		}
 
 		update_option( 'wcs_seed_version', WCS_VERSION );

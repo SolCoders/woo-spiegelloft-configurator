@@ -29,14 +29,23 @@ class WCS_Template_Admin {
 	private WCS_Extras_Registry $registry;
 
 	/**
+	 * Extras catalog.
+	 *
+	 * @var WCS_Extras_Catalog
+	 */
+	private WCS_Extras_Catalog $catalog;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param WCS_Template          $template Template helper.
-	 * @param WCS_Extras_Registry   $registry Extras registry.
+	 * @param WCS_Template        $template Template helper.
+	 * @param WCS_Extras_Registry $registry Extras registry.
+	 * @param WCS_Extras_Catalog  $catalog  Extras catalog.
 	 */
-	public function __construct( WCS_Template $template, WCS_Extras_Registry $registry ) {
+	public function __construct( WCS_Template $template, WCS_Extras_Registry $registry, WCS_Extras_Catalog $catalog ) {
 		$this->template = $template;
 		$this->registry = $registry;
+		$this->catalog  = $catalog;
 	}
 
 	/**
@@ -54,8 +63,8 @@ class WCS_Template_Admin {
 	public function register_submenu(): void {
 		add_submenu_page(
 			'wcs-configurator',
-			__( 'Templates', 'woo-spiegelloft-configurator' ),
-			__( 'Templates', 'woo-spiegelloft-configurator' ),
+			__( 'Mirror templates', 'woo-spiegelloft-configurator' ),
+			__( 'Mirror templates', 'woo-spiegelloft-configurator' ),
 			'manage_woocommerce',
 			'edit.php?post_type=wcs_template'
 		);
@@ -66,18 +75,27 @@ class WCS_Template_Admin {
 	 */
 	public function register_meta_boxes(): void {
 		add_meta_box(
-			'wcs_template_groups',
-			__( 'Enabled Extra Groups', 'woo-spiegelloft-configurator' ),
-			array( $this, 'render_groups_meta_box' ),
+			'wcs_template_basic',
+			__( 'Basic settings', 'woo-spiegelloft-configurator' ),
+			array( $this, 'render_basic_meta_box' ),
 			'wcs_template',
 			'normal',
 			'high'
 		);
 
 		add_meta_box(
-			'wcs_template_rules',
-			__( 'Validation Rules', 'woo-spiegelloft-configurator' ),
-			array( $this, 'render_rules_meta_box' ),
+			'wcs_template_choices',
+			__( 'What customers can choose', 'woo-spiegelloft-configurator' ),
+			array( $this, 'render_choices_meta_box' ),
+			'wcs_template',
+			'normal',
+			'default'
+		);
+
+		add_meta_box(
+			'wcs_template_restrictions',
+			__( 'Restrictions', 'woo-spiegelloft-configurator' ),
+			array( $this, 'render_restrictions_meta_box' ),
 			'wcs_template',
 			'normal',
 			'default'
@@ -85,30 +103,48 @@ class WCS_Template_Admin {
 	}
 
 	/**
-	 * Render groups meta box.
+	 * Render basic settings meta box.
 	 *
 	 * @param WP_Post $post Post object.
 	 */
-	public function render_groups_meta_box( WP_Post $post ): void {
+	public function render_basic_meta_box( WP_Post $post ): void {
 		wp_nonce_field( 'wcs_save_template', 'wcs_template_nonce' );
 
-		$data           = $this->template->get_template_data( (int) $post->ID ) ?? array( 'groups' => array(), 'rules' => array() );
-		$enabled_groups = (array) ( $data['groups'] ?? array() );
-		$all_groups     = $this->registry->get_groups();
+		$data = $this->template->get_template_data( (int) $post->ID ) ?? array();
 
-		include WCS_PLUGIN_DIR . 'templates/admin/template-groups-meta.php';
+		include WCS_PLUGIN_DIR . 'templates/admin/template-basic-meta.php';
 	}
 
 	/**
-	 * Render rules meta box.
+	 * Render customer choices meta box.
 	 *
 	 * @param WP_Post $post Post object.
 	 */
-	public function render_rules_meta_box( WP_Post $post ): void {
-		$data  = $this->template->get_template_data( (int) $post->ID ) ?? array( 'rules' => array() );
-		$rules = (array) ( $data['rules'] ?? array() );
+	public function render_choices_meta_box( WP_Post $post ): void {
+		$data           = $this->template->get_template_data( (int) $post->ID ) ?? array();
+		$enabled_groups = (array) ( $data['enabled_groups'] ?? $data['groups'] ?? array() );
+		$option_map     = (array) ( $data['extra_option_map'] ?? array() );
+		$all_groups     = $this->registry->get_groups();
+		$group_options  = array();
 
-		include WCS_PLUGIN_DIR . 'templates/admin/template-rules-meta.php';
+		foreach ( array_keys( $all_groups ) as $group_slug ) {
+			$group_options[ $group_slug ] = $this->catalog->get_options_by_group( $group_slug );
+		}
+
+		include WCS_PLUGIN_DIR . 'templates/admin/template-choices-meta.php';
+	}
+
+	/**
+	 * Render restrictions meta box.
+	 *
+	 * @param WP_Post $post Post object.
+	 */
+	public function render_restrictions_meta_box( WP_Post $post ): void {
+		$data  = $this->template->get_template_data( (int) $post->ID ) ?? array();
+		$rules = (array) ( $data['validation_rules'] ?? $data['rules'] ?? array() );
+		$groups = $this->registry->get_groups();
+
+		include WCS_PLUGIN_DIR . 'templates/admin/template-restrictions-meta.php';
 	}
 
 	/**
@@ -128,19 +164,60 @@ class WCS_Template_Admin {
 			return;
 		}
 
-		$groups = isset( $_POST['wcs_template_groups'] ) ? array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['wcs_template_groups'] ) ) : array();
+		$enabled_groups = isset( $_POST['wcs_enabled_groups'] ) ? array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['wcs_enabled_groups'] ) ) : array();
 
-		$rules_raw = isset( $_POST['wcs_template_rules'] ) ? wp_unslash( (string) $_POST['wcs_template_rules'] ) : '[]'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		$rules     = json_decode( $rules_raw, true );
-		if ( ! is_array( $rules ) ) {
-			$rules = array();
+		$option_map_raw = isset( $_POST['wcs_extra_option_map'] ) ? wp_unslash( $_POST['wcs_extra_option_map'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$option_map     = array();
+		if ( is_array( $option_map_raw ) ) {
+			foreach ( $option_map_raw as $group => $ids ) {
+				$group = sanitize_text_field( (string) $group );
+				$option_map[ $group ] = array_map( 'absint', (array) $ids );
+			}
+		}
+
+		$rules = array();
+		if ( isset( $_POST['wcs_validation_rules'] ) && is_array( $_POST['wcs_validation_rules'] ) ) {
+			$raw_rules = wp_unslash( $_POST['wcs_validation_rules'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			foreach ( $raw_rules as $rule ) {
+				if ( ! is_array( $rule ) ) {
+					continue;
+				}
+				$when = array();
+				if ( ! empty( $rule['when_group'] ) && ! empty( $rule['when_value'] ) ) {
+					$when[ sanitize_text_field( (string) $rule['when_group'] ) ] = sanitize_text_field( (string) $rule['when_value'] );
+				}
+				$rules[] = array(
+					'when'   => $when,
+					'then'   => sanitize_text_field( (string) ( $rule['then'] ?? 'require' ) ),
+					'target' => sanitize_text_field( (string) ( $rule['target'] ?? '' ) ),
+				);
+			}
+		}
+
+		$edge_override = array();
+		if ( isset( $_POST['wcs_edge_name'] ) ) {
+			$edge_override['name'] = sanitize_text_field( wp_unslash( (string) $_POST['wcs_edge_name'] ) );
+		}
+		if ( isset( $_POST['wcs_edge_desc'] ) ) {
+			$edge_override['desc'] = sanitize_text_field( wp_unslash( (string) $_POST['wcs_edge_desc'] ) );
 		}
 
 		$this->template->save_template_data(
 			$post_id,
 			array(
-				'groups' => $groups,
-				'rules'  => $rules,
+				'panel_template'    => sanitize_text_field( wp_unslash( (string) ( $_POST['wcs_panel_template'] ?? 'bathroomMirror' ) ) ),
+				'slug'              => sanitize_title( wp_unslash( (string) ( $_POST['wcs_template_slug'] ?? '' ) ) ),
+				'type'              => sanitize_text_field( wp_unslash( (string) ( $_POST['wcs_template_type'] ?? '' ) ) ),
+				'dimensions'        => array(
+					'min_width'  => absint( $_POST['wcs_min_width'] ?? 400 ),
+					'max_width'  => absint( $_POST['wcs_max_width'] ?? 2500 ),
+					'min_height' => absint( $_POST['wcs_min_height'] ?? 400 ),
+					'max_height' => absint( $_POST['wcs_max_height'] ?? 2500 ),
+				),
+				'enabled_groups'    => $enabled_groups,
+				'extra_option_map'  => $option_map,
+				'validation_rules'  => $rules,
+				'edge_override'     => $edge_override,
 			)
 		);
 	}

@@ -134,9 +134,15 @@ class WCS_Extra_Field_Type_Repeater implements WCS_Extra_Field_Type {
 	public function render_admin_field( string $name, $value, array $field ): void {
 		$rows      = is_array( $value ) ? $value : array();
 		$subfields = (array) ( $field['fields'] ?? array() );
+		if ( empty( $rows ) ) {
+			$rows = array( array() );
+		}
+
 		echo '<div class="wcs-repeater" data-name="' . esc_attr( $name ) . '">';
 		foreach ( $rows as $index => $row ) {
 			echo '<div class="wcs-repeater-row">';
+			echo '<span class="wcs-repeater-handle dashicons dashicons-menu"></span>';
+			echo '<div class="wcs-repeater-fields">';
 			foreach ( $subfields as $subfield ) {
 				if ( ! is_array( $subfield ) || empty( $subfield['id'] ) ) {
 					continue;
@@ -144,9 +150,13 @@ class WCS_Extra_Field_Type_Repeater implements WCS_Extra_Field_Type {
 				$sub_name = $name . '[' . $index . '][' . $subfield['id'] . ']';
 				$handler  = $this->registry->get( (string) ( $subfield['type'] ?? 'text' ) );
 				if ( $handler ) {
+					echo '<div class="wcs-repeater-subfield">';
 					$handler->render_admin_field( $sub_name, is_array( $row ) ? ( $row[ $subfield['id'] ] ?? '' ) : '', $subfield );
+					echo '</div>';
 				}
 			}
+			echo '</div>';
+			echo '<button type="button" class="button-link wcs-remove-repeater-row">' . esc_html__( 'Remove', 'woo-spiegelloft-configurator' ) . '</button>';
 			echo '</div>';
 		}
 		echo '<button type="button" class="button wcs-add-repeater-row">' . esc_html__( 'Add row', 'woo-spiegelloft-configurator' ) . '</button>';

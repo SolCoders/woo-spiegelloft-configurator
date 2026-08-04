@@ -23,7 +23,7 @@ class WCS_Validation_Engine {
 	 * @return true|WP_Error
 	 */
 	public function validate( array $selections, array $template, array $groups ) {
-		$enabled_groups = (array) ( $template['groups'] ?? array() );
+		$enabled_groups = (array) ( $template['enabled_groups'] ?? $template['groups'] ?? array() );
 
 		foreach ( $selections as $group_slug => $value ) {
 			$group_slug = sanitize_key( (string) $group_slug );
@@ -50,7 +50,7 @@ class WCS_Validation_Engine {
 			}
 		}
 
-		$rules = (array) ( $template['rules'] ?? array() );
+		$rules = (array) ( $template['validation_rules'] ?? $template['rules'] ?? array() );
 		foreach ( $rules as $rule ) {
 			if ( ! is_array( $rule ) ) {
 				continue;

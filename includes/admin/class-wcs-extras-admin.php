@@ -1,6 +1,6 @@
 <?php
 /**
- * Extras catalog admin pages and AJAX.
+ * Extras catalog admin: list table enhancements and submenu.
  *
  * @package WooSpiegelloftConfigurator
  */
@@ -44,171 +44,170 @@ class WCS_Extras_Admin {
 	 */
 	public function register(): void {
 		add_action( 'admin_menu', array( $this, 'register_submenu' ), 20 );
-		add_action( 'add_meta_boxes', array( $this, 'register_meta_boxes' ) );
-		add_action( 'save_post_wcs_extra_option', array( $this, 'save_meta_boxes' ), 10, 2 );
-		add_action( 'wp_ajax_wcs_save_extra_option', array( $this, 'ajax_save_option' ) );
-		add_action( 'wp_ajax_wcs_delete_extra_option', array( $this, 'ajax_delete_option' ) );
+		add_action( 'init', array( $this, 'register_post_type_labels' ), 15 );
+		add_filter( 'manage_wcs_extra_option_posts_columns', array( $this, 'list_columns' ) );
+		add_action( 'manage_wcs_extra_option_posts_custom_column', array( $this, 'render_list_column' ), 10, 2 );
+		add_action( 'restrict_manage_posts', array( $this, 'taxonomy_filter_dropdown' ) );
+		add_action( 'pre_get_posts', array( $this, 'filter_by_taxonomy' ) );
 		add_action( 'wp_ajax_wcs_get_group_options', array( $this, 'ajax_get_group_options' ) );
 	}
 
 	/**
-	 * Register extras submenu.
+	 * Update CPT labels to plain language.
+	 */
+	public function register_post_type_labels(): void {
+		global $wp_post_types;
+
+		if ( ! isset( $wp_post_types['wcs_extra_option'] ) ) {
+			return;
+		}
+
+		$labels = &$wp_post_types['wcs_extra_option']->labels;
+		$labels->name               = __( 'Customization choices', 'woo-spiegelloft-configurator' );
+		$labels->singular_name      = __( 'Customization choice', 'woo-spiegelloft-configurator' );
+		$labels->add_new            = __( 'Add choice', 'woo-spiegelloft-configurator' );
+		$labels->add_new_item       = __( 'Add customization choice', 'woo-spiegelloft-configurator' );
+		$labels->edit_item          = __( 'Edit customization choice', 'woo-spiegelloft-configurator' );
+		$labels->new_item           = __( 'New customization choice', 'woo-spiegelloft-configurator' );
+		$labels->view_item          = __( 'View customization choice', 'woo-spiegelloft-configurator' );
+		$labels->search_items       = __( 'Search choices', 'woo-spiegelloft-configurator' );
+		$labels->not_found          = __( 'No choices found.', 'woo-spiegelloft-configurator' );
+		$labels->not_found_in_trash = __( 'No choices found in trash.', 'woo-spiegelloft-configurator' );
+		$labels->all_items          = __( 'All choices', 'woo-spiegelloft-configurator' );
+	}
+
+	/**
+	 * Register customization choices submenu.
 	 */
 	public function register_submenu(): void {
 		add_submenu_page(
 			'wcs-configurator',
-			__( 'Extras Catalog', 'woo-spiegelloft-configurator' ),
-			__( 'Extras', 'woo-spiegelloft-configurator' ),
+			__( 'Customization choices', 'woo-spiegelloft-configurator' ),
+			__( 'Customization choices', 'woo-spiegelloft-configurator' ),
 			'manage_woocommerce',
-			'wcs-extras',
-			array( $this, 'render_extras_page' )
+			'edit.php?post_type=wcs_extra_option'
 		);
 
 		add_submenu_page(
 			'wcs-configurator',
-			__( 'Add Extra Option', 'woo-spiegelloft-configurator' ),
-			__( 'Add Extra', 'woo-spiegelloft-configurator' ),
+			__( 'Add customization choice', 'woo-spiegelloft-configurator' ),
+			__( 'Add choice', 'woo-spiegelloft-configurator' ),
 			'manage_woocommerce',
 			'post-new.php?post_type=wcs_extra_option'
 		);
 	}
 
 	/**
-	 * Render extras catalog page.
-	 */
-	public function render_extras_page(): void {
-		if ( ! current_user_can( 'manage_woocommerce' ) ) {
-			wp_die( esc_html__( 'You do not have permission to access this page.', 'woo-spiegelloft-configurator' ) );
-		}
-
-		$groups  = $this->registry->get_groups();
-		$options = array();
-
-		foreach ( array_keys( $groups ) as $group_slug ) {
-			$options[ $group_slug ] = $this->catalog->get_options_by_group( $group_slug );
-		}
-
-		include WCS_PLUGIN_DIR . 'templates/admin/extras-catalog.php';
-	}
-
-	/**
-	 * Register meta boxes for extra options.
-	 */
-	public function register_meta_boxes(): void {
-		add_meta_box(
-			'wcs_extra_option_details',
-			__( 'Option Details', 'woo-spiegelloft-configurator' ),
-			array( $this, 'render_option_meta_box' ),
-			'wcs_extra_option',
-			'normal',
-			'high'
-		);
-	}
-
-	/**
-	 * Render option meta box.
+	 * Customize list table columns.
 	 *
-	 * @param WP_Post $post Post object.
+	 * @param array<string, string> $columns Columns.
+	 * @return array<string, string>
 	 */
-	public function render_option_meta_box( WP_Post $post ): void {
-		wp_nonce_field( 'wcs_save_extra_option', 'wcs_extra_option_nonce' );
-
-		$slug  = (string) get_post_meta( $post->ID, '_wcs_option_slug', true );
-		$price = (string) get_post_meta( $post->ID, '_wcs_price', true );
-		$image = (string) get_post_meta( $post->ID, '_wcs_image', true );
-		$terms = wp_get_object_terms( $post->ID, 'wcs_extra_group', array( 'fields' => 'slugs' ) );
-		$group = ( ! is_wp_error( $terms ) && ! empty( $terms ) ) ? (string) $terms[0] : '';
-		$groups = $this->registry->get_groups();
-
-		include WCS_PLUGIN_DIR . 'templates/admin/extra-option-meta.php';
+	public function list_columns( array $columns ): array {
+		$new = array();
+		foreach ( $columns as $key => $label ) {
+			if ( 'title' === $key ) {
+				$new['wcs_thumbnail'] = __( 'Image', 'woo-spiegelloft-configurator' );
+			}
+			$new[ $key ] = $label;
+			if ( 'title' === $key ) {
+				$new['wcs_category'] = __( 'Category', 'woo-spiegelloft-configurator' );
+				$new['wcs_price']    = __( 'Price', 'woo-spiegelloft-configurator' );
+			}
+		}
+		unset( $new['taxonomy-wcs_extra_group'] );
+		return $new;
 	}
 
 	/**
-	 * Save option meta box data.
+	 * Render custom list column.
 	 *
-	 * @param int     $post_id Post ID.
-	 * @param WP_Post $post    Post object.
+	 * @param string $column  Column key.
+	 * @param int    $post_id Post ID.
 	 */
-	public function save_meta_boxes( int $post_id, WP_Post $post ): void {
-		unset( $post );
+	public function render_list_column( string $column, int $post_id ): void {
+		switch ( $column ) {
+			case 'wcs_thumbnail':
+				$image = (string) get_post_meta( $post_id, '_wcs_image', true );
+				if ( $image ) {
+					echo '<img src="' . esc_url( $image ) . '" alt="" style="max-width:48px;height:auto;">';
+				} else {
+					echo '—';
+				}
+				break;
 
-		if ( ! isset( $_POST['wcs_extra_option_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( (string) $_POST['wcs_extra_option_nonce'] ) ), 'wcs_save_extra_option' ) ) {
+			case 'wcs_category':
+				$terms = wp_get_object_terms( $post_id, 'wcs_extra_group' );
+				if ( ! is_wp_error( $terms ) && ! empty( $terms ) ) {
+					$group = $this->registry->get_group( (string) $terms[0]->slug );
+					echo esc_html( (string) ( $group['label'] ?? $terms[0]->name ) );
+				} else {
+					echo '—';
+				}
+				break;
+
+			case 'wcs_price':
+				$price = get_post_meta( $post_id, '_wcs_price', true );
+				echo wp_kses_post( wc_price( (float) $price ) );
+				break;
+		}
+	}
+
+	/**
+	 * Taxonomy filter dropdown on choices list.
+	 *
+	 * @param string $post_type Post type.
+	 */
+	public function taxonomy_filter_dropdown( string $post_type ): void {
+		if ( 'wcs_extra_option' !== $post_type ) {
 			return;
 		}
 
-		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+		$selected = isset( $_GET['wcs_extra_group'] ) ? sanitize_title( wp_unslash( (string) $_GET['wcs_extra_group'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$groups   = $this->registry->get_groups();
+
+		echo '<select name="wcs_extra_group" id="wcs_extra_group_filter">';
+		echo '<option value="">' . esc_html__( 'All categories', 'woo-spiegelloft-configurator' ) . '</option>';
+		foreach ( $groups as $slug => $group ) {
+			printf(
+				'<option value="%1$s" %2$s>%3$s</option>',
+				esc_attr( $slug ),
+				selected( $selected, $slug, false ),
+				esc_html( (string) ( $group['label'] ?? $slug ) )
+			);
+		}
+		echo '</select>';
+	}
+
+	/**
+	 * Apply taxonomy filter on choices list.
+	 *
+	 * @param WP_Query $query Query object.
+	 */
+	public function filter_by_taxonomy( WP_Query $query ): void {
+		if ( ! is_admin() || ! $query->is_main_query() ) {
 			return;
 		}
 
-		if ( isset( $_POST['wcs_option_slug'] ) ) {
-			update_post_meta( $post_id, '_wcs_option_slug', sanitize_title( wp_unslash( (string) $_POST['wcs_option_slug'] ) ) );
+		if ( 'wcs_extra_option' !== $query->get( 'post_type' ) ) {
+			return;
 		}
 
-		if ( isset( $_POST['wcs_price'] ) ) {
-			update_post_meta( $post_id, '_wcs_price', wc_format_decimal( wp_unslash( (string) $_POST['wcs_price'] ) ) );
+		if ( empty( $_GET['wcs_extra_group'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return;
 		}
 
-		if ( isset( $_POST['wcs_image'] ) ) {
-			update_post_meta( $post_id, '_wcs_image', esc_url_raw( wp_unslash( (string) $_POST['wcs_image'] ) ) );
-		}
-
-		if ( isset( $_POST['wcs_extra_group'] ) ) {
-			wp_set_object_terms( $post_id, sanitize_title( wp_unslash( (string) $_POST['wcs_extra_group'] ) ), 'wcs_extra_group' );
-		}
-	}
-
-	/**
-	 * AJAX: save extra option.
-	 */
-	public function ajax_save_option(): void {
-		check_ajax_referer( 'wcs_admin_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_woocommerce' ) ) {
-			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'woo-spiegelloft-configurator' ) ), 403 );
-		}
-
-		$data = isset( $_POST['option'] ) ? wp_unslash( $_POST['option'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		if ( ! is_array( $data ) ) {
-			wp_send_json_error( array( 'message' => __( 'Invalid data.', 'woo-spiegelloft-configurator' ) ) );
-		}
-
-		$payload = array(
-			'id'    => isset( $data['id'] ) ? absint( $data['id'] ) : 0,
-			'title' => sanitize_text_field( (string) ( $data['title'] ?? '' ) ),
-			'slug'  => sanitize_title( (string) ( $data['slug'] ?? '' ) ),
-			'group' => sanitize_title( (string) ( $data['group'] ?? '' ) ),
-			'meta'  => array(
-				'_wcs_price' => wc_format_decimal( (string) ( $data['price'] ?? '0' ) ),
-				'_wcs_image' => esc_url_raw( (string) ( $data['image'] ?? '' ) ),
-			),
+		$slug = sanitize_title( wp_unslash( (string) $_GET['wcs_extra_group'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$query->set(
+			'tax_query',
+			array(
+				array(
+					'taxonomy' => 'wcs_extra_group',
+					'field'    => 'slug',
+					'terms'    => $slug,
+				),
+			)
 		);
-
-		$result = $this->catalog->save_option( $payload );
-		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
-		}
-
-		wp_send_json_success( array( 'id' => $result ) );
-	}
-
-	/**
-	 * AJAX: delete extra option.
-	 */
-	public function ajax_delete_option(): void {
-		check_ajax_referer( 'wcs_admin_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_woocommerce' ) ) {
-			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'woo-spiegelloft-configurator' ) ), 403 );
-		}
-
-		$option_id = isset( $_POST['option_id'] ) ? absint( $_POST['option_id'] ) : 0;
-		$result    = $this->catalog->delete_option( $option_id );
-
-		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
-		}
-
-		wp_send_json_success();
 	}
 
 	/**
@@ -221,7 +220,7 @@ class WCS_Extras_Admin {
 			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'woo-spiegelloft-configurator' ) ), 403 );
 		}
 
-		$group = isset( $_POST['group'] ) ? sanitize_title( wp_unslash( (string) $_POST['group'] ) ) : '';
+		$group   = isset( $_POST['group'] ) ? sanitize_title( wp_unslash( (string) $_POST['group'] ) ) : '';
 		$options = $this->catalog->get_options_by_group( $group );
 
 		wp_send_json_success( array( 'options' => $options ) );

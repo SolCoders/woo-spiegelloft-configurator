@@ -2,6 +2,9 @@
 /**
  * Nested options extra field type.
  *
+ * Supports a single option object (associative array) or a list of option
+ * objects indexed numerically (mirror_type pattern).
+ *
  * @package WooSpiegelloftConfigurator
  */
 
@@ -38,13 +41,45 @@ class WCS_Extra_Field_Type_Nested_Options implements WCS_Extra_Field_Type {
 	}
 
 	/**
+	 * Whether value is a list of option rows.
+	 *
+	 * @param mixed $value Raw value.
+	 */
+	private function is_list_of_options( $value ): bool {
+		if ( ! is_array( $value ) || empty( $value ) ) {
+			return false;
+		}
+		return array_keys( $value ) === range( 0, count( $value ) - 1 );
+	}
+
+	/**
 	 * {@inheritDoc}
 	 *
-	 * @return array<string, mixed>
+	 * @return array<string, mixed>|array<int, array<string, mixed>>
 	 */
 	public function sanitize( $value, array $field ) {
 		if ( ! is_array( $value ) ) {
 			return array();
+		}
+
+		if ( $this->is_list_of_options( $value ) ) {
+			$sanitized = array();
+			$subfields = (array) ( $field['fields'] ?? array() );
+			foreach ( $value as $row ) {
+				if ( ! is_array( $row ) ) {
+					continue;
+				}
+				$row_data = array();
+				foreach ( $subfields as $subfield ) {
+					if ( ! is_array( $subfield ) || empty( $subfield['id'] ) ) {
+						continue;
+					}
+					$id = (string) $subfield['id'];
+					$row_data[ $id ] = $this->registry->sanitize_value( $row[ $id ] ?? '', $subfield );
+				}
+				$sanitized[] = $row_data;
+			}
+			return $sanitized;
 		}
 
 		$sanitized = array();
@@ -70,14 +105,21 @@ class WCS_Extra_Field_Type_Nested_Options implements WCS_Extra_Field_Type {
 		}
 
 		$subfields = (array) ( $field['fields'] ?? array() );
-		foreach ( $subfields as $subfield ) {
-			if ( ! is_array( $subfield ) || empty( $subfield['id'] ) ) {
+		$rows      = $this->is_list_of_options( $value ) ? $value : array( $value );
+
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) ) {
 				continue;
 			}
-			$id     = (string) $subfield['id'];
-			$result = $this->registry->validate_value( $value[ $id ] ?? '', $subfield );
-			if ( is_wp_error( $result ) ) {
-				return $result;
+			foreach ( $subfields as $subfield ) {
+				if ( ! is_array( $subfield ) || empty( $subfield['id'] ) ) {
+					continue;
+				}
+				$id     = (string) $subfield['id'];
+				$result = $this->registry->validate_value( $row[ $id ] ?? '', $subfield );
+				if ( is_wp_error( $result ) ) {
+					return $result;
+				}
 			}
 		}
 
@@ -93,8 +135,30 @@ class WCS_Extra_Field_Type_Nested_Options implements WCS_Extra_Field_Type {
 		}
 
 		$subfields = (array) ( $field['fields'] ?? array() );
-		$formatted = array();
 
+		if ( $this->is_list_of_options( $value ) ) {
+			$formatted = array();
+			foreach ( $value as $row ) {
+				if ( ! is_array( $row ) ) {
+					continue;
+				}
+				$row_data = array();
+				foreach ( $subfields as $subfield ) {
+					if ( ! is_array( $subfield ) || empty( $subfield['id'] ) ) {
+						continue;
+					}
+					$id      = (string) $subfield['id'];
+					$handler = $this->registry->get( (string) ( $subfield['type'] ?? 'text' ) );
+					$row_data[ $id ] = $handler
+						? $handler->format_for_config( $row[ $id ] ?? '', $subfield )
+						: $row[ $id ] ?? '';
+				}
+				$formatted[] = $row_data;
+			}
+			return $formatted;
+		}
+
+		$formatted = array();
 		foreach ( $subfields as $subfield ) {
 			if ( ! is_array( $subfield ) || empty( $subfield['id'] ) ) {
 				continue;
@@ -113,8 +177,32 @@ class WCS_Extra_Field_Type_Nested_Options implements WCS_Extra_Field_Type {
 	 * {@inheritDoc}
 	 */
 	public function render_admin_field( string $name, $value, array $field ): void {
-		$data      = is_array( $value ) ? $value : array();
 		$subfields = (array) ( $field['fields'] ?? array() );
+
+		if ( $this->is_list_of_options( $value ) || empty( $value ) ) {
+			$rows = is_array( $value ) && ! empty( $value ) ? $value : array( array() );
+			echo '<div class="wcs-nested-options wcs-nested-options-list" data-name="' . esc_attr( $name ) . '">';
+			foreach ( $rows as $index => $row ) {
+				$row = is_array( $row ) ? $row : array();
+				echo '<div class="wcs-nested-option-row">';
+				foreach ( $subfields as $subfield ) {
+					if ( ! is_array( $subfield ) || empty( $subfield['id'] ) ) {
+						continue;
+					}
+					$sub_name = $name . '[' . $index . '][' . $subfield['id'] . ']';
+					$handler  = $this->registry->get( (string) ( $subfield['type'] ?? 'text' ) );
+					if ( $handler ) {
+						$handler->render_admin_field( $sub_name, $row[ $subfield['id'] ] ?? '', $subfield );
+					}
+				}
+				echo '</div>';
+			}
+			echo '<button type="button" class="button wcs-add-nested-option-row">' . esc_html__( 'Add option', 'woo-spiegelloft-configurator' ) . '</button>';
+			echo '</div>';
+			return;
+		}
+
+		$data = is_array( $value ) ? $value : array();
 		echo '<div class="wcs-nested-options">';
 		foreach ( $subfields as $subfield ) {
 			if ( ! is_array( $subfield ) || empty( $subfield['id'] ) ) {

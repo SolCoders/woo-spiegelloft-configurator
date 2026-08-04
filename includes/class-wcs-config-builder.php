@@ -46,7 +46,7 @@ class WCS_Config_Builder {
 	 * Constructor.
 	 *
 	 * @param WCS_Extras_Registry   $extras_registry Extras registry.
-	 * @param WCS_Extras_Catalog  $extras_catalog  Extras catalog.
+	 * @param WCS_Extras_Catalog    $extras_catalog  Extras catalog.
 	 * @param WCS_Template          $template        Template helper.
 	 * @param WCS_Validation_Engine $validation      Validation engine.
 	 */
@@ -95,9 +95,12 @@ class WCS_Config_Builder {
 	 * @return array<string, mixed>
 	 */
 	public function build_payload( WC_Product $product, array $template_data ): array {
-		$groups       = $this->extras_registry->get_groups();
-		$enabled      = (array) ( $template_data['groups'] ?? array() );
-		$group_output = array();
+		$groups         = $this->extras_registry->get_groups();
+		$enabled        = (array) ( $template_data['enabled_groups'] ?? $template_data['groups'] ?? array() );
+		$option_map     = (array) ( $template_data['extra_option_map'] ?? array() );
+		$dimensions     = (array) ( $template_data['dimensions'] ?? array() );
+		$edge_override  = (array) ( $template_data['edge_override'] ?? array() );
+		$extras_output  = array();
 
 		foreach ( $enabled as $group_slug ) {
 			$group_slug = (string) $group_slug;
@@ -106,35 +109,71 @@ class WCS_Config_Builder {
 				continue;
 			}
 
-			$options = $this->extras_catalog->get_options_by_group( $group_slug );
-			$group_output[ $group_slug ] = array(
-				'slug'        => $group_slug,
-				'label'       => (string) ( $definition['label'] ?? $group_slug ),
-				'input_type'  => (string) ( $definition['input_type'] ?? 'single' ),
-				'fields'      => (array) ( $definition['fields'] ?? array() ),
-				'options'     => array_map( array( $this, 'format_option_for_json' ), $options ),
-				'position'    => (int) ( $definition['position'] ?? 0 ),
-				'required'    => (bool) ( $definition['required'] ?? false ),
+			if ( 'static' === ( $definition['type'] ?? 'selectable' ) && 'edge' === $group_slug ) {
+				$extras_output['edge'] = array(
+					'name' => (string) ( $edge_override['name'] ?? 'Kanten' ),
+					'desc' => (string) ( $edge_override['desc'] ?? 'geschliffen & poliert' ),
+				);
+				continue;
+			}
+
+			$all_options    = $this->extras_catalog->get_options_by_group( $group_slug );
+			$allowed_ids    = (array) ( $option_map[ $group_slug ] ?? array() );
+			$filtered       = array();
+
+			foreach ( $all_options as $option ) {
+				$option_id = (int) ( $option['id'] ?? 0 );
+				if ( ! empty( $allowed_ids ) && ! in_array( $option_id, $allowed_ids, true ) ) {
+					continue;
+				}
+				$filtered[] = $this->format_shopify_option( $option, $definition );
+			}
+
+			usort(
+				$filtered,
+				static function ( array $a, array $b ): int {
+					return ( $a['id'] ?? 0 ) <=> ( $b['id'] ?? 0 );
+				}
+			);
+
+			$extras_output[ $group_slug ] = array(
+				'title' => (string) ( $definition['category_title'] ?? $definition['label'] ?? $group_slug ),
+				'value' => $filtered,
 			);
 		}
 
-		uasort(
-			$group_output,
-			static function ( array $a, array $b ): int {
-				return ( $a['position'] ?? 0 ) <=> ( $b['position'] ?? 0 );
+		$images = array();
+		$image_id = $product->get_image_id();
+		if ( $image_id ) {
+			$url = wp_get_attachment_url( $image_id );
+			if ( $url ) {
+				$images[] = $url;
 			}
-		);
+		}
+		foreach ( $product->get_gallery_image_ids() as $gallery_id ) {
+			$url = wp_get_attachment_url( $gallery_id );
+			if ( $url ) {
+				$images[] = $url;
+			}
+		}
 
 		$data = array(
-			'product_id'   => $product->get_id(),
-			'product_sku'  => $product->get_sku(),
-			'template_id'  => (int) ( $template_data['id'] ?? 0 ),
-			'base_price'   => (float) $product->get_price(),
-			'currency'     => get_woocommerce_currency(),
-			'groups'       => $group_output,
-			'rules'        => (array) ( $template_data['rules'] ?? array() ),
-			'meta'         => (array) ( $template_data['meta'] ?? array() ),
-			'generated_at' => gmdate( 'c' ),
+			'id'               => (string) $product->get_id(),
+			'product_id'       => (string) $product->get_id(),
+			'title'            => $product->get_name(),
+			'vendor'           => '',
+			'description'      => $product->get_description(),
+			'default_price'    => (string) $product->get_price(),
+			'panelTemplate'    => (string) ( $template_data['panel_template'] ?? 'bathroomMirror' ),
+			'type'             => (string) ( $template_data['type'] ?? '' ),
+			'template'         => (string) ( $template_data['slug'] ?? sanitize_title( $template_data['title'] ?? '' ) ),
+			'images'           => $images,
+			'min_width'        => (int) ( $dimensions['min_width'] ?? 400 ),
+			'max_width'        => (int) ( $dimensions['max_width'] ?? 2500 ),
+			'min_height'       => (int) ( $dimensions['min_height'] ?? 400 ),
+			'max_height'       => (int) ( $dimensions['max_height'] ?? 2500 ),
+			'extras'           => $extras_output,
+			'validation_rules' => (array) ( $template_data['validation_rules'] ?? $template_data['rules'] ?? array() ),
 		);
 
 		/**
@@ -147,21 +186,39 @@ class WCS_Config_Builder {
 	}
 
 	/**
-	 * Format catalog option for JSON output.
+	 * Format catalog option for Shopify extras.value[] shape.
 	 *
-	 * @param array<string, mixed> $option Option data.
+	 * @param array<string, mixed> $option     Option data.
+	 * @param array<string, mixed> $group_def  Group definition.
 	 * @return array<string, mixed>
 	 */
-	private function format_option_for_json( array $option ): array {
-		$meta = (array) ( $option['meta'] ?? array() );
-		return array(
-			'id'    => (int) ( $option['id'] ?? 0 ),
-			'title' => (string) ( $option['title'] ?? '' ),
-			'slug'  => (string) ( $option['slug'] ?? '' ),
-			'price' => isset( $meta['_wcs_price'] ) ? (float) $meta['_wcs_price'] : 0.0,
-			'image' => (string) ( $meta['_wcs_image'] ?? '' ),
-			'meta'  => $meta,
+	private function format_shopify_option( array $option, array $group_def ): array {
+		$meta        = (array) ( $option['meta'] ?? array() );
+		$option_data = isset( $meta['_wcs_option_data'] ) && is_array( $meta['_wcs_option_data'] )
+			? $meta['_wcs_option_data']
+			: array();
+
+		$legacy_id = (int) ( $meta['_wcs_legacy_id'] ?? 0 );
+		if ( $legacy_id <= 0 ) {
+			$legacy_id = (int) ( $option['id'] ?? 0 );
+		}
+
+		$output = array(
+			'id'    => $legacy_id,
+			'name'  => (string) ( $option_data['name'] ?? $option['title'] ?? '' ),
+			'value' => (string) ( $option_data['value'] ?? $option['slug'] ?? '' ),
+			'image' => (string) ( $option_data['image'] ?? $meta['_wcs_image'] ?? '' ),
+			'price' => (float) ( $option_data['price'] ?? $meta['_wcs_price'] ?? 0 ),
 		);
+
+		$optional_fields = (array) ( $group_def['optional_fields'] ?? array() );
+		foreach ( array_keys( $optional_fields ) as $nested_key ) {
+			if ( array_key_exists( $nested_key, $option_data ) ) {
+				$output[ $nested_key ] = $option_data[ $nested_key ];
+			}
+		}
+
+		return $output;
 	}
 
 	/**
@@ -181,7 +238,9 @@ class WCS_Config_Builder {
 			foreach ( $slugs as $slug ) {
 				foreach ( $options as $option ) {
 					if ( ( $option['slug'] ?? '' ) === (string) $slug ) {
-						$price = (float) ( $option['meta']['_wcs_price'] ?? 0 );
+						$meta  = (array) ( $option['meta'] ?? array() );
+						$data  = (array) ( $meta['_wcs_option_data'] ?? array() );
+						$price = (float) ( $data['price'] ?? $meta['_wcs_price'] ?? 0 );
 						$total += $price;
 					}
 				}

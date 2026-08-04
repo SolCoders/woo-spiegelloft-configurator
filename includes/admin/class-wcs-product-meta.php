@@ -47,7 +47,7 @@ class WCS_Product_Meta {
 	 */
 	public function add_product_tab( array $tabs ): array {
 		$tabs['wcs_configurator'] = array(
-			'label'    => __( 'Configurator', 'woo-spiegelloft-configurator' ),
+			'label'    => __( 'Mirror Customizer', 'woo-spiegelloft-configurator' ),
 			'target'   => 'wcs_configurator_product_data',
 			'class'    => array(),
 			'priority' => 80,
@@ -61,9 +61,14 @@ class WCS_Product_Meta {
 	public function render_product_panel(): void {
 		global $post;
 
-		$template_id   = $this->template->get_product_template_id( (int) $post->ID );
-		$templates     = $this->template->get_all_templates();
-		$enabled       = (bool) get_post_meta( (int) $post->ID, '_wcs_configurator_enabled', true );
+		$product_id  = (int) $post->ID;
+		$template_id = $this->template->get_product_template_id( $product_id );
+		$templates   = $this->template->get_all_templates();
+		$enabled     = 'yes' === get_post_meta( $product_id, '_wcs_enabled', true );
+
+		if ( ! $enabled && 'yes' === get_post_meta( $product_id, '_wcs_configurator_enabled', true ) ) {
+			$enabled = true;
+		}
 
 		include WCS_PLUGIN_DIR . 'templates/admin/product-configurator-tab.php';
 	}
@@ -78,7 +83,8 @@ class WCS_Product_Meta {
 			return;
 		}
 
-		$enabled = isset( $_POST['_wcs_configurator_enabled'] ) ? 'yes' : 'no';
+		$enabled = isset( $_POST['_wcs_enabled'] ) ? 'yes' : 'no';
+		update_post_meta( $post_id, '_wcs_enabled', $enabled );
 		update_post_meta( $post_id, '_wcs_configurator_enabled', $enabled );
 
 		if ( isset( $_POST['_wcs_template_id'] ) ) {

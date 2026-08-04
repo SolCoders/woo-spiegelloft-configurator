@@ -46,10 +46,10 @@ class WCS_Template {
 			'wcs_template',
 			array(
 				'labels'              => array(
-					'name'          => __( 'Configurator Templates', 'woo-spiegelloft-configurator' ),
-					'singular_name' => __( 'Configurator Template', 'woo-spiegelloft-configurator' ),
-					'add_new_item'  => __( 'Add Template', 'woo-spiegelloft-configurator' ),
-					'edit_item'     => __( 'Edit Template', 'woo-spiegelloft-configurator' ),
+					'name'          => __( 'Mirror templates', 'woo-spiegelloft-configurator' ),
+					'singular_name' => __( 'Mirror template', 'woo-spiegelloft-configurator' ),
+					'add_new_item'  => __( 'Add mirror template', 'woo-spiegelloft-configurator' ),
+					'edit_item'     => __( 'Edit mirror template', 'woo-spiegelloft-configurator' ),
 				),
 				'public'              => false,
 				'show_ui'             => true,
@@ -96,12 +96,27 @@ class WCS_Template {
 			$data = array();
 		}
 
+		$dimensions = (array) ( $data['dimensions'] ?? array() );
+
 		$formatted = array(
-			'id'     => $template_id,
-			'title'  => $post->post_title,
-			'groups' => (array) ( $data['groups'] ?? array() ),
-			'rules'  => (array) ( $data['rules'] ?? array() ),
-			'meta'   => (array) ( $data['meta'] ?? array() ),
+			'id'                => $template_id,
+			'title'             => $post->post_title,
+			'panel_template'    => (string) ( $data['panel_template'] ?? 'bathroomMirror' ),
+			'slug'              => (string) ( $data['slug'] ?? sanitize_title( $post->post_title ) ),
+			'type'              => (string) ( $data['type'] ?? '' ),
+			'dimensions'        => array(
+				'min_width'  => (int) ( $dimensions['min_width'] ?? 400 ),
+				'max_width'  => (int) ( $dimensions['max_width'] ?? 2500 ),
+				'min_height' => (int) ( $dimensions['min_height'] ?? 400 ),
+				'max_height' => (int) ( $dimensions['max_height'] ?? 2500 ),
+			),
+			'enabled_groups'    => (array) ( $data['enabled_groups'] ?? $data['groups'] ?? array() ),
+			'extra_option_map'  => (array) ( $data['extra_option_map'] ?? array() ),
+			'validation_rules'  => (array) ( $data['validation_rules'] ?? $data['rules'] ?? array() ),
+			'edge_override'     => (array) ( $data['edge_override'] ?? array() ),
+			'groups'            => (array) ( $data['enabled_groups'] ?? $data['groups'] ?? array() ),
+			'rules'             => (array) ( $data['validation_rules'] ?? $data['rules'] ?? array() ),
+			'meta'              => (array) ( $data['meta'] ?? array() ),
 		);
 
 		$this->cache->set( $cache_key, $formatted );
@@ -116,10 +131,22 @@ class WCS_Template {
 	 * @return bool
 	 */
 	public function save_template_data( int $template_id, array $data ): bool {
+		$dimensions = (array) ( $data['dimensions'] ?? array() );
+
 		$sanitized = array(
-			'groups' => array_values( array_map( 'sanitize_text_field', (array) ( $data['groups'] ?? array() ) ) ),
-			'rules'  => is_array( $data['rules'] ?? null ) ? $data['rules'] : array(),
-			'meta'   => is_array( $data['meta'] ?? null ) ? $data['meta'] : array(),
+			'panel_template'   => sanitize_text_field( (string) ( $data['panel_template'] ?? 'bathroomMirror' ) ),
+			'slug'             => sanitize_title( (string) ( $data['slug'] ?? '' ) ),
+			'type'             => sanitize_text_field( (string) ( $data['type'] ?? '' ) ),
+			'dimensions'       => array(
+				'min_width'  => absint( $dimensions['min_width'] ?? 400 ),
+				'max_width'  => absint( $dimensions['max_width'] ?? 2500 ),
+				'min_height' => absint( $dimensions['min_height'] ?? 400 ),
+				'max_height' => absint( $dimensions['max_height'] ?? 2500 ),
+			),
+			'enabled_groups'   => array_values( array_map( 'sanitize_text_field', (array) ( $data['enabled_groups'] ?? array() ) ) ),
+			'extra_option_map' => is_array( $data['extra_option_map'] ?? null ) ? $data['extra_option_map'] : array(),
+			'validation_rules' => is_array( $data['validation_rules'] ?? null ) ? $data['validation_rules'] : array(),
+			'edge_override'    => is_array( $data['edge_override'] ?? null ) ? $data['edge_override'] : array(),
 		);
 
 		update_post_meta( $template_id, '_wcs_template_data', $sanitized );

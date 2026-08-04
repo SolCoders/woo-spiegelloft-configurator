@@ -12,14 +12,20 @@
 defined( 'ABSPATH' ) || exit;
 ?>
 <div id="wcs_configurator_product_data" class="panel woocommerce_options_panel hidden">
+	<div class="options_group wcs-product-configurator-intro">
+		<p class="form-field">
+			<?php esc_html_e( 'Turn on the mirror customizer for this product and choose which template controls the available choices and size limits.', 'woo-spiegelloft-configurator' ); ?>
+		</p>
+	</div>
+
 	<div class="options_group">
 		<?php
 		woocommerce_wp_checkbox(
 			array(
-				'id'          => '_wcs_configurator_enabled',
-				'label'       => __( 'Enable configurator', 'woo-spiegelloft-configurator' ),
+				'id'          => '_wcs_enabled',
+				'label'       => __( 'Enable mirror customizer', 'woo-spiegelloft-configurator' ),
 				'value'       => $enabled ? 'yes' : 'no',
-				'description' => __( 'Enable the mirror configurator for this product.', 'woo-spiegelloft-configurator' ),
+				'description' => __( 'Customers can configure this product on the storefront.', 'woo-spiegelloft-configurator' ),
 			)
 		);
 		?>
@@ -27,7 +33,7 @@ defined( 'ABSPATH' ) || exit;
 
 	<div class="options_group">
 		<p class="form-field">
-			<label for="_wcs_template_id"><?php esc_html_e( 'Configurator template', 'woo-spiegelloft-configurator' ); ?></label>
+			<label for="_wcs_template_id"><strong><?php esc_html_e( 'Mirror template', 'woo-spiegelloft-configurator' ); ?></strong></label>
 			<select name="_wcs_template_id" id="_wcs_template_id" class="select short">
 				<option value="0"><?php esc_html_e( '— Select template —', 'woo-spiegelloft-configurator' ); ?></option>
 				<?php foreach ( $templates as $template ) : ?>
@@ -36,6 +42,9 @@ defined( 'ABSPATH' ) || exit;
 					</option>
 				<?php endforeach; ?>
 			</select>
+			<span class="description">
+				<a href="<?php echo esc_url( admin_url( 'edit.php?post_type=wcs_template' ) ); ?>"><?php esc_html_e( 'Manage templates', 'woo-spiegelloft-configurator' ); ?></a>
+			</span>
 		</p>
 	</div>
 </div>

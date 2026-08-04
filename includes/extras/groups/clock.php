@@ -1,35 +1,32 @@
 <?php
-/**
- * Extra group: Clock
- *
- * @package WooSpiegelloftConfigurator
- */
-
 declare(strict_types=1);
-
 defined( 'ABSPATH' ) || exit;
 
 return array(
-	'slug'       => 'clock',
-	'label'      => __( 'Clock', 'woo-spiegelloft-configurator' ),
-	'input_type' => 'single',
-	'position'   => 80,
-	'required'   => false,
-	'fields'     => array(
-		array(
-			'id'    => 'title',
-			'type'  => 'text',
-			'label' => __( 'Title', 'woo-spiegelloft-configurator' ),
-		),
-		array(
-			'id'    => 'price',
-			'type'  => 'price',
-			'label' => __( 'Price', 'woo-spiegelloft-configurator' ),
-		),
-		array(
-			'id'    => 'image',
-			'type'  => 'image',
-			'label' => __( 'Image', 'woo-spiegelloft-configurator' ),
+	'slug'           => 'clock',
+	'label'          => __( 'Digital Clock', 'woo-spiegelloft-configurator' ),
+	'category_title' => __( 'Digitaluhr', 'woo-spiegelloft-configurator' ),
+	'input_type'     => 'single',
+	'position'       => 80,
+	'type'           => 'selectable',
+	'base_fields'    => array( 'name', 'value', 'image', 'price' ),
+	'optional_fields' => array(
+		'position' => array(
+			'type'       => 'repeater',
+			'label'      => __( 'Where can the customer place this?', 'woo-spiegelloft-configurator' ),
+			'preset_key' => 'bottom_row',
+			'fields' => array(
+				array(
+					'id'    => 'title',
+					'type'  => 'text',
+					'label' => __( 'Title', 'woo-spiegelloft-configurator' ),
+				),
+				array(
+					'id'    => 'image',
+					'type'  => 'image',
+					'label' => __( 'Image', 'woo-spiegelloft-configurator' ),
+				),
+			),
 		),
 	),
 );

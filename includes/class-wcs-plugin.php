@@ -58,17 +58,20 @@ class WCS_Plugin {
 		$template = new WCS_Template( $cache );
 		$template->register();
 
-		$validation = new WCS_Validation_Engine();
+		$validation     = new WCS_Validation_Engine();
 		$config_builder = new WCS_Config_Builder( $extras_registry, $extras_catalog, $template, $validation );
 
 		if ( is_admin() ) {
 			$admin = new WCS_Admin();
 			$admin->register();
 
+			$choice_meta = new WCS_Choice_Meta( $extras_registry, $field_registry );
+			$choice_meta->register();
+
 			$extras_admin = new WCS_Extras_Admin( $extras_catalog, $extras_registry );
 			$extras_admin->register();
 
-			$template_admin = new WCS_Template_Admin( $template, $extras_registry );
+			$template_admin = new WCS_Template_Admin( $template, $extras_registry, $extras_catalog );
 			$template_admin->register();
 
 			$product_meta = new WCS_Product_Meta( $template );

@@ -47,10 +47,10 @@ class WCS_Extras_Catalog {
 			'wcs_extra_option',
 			array(
 				'labels'              => array(
-					'name'          => __( 'Extra Options', 'woo-spiegelloft-configurator' ),
-					'singular_name' => __( 'Extra Option', 'woo-spiegelloft-configurator' ),
-					'add_new_item'  => __( 'Add Extra Option', 'woo-spiegelloft-configurator' ),
-					'edit_item'     => __( 'Edit Extra Option', 'woo-spiegelloft-configurator' ),
+					'name'          => __( 'Customization choices', 'woo-spiegelloft-configurator' ),
+					'singular_name' => __( 'Customization choice', 'woo-spiegelloft-configurator' ),
+					'add_new_item'  => __( 'Add customization choice', 'woo-spiegelloft-configurator' ),
+					'edit_item'     => __( 'Edit customization choice', 'woo-spiegelloft-configurator' ),
 				),
 				'public'              => false,
 				'show_ui'             => true,

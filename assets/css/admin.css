@@ -20,26 +20,395 @@
 	margin: 0 0 12px;
 }
 
-.wcs-group-panel {
+/* Wizard */
+.wcs-wizard {
+	max-width: 1120px;
+}
+
+.wcs-wizard-hero {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 260px;
+	gap: 24px;
+	align-items: end;
+	margin: 18px 0 24px;
+	padding: 30px;
+	background: linear-gradient(135deg, #f8fbff 0%, #fff 54%, #f6f7f7 100%);
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+	box-shadow: 0 12px 28px rgba(31, 41, 55, 0.07);
+}
+
+.wcs-wizard-hero h1 {
+	margin: 6px 0 10px;
+	font-size: 28px;
+	line-height: 1.2;
+	font-weight: 650;
+	color: #1d2327;
+}
+
+.wcs-wizard-eyebrow {
+	display: inline-flex;
+	align-items: center;
+	width: fit-content;
+	padding: 4px 9px;
+	background: #e8f2ff;
+	border: 1px solid #c7ddf5;
+	border-radius: 999px;
+	color: #135e96;
+	font-size: 12px;
+	font-weight: 700;
+	text-transform: uppercase;
+}
+
+.wcs-wizard-intro {
+	max-width: 720px;
+	margin: 0;
+	color: #50575e;
+	font-size: 15px;
+	line-height: 1.55;
+}
+
+.wcs-wizard-progress-card {
+	padding: 18px;
+	background: #1d2327;
+	border-radius: 8px;
+	color: #fff;
+	box-shadow: 0 10px 24px rgba(29, 35, 39, 0.16);
+}
+
+.wcs-wizard-progress-value,
+.wcs-wizard-progress-label {
+	display: block;
+}
+
+.wcs-wizard-progress-value {
+	font-size: 30px;
+	line-height: 1;
+	font-weight: 700;
+}
+
+.wcs-wizard-progress-label {
+	margin-top: 6px;
+	color: #c3c4c7;
+	font-size: 13px;
+}
+
+.wcs-wizard-progress-track {
+	display: block;
+	height: 8px;
+	margin-top: 18px;
+	overflow: hidden;
+	background: rgba(255, 255, 255, 0.18);
+	border-radius: 999px;
+}
+
+.wcs-wizard-progress-track span {
+	display: block;
+	height: 100%;
+	background: #72aee6;
+	border-radius: inherit;
+}
+
+.wcs-wizard-steps {
+	list-style: none;
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 16px;
+	margin: 0 0 24px;
+	padding: 0;
+}
+
+.wcs-wizard-step {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	min-height: 230px;
 	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+	margin: 0;
+	padding: 20px 24px;
+	box-shadow: 0 7px 18px rgba(31, 41, 55, 0.06);
+	transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.wcs-wizard-step:hover {
+	border-color: #8c8f94;
+	box-shadow: 0 14px 30px rgba(31, 41, 55, 0.1);
+	transform: translateY(-2px);
+}
+
+.wcs-wizard-step--complete {
+	border-top: 4px solid #00a32a;
+}
+
+.wcs-wizard-step--pending {
+	border-top: 4px solid #dba617;
+}
+
+.wcs-wizard-step-header {
+	display: flex;
+	align-items: flex-start;
+	gap: 14px;
+	margin-bottom: 14px;
+}
+
+.wcs-wizard-step-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	background: #2271b1;
+	color: #fff;
+	font-size: 13px;
+	font-weight: 700;
+	flex-shrink: 0;
+}
+
+.wcs-wizard-step--complete .wcs-wizard-step-badge {
+	background: #00a32a;
+}
+
+.wcs-wizard-step--pending .wcs-wizard-step-badge {
+	background: #dba617;
+	color: #1d2327;
+}
+
+.wcs-wizard-step h2 {
+	margin: 0 0 4px;
+	font-size: 16px;
+	line-height: 1.35;
+	color: #1d2327;
+}
+
+.wcs-wizard-step p {
+	margin: 0;
+	color: #50575e;
+	line-height: 1.55;
+}
+
+.wcs-wizard-status {
+	display: inline-flex;
+	align-items: center;
+	width: fit-content;
+	padding: 3px 8px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+}
+
+.wcs-wizard-status--complete {
+	background: #edfaef;
+	color: #00a32a;
+}
+
+.wcs-wizard-status--pending {
+	background: #fcf9e8;
+	color: #996800;
+}
+
+.wcs-wizard-step-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 14px;
+	margin-top: auto;
+	padding-top: 18px;
+}
+
+.wcs-wizard-meta {
+	display: grid;
+	gap: 2px;
+	color: #646970;
+	font-size: 12px;
+}
+
+.wcs-wizard-meta strong {
+	color: #1d2327;
+	font-size: 22px;
+	line-height: 1;
+}
+
+.wcs-wizard-step .button.button-primary {
+	min-height: 38px;
+	padding: 4px 14px;
+	border: 0;
+	border-radius: 6px;
+	background: #3858e9;
+	font-weight: 700;
+	line-height: 28px;
+	box-shadow: none;
+}
+
+.wcs-wizard-step .button.button-primary:hover,
+.wcs-wizard-step .button.button-primary:focus {
+	background: #2145e6;
+}
+
+@media (max-width: 960px) {
+	.wcs-wizard-hero,
+	.wcs-wizard-steps {
+		grid-template-columns: 1fr;
+	}
+
+	.wcs-wizard-progress-card {
+		max-width: 320px;
+	}
+}
+
+@media (max-width: 600px) {
+	.wcs-wizard-hero {
+		padding: 22px;
+	}
+
+	.wcs-wizard-hero h1 {
+		font-size: 24px;
+	}
+
+	.wcs-wizard-step-footer {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+}
+
+/* Choice editor */
+.wcs-choice-details .wcs-field,
+.wcs-choice-nested .wcs-field {
+	margin-bottom: 16px;
+}
+
+.wcs-choice-details label,
+.wcs-choice-nested label {
+	display: block;
+	margin-bottom: 4px;
+}
+
+.wcs-advanced {
+	margin-top: 16px;
+	padding: 12px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+}
+
+.wcs-advanced summary {
+	cursor: pointer;
+	font-weight: 600;
+}
+
+.wcs-image-picker {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 8px;
+}
+
+.wcs-image-preview img {
+	max-width: 120px;
+	height: auto;
+	margin-top: 8px;
 	border: 1px solid #c3c4c7;
-	margin-bottom: 24px;
+	border-radius: 4px;
+}
+
+/* Accordion */
+.wcs-nested-accordion,
+.wcs-template-accordion {
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	overflow: hidden;
+}
+
+.wcs-accordion-panel {
+	border-bottom: 1px solid #c3c4c7;
+	background: #fff;
+}
+
+.wcs-accordion-panel:last-child {
+	border-bottom: none;
+}
+
+.wcs-accordion-toggle {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+	padding: 12px 16px;
+	background: #f6f7f7;
+	border: 0;
+	cursor: pointer;
+	text-align: left;
+	font-size: 14px;
+}
+
+.wcs-accordion-panel.is-open .wcs-accordion-toggle {
+	background: #fff;
+	border-bottom: 1px solid #dcdcde;
+}
+
+.wcs-accordion-body {
+	display: none;
 	padding: 16px;
 }
 
-.wcs-group-panel h2 {
-	margin-top: 0;
+.wcs-accordion-panel.is-open .wcs-accordion-body {
+	display: block;
 }
 
-.wcs-template-groups .wcs-checkbox-row {
-	display: block;
-	margin-bottom: 8px;
+.wcs-template-group-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 12px 16px;
+	background: #f6f7f7;
+}
+
+.wcs-template-group-panel.is-enabled .wcs-template-group-header {
+	background: #edf5ff;
+}
+
+.wcs-template-group-panel .wcs-accordion-body {
+	padding: 12px 16px 16px;
+}
+
+.wcs-option-checklist {
+	max-height: 280px;
+	overflow-y: auto;
+}
+
+/* Repeaters */
+.wcs-repeater-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 12px;
 }
 
 .wcs-repeater-row {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
 	border: 1px dashed #c3c4c7;
-	padding: 10px;
+	padding: 12px;
 	margin-bottom: 10px;
+	background: #fafafa;
+	border-radius: 4px;
+}
+
+.wcs-repeater-handle {
+	cursor: move;
+	color: #787c82;
+	margin-top: 6px;
+}
+
+.wcs-repeater-fields {
+	flex: 1;
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+	gap: 10px;
 }
 
 .wcs-nested-options {
@@ -47,8 +416,63 @@
 	border-left: 3px solid #2271b1;
 }
 
-.wcs-rules-editor {
-	font-family: Consolas, Monaco, monospace;
+.wcs-nested-option-row {
+	border: 1px solid #dcdcde;
+	padding: 10px;
+	margin-bottom: 8px;
+	border-radius: 4px;
+	background: #fff;
+}
+
+/* Template basic */
+.wcs-dimensions-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+	gap: 12px;
+	margin: 16px 0;
+	padding: 12px;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+}
+
+.wcs-dimensions-grid label {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	font-size: 13px;
+}
+
+.wcs-edge-override {
+	margin-top: 16px;
+	padding: 12px;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+}
+
+/* Rule builder */
+.wcs-rule-builder .wcs-rule-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 12px;
+	padding: 12px;
+	margin-bottom: 10px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+}
+
+.wcs-rule-builder label {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	font-size: 13px;
+}
+
+.wcs-template-groups .wcs-checkbox-row,
+.wcs-option-checklist .wcs-checkbox-row {
+	display: block;
+	margin-bottom: 8px;
 }
 
 .wcs-order-configuration dt {
@@ -63,4 +487,9 @@
 
 .wcs-image-field .wcs-upload-image {
 	margin-left: 8px;
+}
+
+.wcs-product-configurator-intro .form-field {
+	padding: 12px 12px 0;
+	color: #646970;
 }
