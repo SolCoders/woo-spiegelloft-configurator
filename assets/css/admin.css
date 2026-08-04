@@ -1,0 +1,66 @@
+.wcs-admin-wrap .wcs-dashboard-cards {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 20px;
+	margin: 20px 0;
+}
+
+.wcs-admin-wrap .wcs-card {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	padding: 20px;
+	min-width: 220px;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.wcs-admin-wrap .wcs-stat {
+	font-size: 2rem;
+	font-weight: 600;
+	margin: 0 0 12px;
+}
+
+.wcs-group-panel {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	margin-bottom: 24px;
+	padding: 16px;
+}
+
+.wcs-group-panel h2 {
+	margin-top: 0;
+}
+
+.wcs-template-groups .wcs-checkbox-row {
+	display: block;
+	margin-bottom: 8px;
+}
+
+.wcs-repeater-row {
+	border: 1px dashed #c3c4c7;
+	padding: 10px;
+	margin-bottom: 10px;
+}
+
+.wcs-nested-options {
+	padding-left: 12px;
+	border-left: 3px solid #2271b1;
+}
+
+.wcs-rules-editor {
+	font-family: Consolas, Monaco, monospace;
+}
+
+.wcs-order-configuration dt {
+	font-weight: 600;
+	margin-top: 4px;
+}
+
+.wcs-order-configuration dd {
+	margin-left: 0;
+	margin-bottom: 4px;
+}
+
+.wcs-image-field .wcs-upload-image {
+	margin-left: 8px;
+}
