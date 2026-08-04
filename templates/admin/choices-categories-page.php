@@ -49,7 +49,7 @@ defined( 'ABSPATH' ) || exit;
 						<code><?php echo esc_html( (string) $slug ); ?></code>
 					</div>
 					<div class="wcs-choice-category-meta">
-						<span>
+						<span class="wcs-choice-count" data-count="<?php echo esc_attr( (string) count( $options ) ); ?>">
 							<?php
 							printf(
 								/* translators: %d: choice count */
@@ -113,7 +113,12 @@ defined( 'ABSPATH' ) || exit;
 													<a class="button button-small" href="<?php echo esc_url( get_edit_post_link( $option_id, '' ) ); ?>">
 														<?php esc_html_e( 'Edit', 'woo-spiegelloft-configurator' ); ?>
 													</a>
-													<a class="button button-small wcs-delete-choice" href="<?php echo esc_url( get_delete_post_link( $option_id, '', true ) ); ?>">
+													<a
+														class="button button-small wcs-delete-choice"
+														href="<?php echo esc_url( get_delete_post_link( $option_id, '', true ) ); ?>"
+														data-choice-id="<?php echo esc_attr( (string) $option_id ); ?>"
+														data-nonce="<?php echo esc_attr( wp_create_nonce( 'wcs_delete_choice_' . $option_id ) ); ?>"
+													>
 														<?php esc_html_e( 'Delete', 'woo-spiegelloft-configurator' ); ?>
 													</a>
 												</td>
@@ -122,6 +127,7 @@ defined( 'ABSPATH' ) || exit;
 									</tbody>
 								</table>
 							</div>
+							<p class="description wcs-empty-options-message" hidden><?php esc_html_e( 'No choices in this category yet.', 'woo-spiegelloft-configurator' ); ?></p>
 						<?php endif; ?>
 					<?php endif; ?>
 				</div>

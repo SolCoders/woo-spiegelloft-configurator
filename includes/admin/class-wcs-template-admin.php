@@ -125,7 +125,19 @@ class WCS_Template_Admin {
 		$enabled_groups = (array) ( $data['enabled_groups'] ?? $data['groups'] ?? array() );
 		$option_map     = (array) ( $data['extra_option_map'] ?? array() );
 		$all_groups     = $this->registry->get_groups();
+		$group_order    = (array) ( $data['group_order'] ?? array() );
 		$group_options  = array();
+
+		if ( ! empty( $group_order ) ) {
+			$ordered_groups = array();
+			foreach ( $group_order as $group_slug ) {
+				$group_slug = (string) $group_slug;
+				if ( isset( $all_groups[ $group_slug ] ) ) {
+					$ordered_groups[ $group_slug ] = $all_groups[ $group_slug ];
+				}
+			}
+			$all_groups = $ordered_groups + $all_groups;
+		}
 
 		foreach ( array_keys( $all_groups ) as $group_slug ) {
 			$group_options[ $group_slug ] = $this->catalog->get_options_by_group( $group_slug );
@@ -164,7 +176,21 @@ class WCS_Template_Admin {
 			return;
 		}
 
-		$enabled_groups = isset( $_POST['wcs_enabled_groups'] ) ? array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['wcs_enabled_groups'] ) ) : array();
+		$enabled_groups_raw = isset( $_POST['wcs_enabled_groups'] ) ? (array) wp_unslash( $_POST['wcs_enabled_groups'] ) : array();
+		$group_order_raw    = isset( $_POST['wcs_group_order'] ) ? (array) wp_unslash( $_POST['wcs_group_order'] ) : array();
+		$enabled_groups     = array_values( array_unique( array_map( 'sanitize_text_field', $enabled_groups_raw ) ) );
+		$group_order        = array_values( array_unique( array_map( 'sanitize_text_field', $group_order_raw ) ) );
+		if ( ! empty( $group_order ) ) {
+			$enabled_lookup = array_flip( $enabled_groups );
+			$enabled_groups = array_values(
+				array_filter(
+					$group_order,
+					static function ( string $group_slug ) use ( $enabled_lookup ): bool {
+						return isset( $enabled_lookup[ $group_slug ] );
+					}
+				)
+			);
+		}
 
 		$option_map_raw = isset( $_POST['wcs_extra_option_map'] ) ? wp_unslash( $_POST['wcs_extra_option_map'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$option_map     = array();
@@ -238,6 +264,7 @@ class WCS_Template_Admin {
 					'max_height' => absint( $_POST['wcs_max_height'] ?? 2500 ),
 				),
 				'enabled_groups'    => $enabled_groups,
+				'group_order'       => $group_order,
 				'extra_option_map'  => $option_map,
 				'validation_rules'  => $rules,
 				'behavior_rules'    => $rules,

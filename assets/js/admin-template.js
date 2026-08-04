@@ -163,9 +163,62 @@
 
 	function bindDeleteChoice() {
 		$(document).on('click', '.wcs-delete-choice', function (e) {
-			if (!window.confirm('Delete this choice?')) {
-				e.preventDefault();
+			e.preventDefault();
+
+			var $button = $(this);
+			var choiceId = parseInt($button.data('choice-id'), 10);
+			var nonce = $button.data('nonce');
+			var labels = window.wcsAdmin && wcsAdmin.i18n ? wcsAdmin.i18n : {};
+
+			if ($button.data('busy')) {
+				return;
 			}
+
+			if (!choiceId || !nonce) {
+				window.location.href = $button.attr('href');
+				return;
+			}
+
+			if (!window.confirm(labels.deleteConfirm || 'Delete this choice?')) {
+				return;
+			}
+
+			$button.data('busy', true).addClass('disabled').text(labels.deleting || 'Deleting...');
+
+			$.post(wcsAdmin.ajaxUrl, {
+				action: 'wcs_delete_choice',
+				choice_id: choiceId,
+				nonce: nonce
+			})
+				.done(function (response) {
+					if (!response || !response.success) {
+						window.alert(response && response.data && response.data.message ? response.data.message : (labels.error || 'An error occurred.'));
+						return;
+					}
+
+					var $row = $button.closest('tr');
+					var $panel = $button.closest('.wcs-template-group-panel');
+					var $tbody = $row.closest('tbody');
+
+					$row.fadeOut(150, function () {
+						$(this).remove();
+
+						var count = $tbody.find('tr').length;
+						var $count = $panel.find('.wcs-choice-count').first();
+						$count.data('count', count).text(count === 1 ? '1 choice' : count + ' choices');
+
+						if (!count) {
+							$panel.find('.wcs-option-table-wrap').hide();
+							$panel.find('.wcs-empty-options-message').prop('hidden', false).show();
+						}
+					});
+				})
+				.fail(function () {
+					window.alert(labels.error || 'An error occurred.');
+				})
+				.always(function () {
+					$button.data('busy', false).removeClass('disabled').text(labels.deleteLabel || 'Delete');
+				});
 		});
 	}
 
@@ -192,11 +245,29 @@
 		});
 	}
 
+	function bindGroupSorting() {
+		$('.wcs-template-choices .wcs-template-accordion').each(function () {
+			var $accordion = $(this);
+			if ($accordion.data('sortable')) {
+				return;
+			}
+			$accordion.sortable({
+				axis: 'y',
+				handle: '.wcs-group-sort-handle',
+				items: '> .wcs-template-group-panel',
+				placeholder: 'wcs-group-sort-placeholder',
+				forcePlaceholderSize: true
+			});
+			$accordion.data('sortable', true);
+		});
+	}
+
 	$(function () {
 		bindAccordion();
 		bindTemplateSlug();
 		bindRuleBuilder();
 		bindDeleteChoice();
 		bindChoiceSorting();
+		bindGroupSorting();
 	});
 }(jQuery));

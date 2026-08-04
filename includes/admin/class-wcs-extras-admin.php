@@ -50,6 +50,7 @@ class WCS_Extras_Admin {
 		add_action( 'restrict_manage_posts', array( $this, 'taxonomy_filter_dropdown' ) );
 		add_action( 'pre_get_posts', array( $this, 'filter_by_taxonomy' ) );
 		add_action( 'wp_ajax_wcs_get_group_options', array( $this, 'ajax_get_group_options' ) );
+		add_action( 'wp_ajax_wcs_delete_choice', array( $this, 'ajax_delete_choice' ) );
 	}
 
 	/**
@@ -254,5 +255,37 @@ class WCS_Extras_Admin {
 		$options = $this->catalog->get_options_by_group( $group );
 
 		wp_send_json_success( array( 'options' => $options ) );
+	}
+
+	/**
+	 * AJAX: delete a customization choice.
+	 */
+	public function ajax_delete_choice(): void {
+		$choice_id = isset( $_POST['choice_id'] ) ? absint( wp_unslash( $_POST['choice_id'] ) ) : 0;
+
+		check_ajax_referer( 'wcs_delete_choice_' . $choice_id, 'nonce' );
+
+		if ( ! current_user_can( 'manage_woocommerce' ) || ! current_user_can( 'delete_post', $choice_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'woo-spiegelloft-configurator' ) ), 403 );
+		}
+
+		$post = get_post( $choice_id );
+		if ( ! $post || 'wcs_extra_option' !== $post->post_type ) {
+			wp_send_json_error( array( 'message' => __( 'Choice not found.', 'woo-spiegelloft-configurator' ) ), 404 );
+		}
+
+		$deleted = wp_trash_post( $choice_id );
+		if ( ! $deleted ) {
+			wp_send_json_error( array( 'message' => __( 'Could not delete this choice.', 'woo-spiegelloft-configurator' ) ), 500 );
+		}
+
+		$this->catalog->invalidate_cache( $choice_id );
+
+		wp_send_json_success(
+			array(
+				'choice_id' => $choice_id,
+				'message'   => __( 'Choice deleted.', 'woo-spiegelloft-configurator' ),
+			)
+		);
 	}
 }

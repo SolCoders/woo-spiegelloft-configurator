@@ -35,11 +35,13 @@ defined( 'ABSPATH' ) || exit;
 			?>
 			<div class="wcs-accordion-panel wcs-template-group-panel <?php echo $is_enabled ? 'is-enabled' : ''; ?>">
 				<div class="wcs-template-group-header">
+					<span class="dashicons dashicons-menu wcs-group-sort-handle" title="<?php esc_attr_e( 'Drag to reorder category', 'woo-spiegelloft-configurator' ); ?>"></span>
+					<input type="hidden" class="wcs-group-order-input" name="wcs_group_order[]" value="<?php echo esc_attr( $slug ); ?>">
 					<label class="wcs-template-group-toggle">
 						<input type="checkbox" class="wcs-group-toggle" name="wcs_enabled_groups[]" value="<?php echo esc_attr( $slug ); ?>" <?php checked( $is_enabled ); ?>>
 						<span>
 							<strong><?php echo esc_html( (string) ( $group['label'] ?? $slug ) ); ?></strong>
-							<small>
+							<small class="wcs-choice-count" data-count="<?php echo esc_attr( (string) count( $options ) ); ?>">
 								<?php
 								printf(
 									/* translators: %d: choice count */
@@ -114,7 +116,12 @@ defined( 'ABSPATH' ) || exit;
 											<a class="button button-small" href="<?php echo esc_url( get_edit_post_link( $option_id, '' ) ); ?>">
 												<?php esc_html_e( 'Edit', 'woo-spiegelloft-configurator' ); ?>
 											</a>
-											<a class="button button-small wcs-delete-choice" href="<?php echo esc_url( get_delete_post_link( $option_id, '', true ) ); ?>">
+											<a
+												class="button button-small wcs-delete-choice"
+												href="<?php echo esc_url( get_delete_post_link( $option_id, '', true ) ); ?>"
+												data-choice-id="<?php echo esc_attr( (string) $option_id ); ?>"
+												data-nonce="<?php echo esc_attr( wp_create_nonce( 'wcs_delete_choice_' . $option_id ) ); ?>"
+											>
 												<?php esc_html_e( 'Delete', 'woo-spiegelloft-configurator' ); ?>
 											</a>
 										</td>
@@ -123,6 +130,7 @@ defined( 'ABSPATH' ) || exit;
 								</tbody>
 							</table>
 						</div>
+						<p class="description wcs-empty-options-message" hidden><?php esc_html_e( 'No choices in this category yet.', 'woo-spiegelloft-configurator' ); ?></p>
 					<?php endif; ?>
 				</div>
 			</div>

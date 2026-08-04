@@ -178,9 +178,12 @@ class WCS_Loader {
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( 'wcs_admin_nonce' ),
 				'i18n'    => array(
-					'saved'   => __( 'Saved.', 'woo-spiegelloft-configurator' ),
-					'error'   => __( 'An error occurred.', 'woo-spiegelloft-configurator' ),
-					'confirm' => __( 'Are you sure?', 'woo-spiegelloft-configurator' ),
+					'saved'         => __( 'Saved.', 'woo-spiegelloft-configurator' ),
+					'error'         => __( 'An error occurred.', 'woo-spiegelloft-configurator' ),
+					'confirm'       => __( 'Are you sure?', 'woo-spiegelloft-configurator' ),
+					'deleteConfirm' => __( 'Delete this choice?', 'woo-spiegelloft-configurator' ),
+					'deleteLabel'   => __( 'Delete', 'woo-spiegelloft-configurator' ),
+					'deleting'      => __( 'Deleting...', 'woo-spiegelloft-configurator' ),
 				),
 			)
 		);
