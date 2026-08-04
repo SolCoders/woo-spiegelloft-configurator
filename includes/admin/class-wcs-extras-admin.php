@@ -85,7 +85,8 @@ class WCS_Extras_Admin {
 			__( 'Customization choices', 'woo-spiegelloft-configurator' ),
 			__( 'Customization choices', 'woo-spiegelloft-configurator' ),
 			'manage_woocommerce',
-			'edit.php?post_type=wcs_extra_option'
+			'wcs-choices',
+			array( $this, 'render_choices_page' )
 		);
 
 		add_submenu_page(
@@ -95,6 +96,35 @@ class WCS_Extras_Admin {
 			'manage_woocommerce',
 			'post-new.php?post_type=wcs_extra_option'
 		);
+
+		add_submenu_page(
+			'wcs-configurator',
+			__( 'Choice categories', 'woo-spiegelloft-configurator' ),
+			__( 'Choice categories', 'woo-spiegelloft-configurator' ),
+			'manage_woocommerce',
+			'edit-tags.php?taxonomy=wcs_extra_group&post_type=wcs_extra_option'
+		);
+	}
+
+	/**
+	 * Render category-first customization choices page.
+	 */
+	public function render_choices_page(): void {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_die( esc_html__( 'You do not have permission to view this page.', 'woo-spiegelloft-configurator' ) );
+		}
+
+		$all_groups    = $this->registry->get_groups();
+		$group_options = array();
+		$total_options = 0;
+
+		foreach ( array_keys( $all_groups ) as $group_slug ) {
+			$options                     = $this->catalog->get_options_by_group( $group_slug );
+			$group_options[ $group_slug ] = $options;
+			$total_options              += count( $options );
+		}
+
+		include WCS_PLUGIN_DIR . 'templates/admin/choices-categories-page.php';
 	}
 
 	/**

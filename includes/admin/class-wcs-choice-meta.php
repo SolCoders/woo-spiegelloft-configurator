@@ -124,6 +124,9 @@ class WCS_Choice_Meta {
 		$option_data = $this->get_option_data( (int) $post->ID );
 		$terms       = wp_get_object_terms( $post->ID, 'wcs_extra_group', array( 'fields' => 'slugs' ) );
 		$group       = ( ! is_wp_error( $terms ) && ! empty( $terms ) ) ? (string) $terms[0] : '';
+		if ( '' === $group && isset( $_GET['wcs_extra_group'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$group = sanitize_title( wp_unslash( (string) $_GET['wcs_extra_group'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		}
 		$groups      = $this->registry->get_groups();
 		$legacy_id   = (int) get_post_meta( $post->ID, '_wcs_legacy_id', true );
 		$slug        = (string) get_post_meta( $post->ID, '_wcs_option_slug', true );

@@ -13,9 +13,11 @@ defined( 'ABSPATH' ) || exit;
 if ( empty( $rules ) ) {
 	$rules = array(
 		array(
-			'when'   => array(),
-			'then'   => 'require',
-			'target' => '',
+			'when'         => array(),
+			'when_operator' => 'equals',
+			'then'         => 'require',
+			'target'       => '',
+			'target_value' => '',
 		),
 	);
 }
@@ -29,6 +31,7 @@ if ( empty( $rules ) ) {
 			$when   = (array) ( $rule['when'] ?? array() );
 			$when_k = (string) ( array_key_first( $when ) ?: '' );
 			$when_v = (string) ( $when[ $when_k ] ?? '' );
+			$operator = (string) ( $rule['when_operator'] ?? 'equals' );
 			?>
 			<div class="wcs-rule-row">
 				<label>
@@ -43,13 +46,25 @@ if ( empty( $rules ) ) {
 					</select>
 				</label>
 				<label>
-					<?php esc_html_e( 'equals', 'woo-spiegelloft-configurator' ); ?>
+					<?php esc_html_e( 'Condition', 'woo-spiegelloft-configurator' ); ?>
+					<select name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][when_operator]">
+						<option value="equals" <?php selected( $operator, 'equals' ); ?>><?php esc_html_e( 'equals', 'woo-spiegelloft-configurator' ); ?></option>
+						<option value="not_equals" <?php selected( $operator, 'not_equals' ); ?>><?php esc_html_e( 'does not equal', 'woo-spiegelloft-configurator' ); ?></option>
+						<option value="selected" <?php selected( $operator, 'selected' ); ?>><?php esc_html_e( 'is selected', 'woo-spiegelloft-configurator' ); ?></option>
+						<option value="empty" <?php selected( $operator, 'empty' ); ?>><?php esc_html_e( 'is empty', 'woo-spiegelloft-configurator' ); ?></option>
+					</select>
+				</label>
+				<label>
+					<?php esc_html_e( 'Value', 'woo-spiegelloft-configurator' ); ?>
 					<input type="text" name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][when_value]" value="<?php echo esc_attr( $when_v ); ?>" placeholder="option-value">
 				</label>
 				<label>
 					<?php esc_html_e( 'Then', 'woo-spiegelloft-configurator' ); ?>
 					<select name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][then]">
 						<option value="require" <?php selected( (string) ( $rule['then'] ?? '' ), 'require' ); ?>><?php esc_html_e( 'Require', 'woo-spiegelloft-configurator' ); ?></option>
+						<option value="disallow" <?php selected( (string) ( $rule['then'] ?? '' ), 'disallow' ); ?>><?php esc_html_e( 'Block', 'woo-spiegelloft-configurator' ); ?></option>
+						<option value="require_value" <?php selected( (string) ( $rule['then'] ?? '' ), 'require_value' ); ?>><?php esc_html_e( 'Require option', 'woo-spiegelloft-configurator' ); ?></option>
+						<option value="disallow_value" <?php selected( (string) ( $rule['then'] ?? '' ), 'disallow_value' ); ?>><?php esc_html_e( 'Block option', 'woo-spiegelloft-configurator' ); ?></option>
 					</select>
 				</label>
 				<label>
@@ -62,6 +77,10 @@ if ( empty( $rules ) ) {
 							</option>
 						<?php endforeach; ?>
 					</select>
+				</label>
+				<label>
+					<?php esc_html_e( 'Target value', 'woo-spiegelloft-configurator' ); ?>
+					<input type="text" name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][target_value]" value="<?php echo esc_attr( (string) ( $rule['target_value'] ?? '' ) ); ?>" placeholder="option-value">
 				</label>
 				<button type="button" class="button-link wcs-remove-rule"><?php esc_html_e( 'Remove', 'woo-spiegelloft-configurator' ); ?></button>
 			</div>

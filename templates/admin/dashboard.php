@@ -21,7 +21,7 @@ $steps = array(
 		'desc'    => __( 'These are the options customers can pick, including light color, sockets, make-up mirror, and more. We pre-loaded choices from your Shopify catalog.', 'woo-spiegelloft-configurator' ),
 		'status'  => $step_choices_done ? 'complete' : 'pending',
 		'count'   => $choices_count,
-		'action'  => admin_url( 'edit.php?post_type=wcs_extra_option' ),
+		'action'  => admin_url( 'admin.php?page=wcs-choices' ),
 		'button'  => __( 'Manage choices', 'woo-spiegelloft-configurator' ),
 	),
 	array(

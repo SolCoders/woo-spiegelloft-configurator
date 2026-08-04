@@ -115,19 +115,16 @@ class WCS_Validation_Engine {
 	 * @return true|WP_Error
 	 */
 	private function validate_rule( array $selections, array $rule ) {
-		$when   = (array) ( $rule['when'] ?? array() );
-		$then   = (string) ( $rule['then'] ?? 'require' );
-		$target = (string) ( $rule['target'] ?? '' );
+		$when         = (array) ( $rule['when'] ?? array() );
+		$operator     = (string) ( $rule['when_operator'] ?? 'equals' );
+		$then         = (string) ( $rule['then'] ?? 'require' );
+		$target       = (string) ( $rule['target'] ?? '' );
+		$target_value = (string) ( $rule['target_value'] ?? '' );
 
 		$matches = true;
 		foreach ( $when as $key => $expected ) {
 			$actual = $selections[ $key ] ?? null;
-			if ( is_array( $expected ) ) {
-				if ( ! in_array( $actual, $expected, true ) ) {
-					$matches = false;
-					break;
-				}
-			} elseif ( (string) $actual !== (string) $expected ) {
+			if ( ! $this->selection_matches( $actual, $expected, $operator ) ) {
 				$matches = false;
 				break;
 			}
@@ -148,7 +145,80 @@ class WCS_Validation_Engine {
 			);
 		}
 
+		if ( 'disallow' === $then && $target && ! empty( $selections[ $target ] ) ) {
+			return new WP_Error(
+				'wcs_rule_failed',
+				sprintf(
+					/* translators: %s: target group */
+					__( 'Selection is not allowed for %s.', 'woo-spiegelloft-configurator' ),
+					$target
+				)
+			);
+		}
+
+		if ( 'require_value' === $then && $target && $target_value && ! $this->selection_contains( $selections[ $target ] ?? null, $target_value ) ) {
+			return new WP_Error(
+				'wcs_rule_failed',
+				sprintf(
+					/* translators: 1: target value, 2: target group */
+					__( 'Selection "%1$s" is required for %2$s.', 'woo-spiegelloft-configurator' ),
+					$target_value,
+					$target
+				)
+			);
+		}
+
+		if ( 'disallow_value' === $then && $target && $target_value && $this->selection_contains( $selections[ $target ] ?? null, $target_value ) ) {
+			return new WP_Error(
+				'wcs_rule_failed',
+				sprintf(
+					/* translators: 1: target value, 2: target group */
+					__( 'Selection "%1$s" is not allowed for %2$s.', 'woo-spiegelloft-configurator' ),
+					$target_value,
+					$target
+				)
+			);
+		}
+
 		return true;
+	}
+
+	/**
+	 * Check whether a selection matches a rule condition.
+	 *
+	 * @param mixed  $actual   Actual selection.
+	 * @param mixed  $expected Expected selection.
+	 * @param string $operator Condition operator.
+	 */
+	private function selection_matches( $actual, $expected, string $operator ): bool {
+		if ( 'selected' === $operator ) {
+			return ! empty( $actual );
+		}
+
+		if ( 'empty' === $operator ) {
+			return empty( $actual );
+		}
+
+		$contains = $this->selection_contains( $actual, $expected );
+		return 'not_equals' === $operator ? ! $contains : $contains;
+	}
+
+	/**
+	 * Check whether a single or multi selection contains a value.
+	 *
+	 * @param mixed $actual   Actual selection.
+	 * @param mixed $expected Expected selection.
+	 */
+	private function selection_contains( $actual, $expected ): bool {
+		if ( is_array( $actual ) ) {
+			return in_array( (string) $expected, array_map( 'strval', $actual ), true );
+		}
+
+		if ( is_array( $expected ) ) {
+			return in_array( (string) $actual, array_map( 'strval', $expected ), true );
+		}
+
+		return (string) $actual === (string) $expected;
 	}
 
 	/**

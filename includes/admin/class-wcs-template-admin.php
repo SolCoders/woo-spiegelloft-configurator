@@ -85,7 +85,7 @@ class WCS_Template_Admin {
 
 		add_meta_box(
 			'wcs_template_choices',
-			__( 'What customers can choose', 'woo-spiegelloft-configurator' ),
+			__( 'Customer options', 'woo-spiegelloft-configurator' ),
 			array( $this, 'render_choices_meta_box' ),
 			'wcs_template',
 			'normal',
@@ -182,14 +182,17 @@ class WCS_Template_Admin {
 				if ( ! is_array( $rule ) ) {
 					continue;
 				}
-				$when = array();
-				if ( ! empty( $rule['when_group'] ) && ! empty( $rule['when_value'] ) ) {
-					$when[ sanitize_text_field( (string) $rule['when_group'] ) ] = sanitize_text_field( (string) $rule['when_value'] );
+				$when          = array();
+				$when_operator = sanitize_text_field( (string) ( $rule['when_operator'] ?? 'equals' ) );
+				if ( ! empty( $rule['when_group'] ) && ( ! empty( $rule['when_value'] ) || in_array( $when_operator, array( 'selected', 'empty' ), true ) ) ) {
+					$when[ sanitize_text_field( (string) $rule['when_group'] ) ] = sanitize_text_field( (string) ( $rule['when_value'] ?? '' ) );
 				}
 				$rules[] = array(
-					'when'   => $when,
-					'then'   => sanitize_text_field( (string) ( $rule['then'] ?? 'require' ) ),
-					'target' => sanitize_text_field( (string) ( $rule['target'] ?? '' ) ),
+					'when'          => $when,
+					'when_operator' => $when_operator,
+					'then'          => sanitize_text_field( (string) ( $rule['then'] ?? 'require' ) ),
+					'target'        => sanitize_text_field( (string) ( $rule['target'] ?? '' ) ),
+					'target_value'  => sanitize_text_field( (string) ( $rule['target_value'] ?? '' ) ),
 				);
 			}
 		}
@@ -202,11 +205,18 @@ class WCS_Template_Admin {
 			$edge_override['desc'] = sanitize_text_field( wp_unslash( (string) $_POST['wcs_edge_desc'] ) );
 		}
 
+		$template_title = sanitize_text_field( (string) get_the_title( $post_id ) );
+		$template_slug  = sanitize_title( wp_unslash( (string) ( $_POST['wcs_template_slug'] ?? '' ) ) );
+
+		if ( '' === $template_slug || 'auto-draft' === $template_slug ) {
+			$template_slug = sanitize_title( $template_title );
+		}
+
 		$this->template->save_template_data(
 			$post_id,
 			array(
-				'panel_template'    => sanitize_text_field( wp_unslash( (string) ( $_POST['wcs_panel_template'] ?? 'bathroomMirror' ) ) ),
-				'slug'              => sanitize_title( wp_unslash( (string) ( $_POST['wcs_template_slug'] ?? '' ) ) ),
+				'panel_template'    => $template_title,
+				'slug'              => $template_slug,
 				'type'              => sanitize_text_field( wp_unslash( (string) ( $_POST['wcs_template_type'] ?? '' ) ) ),
 				'dimensions'        => array(
 					'min_width'  => absint( $_POST['wcs_min_width'] ?? 400 ),

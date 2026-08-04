@@ -125,12 +125,17 @@ class WCS_Loader {
 
 		$plugin_screens = array(
 			'toplevel_page_wcs-configurator',
+			'mirror-customizer_page_wcs-choices',
 			'wcs_extra_option',
 			'wcs_template',
 			'product',
 		);
 
-		$is_plugin_screen = in_array( $screen->id, $plugin_screens, true )
+		$screen_id        = (string) $screen->id;
+		$is_choices_page  = '_page_wcs-choices' === substr( $screen_id, -17 );
+		$is_plugin_screen = in_array( $screen_id, $plugin_screens, true )
+			|| $is_choices_page
+			|| 'wcs_extra_group' === ( $screen->taxonomy ?? '' )
 			|| in_array( $screen->post_type ?? '', array( 'wcs_extra_option', 'wcs_template' ), true );
 
 		if ( ! $is_plugin_screen ) {

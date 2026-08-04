@@ -5,26 +5,30 @@
  * @package WooSpiegelloftConfigurator
  *
  * @var array<string, mixed> $data Template data.
+ * @var WP_Post             $post Template post.
  */
 
 defined( 'ABSPATH' ) || exit;
 
-$dimensions = (array) ( $data['dimensions'] ?? array() );
-$edge       = (array) ( $data['edge_override'] ?? array() );
+$dimensions    = (array) ( $data['dimensions'] ?? array() );
+$edge          = (array) ( $data['edge_override'] ?? array() );
+$template_slug = (string) ( $data['slug'] ?? '' );
+
+if ( '' === $template_slug || 'auto-draft' === $template_slug ) {
+	$template_slug = sanitize_title( (string) $post->post_title );
+}
 ?>
 <div class="wcs-template-basic">
-	<p>
-		<label for="wcs_panel_template"><strong><?php esc_html_e( 'Panel template', 'woo-spiegelloft-configurator' ); ?></strong></label>
-		<input type="text" class="regular-text" name="wcs_panel_template" id="wcs_panel_template" value="<?php echo esc_attr( (string) ( $data['panel_template'] ?? 'bathroomMirror' ) ); ?>">
-	</p>
-	<p>
-		<label for="wcs_template_slug"><strong><?php esc_html_e( 'Template slug', 'woo-spiegelloft-configurator' ); ?></strong></label>
-		<input type="text" class="regular-text" name="wcs_template_slug" id="wcs_template_slug" value="<?php echo esc_attr( (string) ( $data['slug'] ?? '' ) ); ?>">
-	</p>
-	<p>
-		<label for="wcs_template_type"><strong><?php esc_html_e( 'Sandblasting / type', 'woo-spiegelloft-configurator' ); ?></strong></label>
-		<input type="text" class="regular-text" name="wcs_template_type" id="wcs_template_type" value="<?php echo esc_attr( (string) ( $data['type'] ?? '' ) ); ?>">
-	</p>
+	<div class="wcs-template-fields">
+		<label class="wcs-template-field" for="wcs_template_slug">
+			<span><?php esc_html_e( 'Template slug', 'woo-spiegelloft-configurator' ); ?></span>
+			<input type="text" name="wcs_template_slug" id="wcs_template_slug" value="<?php echo esc_attr( $template_slug ); ?>">
+		</label>
+		<label class="wcs-template-field" for="wcs_template_type">
+			<span><?php esc_html_e( 'Sandblasting / type', 'woo-spiegelloft-configurator' ); ?></span>
+			<input type="text" name="wcs_template_type" id="wcs_template_type" value="<?php echo esc_attr( (string) ( $data['type'] ?? '' ) ); ?>">
+		</label>
+	</div>
 
 	<fieldset class="wcs-dimensions-grid">
 		<legend><strong><?php esc_html_e( 'Size limits (mm)', 'woo-spiegelloft-configurator' ); ?></strong></legend>
