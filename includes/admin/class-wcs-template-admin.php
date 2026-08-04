@@ -189,6 +189,7 @@ class WCS_Template_Admin {
 				}
 				$rules[] = array(
 					'when'          => $when,
+					'when_field'    => sanitize_text_field( (string) ( $rule['when_field'] ?? 'value' ) ),
 					'when_operator' => $when_operator,
 					'then'          => sanitize_text_field( (string) ( $rule['then'] ?? 'require' ) ),
 					'target'        => sanitize_text_field( (string) ( $rule['target'] ?? '' ) ),

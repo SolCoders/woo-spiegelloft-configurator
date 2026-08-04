@@ -116,6 +116,7 @@ class WCS_Validation_Engine {
 	 */
 	private function validate_rule( array $selections, array $rule ) {
 		$when         = (array) ( $rule['when'] ?? array() );
+		$field        = (string) ( $rule['when_field'] ?? 'value' );
 		$operator     = (string) ( $rule['when_operator'] ?? 'equals' );
 		$then         = (string) ( $rule['then'] ?? 'require' );
 		$target       = (string) ( $rule['target'] ?? '' );
@@ -124,7 +125,7 @@ class WCS_Validation_Engine {
 		$matches = true;
 		foreach ( $when as $key => $expected ) {
 			$actual = $selections[ $key ] ?? null;
-			if ( ! $this->selection_matches( $actual, $expected, $operator ) ) {
+			if ( ! $this->selection_matches( $this->get_comparable_selection_value( $actual, $field ), $expected, $operator ) ) {
 				$matches = false;
 				break;
 			}
@@ -199,8 +200,33 @@ class WCS_Validation_Engine {
 			return empty( $actual );
 		}
 
+		if ( in_array( $operator, array( 'greater_than', 'less_than' ), true ) ) {
+			if ( ! is_numeric( $actual ) || ! is_numeric( $expected ) ) {
+				return false;
+			}
+
+			return 'greater_than' === $operator
+				? (float) $actual > (float) $expected
+				: (float) $actual < (float) $expected;
+		}
+
 		$contains = $this->selection_contains( $actual, $expected );
 		return 'not_equals' === $operator ? ! $contains : $contains;
+	}
+
+	/**
+	 * Extract a comparable value from a submitted selection.
+	 *
+	 * @param mixed  $selection Submitted selection.
+	 * @param string $field     Rule comparison field.
+	 * @return mixed
+	 */
+	private function get_comparable_selection_value( $selection, string $field ) {
+		if ( is_array( $selection ) && isset( $selection[ $field ] ) ) {
+			return $selection[ $field ];
+		}
+
+		return $selection;
 	}
 
 	/**
@@ -232,10 +258,29 @@ class WCS_Validation_Engine {
 		foreach ( $selections as $key => $value ) {
 			$key = sanitize_key( (string) $key );
 			if ( is_array( $value ) ) {
-				$sanitized[ $key ] = array_map( 'sanitize_text_field', $value );
+				$sanitized[ $key ] = $this->sanitize_selection_array( $value );
 			} else {
 				$sanitized[ $key ] = sanitize_text_field( (string) $value );
 			}
+		}
+		return $sanitized;
+	}
+
+	/**
+	 * Sanitize a nested selection array.
+	 *
+	 * @param array<mixed> $value Raw selection array.
+	 * @return array<mixed>
+	 */
+	private function sanitize_selection_array( array $value ): array {
+		$sanitized = array();
+		foreach ( $value as $item_key => $item_value ) {
+			$key = is_string( $item_key ) ? sanitize_key( $item_key ) : $item_key;
+			if ( is_array( $item_value ) ) {
+				$sanitized[ $key ] = $this->sanitize_selection_array( $item_value );
+				continue;
+			}
+			$sanitized[ $key ] = sanitize_text_field( (string) $item_value );
 		}
 		return $sanitized;
 	}

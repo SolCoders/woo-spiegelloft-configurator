@@ -14,6 +14,7 @@ if ( empty( $rules ) ) {
 	$rules = array(
 		array(
 			'when'         => array(),
+			'when_field'   => 'value',
 			'when_operator' => 'equals',
 			'then'         => 'require',
 			'target'       => '',
@@ -31,6 +32,7 @@ if ( empty( $rules ) ) {
 			$when   = (array) ( $rule['when'] ?? array() );
 			$when_k = (string) ( array_key_first( $when ) ?: '' );
 			$when_v = (string) ( $when[ $when_k ] ?? '' );
+			$field = (string) ( $rule['when_field'] ?? 'value' );
 			$operator = (string) ( $rule['when_operator'] ?? 'equals' );
 			?>
 			<div class="wcs-rule-row">
@@ -46,10 +48,20 @@ if ( empty( $rules ) ) {
 					</select>
 				</label>
 				<label>
+					<?php esc_html_e( 'Compare', 'woo-spiegelloft-configurator' ); ?>
+					<select name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][when_field]">
+						<option value="value" <?php selected( $field, 'value' ); ?>><?php esc_html_e( 'Value', 'woo-spiegelloft-configurator' ); ?></option>
+						<option value="price" <?php selected( $field, 'price' ); ?>><?php esc_html_e( 'Price', 'woo-spiegelloft-configurator' ); ?></option>
+						<option value="text" <?php selected( $field, 'text' ); ?>><?php esc_html_e( 'Text', 'woo-spiegelloft-configurator' ); ?></option>
+					</select>
+				</label>
+				<label>
 					<?php esc_html_e( 'Condition', 'woo-spiegelloft-configurator' ); ?>
 					<select name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][when_operator]">
 						<option value="equals" <?php selected( $operator, 'equals' ); ?>><?php esc_html_e( 'equals', 'woo-spiegelloft-configurator' ); ?></option>
 						<option value="not_equals" <?php selected( $operator, 'not_equals' ); ?>><?php esc_html_e( 'does not equal', 'woo-spiegelloft-configurator' ); ?></option>
+						<option value="greater_than" <?php selected( $operator, 'greater_than' ); ?>><?php esc_html_e( 'greater than', 'woo-spiegelloft-configurator' ); ?></option>
+						<option value="less_than" <?php selected( $operator, 'less_than' ); ?>><?php esc_html_e( 'less than', 'woo-spiegelloft-configurator' ); ?></option>
 						<option value="selected" <?php selected( $operator, 'selected' ); ?>><?php esc_html_e( 'is selected', 'woo-spiegelloft-configurator' ); ?></option>
 						<option value="empty" <?php selected( $operator, 'empty' ); ?>><?php esc_html_e( 'is empty', 'woo-spiegelloft-configurator' ); ?></option>
 					</select>
