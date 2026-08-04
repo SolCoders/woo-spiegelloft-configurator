@@ -487,6 +487,22 @@
 	text-align: center;
 }
 
+.wcs-option-table-sort {
+	width: 52px;
+	text-align: center;
+}
+
+.wcs-choice-sort-handle {
+	color: #787c82;
+	cursor: move;
+}
+
+.wcs-option-table tbody tr.ui-sortable-helper {
+	display: table;
+	background: #fff;
+	box-shadow: 0 8px 18px rgba(31, 41, 55, 0.14);
+}
+
 .wcs-option-table-action {
 	width: 150px;
 	text-align: right;
@@ -707,22 +723,107 @@
 
 /* Rule builder */
 .wcs-rule-builder .wcs-rule-row {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: flex-end;
-	gap: 12px;
-	padding: 12px;
-	margin-bottom: 10px;
-	background: #f6f7f7;
+	display: grid;
+	gap: 14px;
+	padding: 16px;
+	margin-bottom: 14px;
+	background: #fff;
 	border: 1px solid #dcdcde;
-	border-radius: 4px;
+	border-radius: 8px;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
-.wcs-rule-builder label {
+.wcs-rule-row-header {
 	display: flex;
-	flex-direction: column;
-	gap: 4px;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid #dcdcde;
+}
+
+.wcs-rule-row-header strong,
+.wcs-rule-section h4 {
+	display: block;
+	margin: 0;
+	color: #1d2327;
+	font-size: 14px;
+	font-weight: 700;
+}
+
+.wcs-rule-row-header span {
+	display: block;
+	margin-top: 3px;
+	color: #646970;
+	font-size: 12px;
+}
+
+.wcs-rule-section {
+	display: grid;
+	gap: 10px;
+}
+
+.wcs-rule-section--type {
+	grid-template-columns: minmax(220px, 280px) minmax(240px, 1fr);
+	align-items: end;
+}
+
+.wcs-rule-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+	gap: 12px;
+	align-items: end;
+}
+
+.wcs-rule-field {
+	display: grid;
+	gap: 5px;
+	color: #1d2327;
 	font-size: 13px;
+	font-weight: 600;
+}
+
+.wcs-rule-field--wide {
+	grid-column: span 2;
+}
+
+.wcs-rule-summary {
+	margin: 0 0 4px;
+	color: #646970;
+	font-size: 13px;
+}
+
+.wcs-rule-builder input,
+.wcs-rule-builder select {
+	width: 100%;
+	min-height: 34px;
+	max-width: none;
+}
+
+.wcs-rule-builder .wcs-rule-checkbox {
+	align-self: center;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0;
+	color: #1d2327;
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.wcs-rule-builder .wcs-remove-rule {
+	color: #b32d2e;
+}
+
+@media (max-width: 782px) {
+	.wcs-rule-section--type,
+	.wcs-rule-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.wcs-rule-field--wide {
+		grid-column: auto;
+	}
 }
 
 .wcs-template-groups .wcs-checkbox-row,

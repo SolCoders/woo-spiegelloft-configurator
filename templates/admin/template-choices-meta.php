@@ -72,6 +72,7 @@ defined( 'ABSPATH' ) || exit;
 							<table class="widefat striped wcs-option-table">
 								<thead>
 									<tr>
+										<th scope="col" class="wcs-option-table-sort"><?php esc_html_e( 'Sort', 'woo-spiegelloft-configurator' ); ?></th>
 										<th scope="col" class="wcs-option-table-check"><?php esc_html_e( 'Show', 'woo-spiegelloft-configurator' ); ?></th>
 										<th scope="col"><?php esc_html_e( 'Choice', 'woo-spiegelloft-configurator' ); ?></th>
 										<th scope="col"><?php esc_html_e( 'Value', 'woo-spiegelloft-configurator' ); ?></th>
@@ -89,6 +90,9 @@ defined( 'ABSPATH' ) || exit;
 								$option_price = (float) ( $option['meta']['_wcs_price'] ?? 0 );
 								?>
 									<tr>
+										<td class="wcs-option-table-sort">
+											<span class="dashicons dashicons-menu wcs-choice-sort-handle" title="<?php esc_attr_e( 'Drag to reorder', 'woo-spiegelloft-configurator' ); ?>"></span>
+										</td>
 										<td class="wcs-option-table-check">
 											<input type="checkbox" name="wcs_extra_option_map[<?php echo esc_attr( $slug ); ?>][]" value="<?php echo esc_attr( (string) $option_id ); ?>" <?php checked( in_array( $option_id, $selected_ids, true ) || empty( $selected_ids ) ); ?>>
 										</td>

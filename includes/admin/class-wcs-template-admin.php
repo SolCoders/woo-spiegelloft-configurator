@@ -182,18 +182,30 @@ class WCS_Template_Admin {
 				if ( ! is_array( $rule ) ) {
 					continue;
 				}
-				$when          = array();
-				$when_operator = sanitize_text_field( (string) ( $rule['when_operator'] ?? 'equals' ) );
-				if ( ! empty( $rule['when_group'] ) && ( ! empty( $rule['when_value'] ) || in_array( $when_operator, array( 'selected', 'empty' ), true ) ) ) {
-					$when[ sanitize_text_field( (string) $rule['when_group'] ) ] = sanitize_text_field( (string) ( $rule['when_value'] ?? '' ) );
+				$when           = array();
+				$when_operator  = sanitize_text_field( (string) ( $rule['when_operator'] ?? 'equals' ) );
+				$when_source    = sanitize_text_field( (string) ( $rule['when_source'] ?? 'category' ) );
+				$when_path      = sanitize_text_field( (string) ( $rule['when_path'] ?? $rule['when_group'] ?? '' ) );
+				$value_optional = in_array( $when_operator, array( 'selected', 'empty' ), true );
+				if ( '' !== $when_path && ( ! empty( $rule['when_value'] ) || $value_optional ) ) {
+					$when[ $when_path ] = sanitize_text_field( (string) ( $rule['when_value'] ?? '' ) );
 				}
 				$rules[] = array(
 					'when'          => $when,
+					'when_source'   => $when_source,
+					'when_path'     => $when_path,
 					'when_field'    => sanitize_text_field( (string) ( $rule['when_field'] ?? 'value' ) ),
 					'when_operator' => $when_operator,
+					'rule_type'     => sanitize_text_field( (string) ( $rule['rule_type'] ?? 'required' ) ),
 					'then'          => sanitize_text_field( (string) ( $rule['then'] ?? 'require' ) ),
+					'target_type'   => sanitize_text_field( (string) ( $rule['target_type'] ?? 'category' ) ),
 					'target'        => sanitize_text_field( (string) ( $rule['target'] ?? '' ) ),
 					'target_value'  => sanitize_text_field( (string) ( $rule['target_value'] ?? '' ) ),
+					'min'           => sanitize_text_field( (string) ( $rule['min'] ?? '' ) ),
+					'max'           => sanitize_text_field( (string) ( $rule['max'] ?? '' ) ),
+					'message'       => sanitize_text_field( (string) ( $rule['message'] ?? '' ) ),
+					'error_seconds' => absint( $rule['error_seconds'] ?? 4 ),
+					'restore'       => ! empty( $rule['restore'] ),
 				);
 			}
 		}
@@ -228,6 +240,7 @@ class WCS_Template_Admin {
 				'enabled_groups'    => $enabled_groups,
 				'extra_option_map'  => $option_map,
 				'validation_rules'  => $rules,
+				'behavior_rules'    => $rules,
 				'edge_override'     => $edge_override,
 			)
 		);

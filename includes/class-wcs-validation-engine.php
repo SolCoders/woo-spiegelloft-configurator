@@ -28,7 +28,7 @@ class WCS_Validation_Engine {
 		foreach ( $selections as $group_slug => $value ) {
 			$group_slug = sanitize_key( (string) $group_slug );
 
-			if ( ! in_array( $group_slug, $enabled_groups, true ) ) {
+			if ( ! in_array( $group_slug, $enabled_groups, true ) && ! $this->is_dimension_key( $group_slug ) ) {
 				return new WP_Error(
 					'wcs_invalid_group',
 					sprintf(
@@ -48,6 +48,11 @@ class WCS_Validation_Engine {
 			if ( is_wp_error( $result ) ) {
 				return $result;
 			}
+
+			$result = $this->validate_known_selection( $group_slug, $value, (array) ( $template['_option_lookup'] ?? array() ) );
+			if ( is_wp_error( $result ) ) {
+				return $result;
+			}
 		}
 
 		$rules = (array) ( $template['validation_rules'] ?? $template['rules'] ?? array() );
@@ -55,7 +60,7 @@ class WCS_Validation_Engine {
 			if ( ! is_array( $rule ) ) {
 				continue;
 			}
-			$result = $this->validate_rule( $selections, $rule );
+			$result = $this->validate_rule( $selections, $template, $rule );
 			if ( is_wp_error( $result ) ) {
 				return $result;
 			}
@@ -111,21 +116,28 @@ class WCS_Validation_Engine {
 	 * Validate a conditional rule.
 	 *
 	 * @param array<string, mixed> $selections Selections.
+	 * @param array<string, mixed> $template   Template data.
 	 * @param array<string, mixed> $rule       Rule definition.
 	 * @return true|WP_Error
 	 */
-	private function validate_rule( array $selections, array $rule ) {
-		$when         = (array) ( $rule['when'] ?? array() );
-		$field        = (string) ( $rule['when_field'] ?? 'value' );
-		$operator     = (string) ( $rule['when_operator'] ?? 'equals' );
-		$then         = (string) ( $rule['then'] ?? 'require' );
-		$target       = (string) ( $rule['target'] ?? '' );
-		$target_value = (string) ( $rule['target_value'] ?? '' );
+	private function validate_rule( array $selections, array $template, array $rule ) {
+		$when          = (array) ( $rule['when'] ?? array() );
+		$when_source   = (string) ( $rule['when_source'] ?? 'category' );
+		$field         = (string) ( $rule['when_field'] ?? 'value' );
+		$operator      = (string) ( $rule['when_operator'] ?? 'equals' );
+		$then          = (string) ( $rule['then'] ?? 'require' );
+		$target        = (string) ( $rule['target'] ?? '' );
+		$target_value  = (string) ( $rule['target_value'] ?? '' );
+		$target_type   = (string) ( $rule['target_type'] ?? 'category' );
+		$option_lookup = (array) ( $template['_option_lookup'] ?? array() );
 
 		$matches = true;
 		foreach ( $when as $key => $expected ) {
-			$actual = $selections[ $key ] ?? null;
-			if ( ! $this->selection_matches( $this->get_comparable_selection_value( $actual, $field ), $expected, $operator ) ) {
+			$actual = $this->get_selection_path_value( $selections, (string) $key );
+			if ( 'dimension' === $when_source && null === $actual ) {
+				$actual = $this->evaluate_formula( (string) $key, $this->build_formula_context( $selections, $template ) );
+			}
+			if ( ! $this->selection_matches( $this->get_comparable_selection_value( $actual, $field, (string) $key, $option_lookup ), $expected, $operator ) ) {
 				$matches = false;
 				break;
 			}
@@ -135,7 +147,17 @@ class WCS_Validation_Engine {
 			return true;
 		}
 
-		if ( 'require' === $then && $target && empty( $selections[ $target ] ) ) {
+		if ( in_array( $then, array( 'show', 'hide', 'clear', 'disable_option' ), true ) ) {
+			return true;
+		}
+
+		if ( 'validate_range' === $then ) {
+			return $this->validate_range_rule( $selections, $template, $rule );
+		}
+
+		$target_actual = $this->get_rule_target_value( $selections, $target, $target_value, $target_type );
+
+		if ( 'require' === $then && $target && $this->is_empty_selection( $target_actual ) ) {
 			return new WP_Error(
 				'wcs_rule_failed',
 				sprintf(
@@ -146,7 +168,7 @@ class WCS_Validation_Engine {
 			);
 		}
 
-		if ( 'disallow' === $then && $target && ! empty( $selections[ $target ] ) ) {
+		if ( 'disallow' === $then && $target && ! $this->is_empty_selection( $target_actual ) ) {
 			return new WP_Error(
 				'wcs_rule_failed',
 				sprintf(
@@ -157,7 +179,7 @@ class WCS_Validation_Engine {
 			);
 		}
 
-		if ( 'require_value' === $then && $target && $target_value && ! $this->selection_contains( $selections[ $target ] ?? null, $target_value ) ) {
+		if ( 'require_value' === $then && $target && $target_value && ! $this->selection_contains( $target_actual, $target_value ) ) {
 			return new WP_Error(
 				'wcs_rule_failed',
 				sprintf(
@@ -169,7 +191,7 @@ class WCS_Validation_Engine {
 			);
 		}
 
-		if ( 'disallow_value' === $then && $target && $target_value && $this->selection_contains( $selections[ $target ] ?? null, $target_value ) ) {
+		if ( 'disallow_value' === $then && $target && $target_value && $this->selection_contains( $target_actual, $target_value ) ) {
 			return new WP_Error(
 				'wcs_rule_failed',
 				sprintf(
@@ -182,6 +204,91 @@ class WCS_Validation_Engine {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Validate that submitted option slugs still exist for enabled template options.
+	 *
+	 * @param string                                    $group_slug    Group slug.
+	 * @param mixed                                     $value         Submitted value.
+	 * @param array<string, array<string, array<mixed>>> $option_lookup Option lookup.
+	 * @return true|WP_Error
+	 */
+	private function validate_known_selection( string $group_slug, $value, array $option_lookup ) {
+		if ( ! isset( $option_lookup[ $group_slug ] ) || $this->is_empty_selection( $value ) ) {
+			return true;
+		}
+
+		foreach ( $this->selection_to_values( $value ) as $selected ) {
+			if ( $this->is_empty_selection( $selected ) ) {
+				continue;
+			}
+
+			if ( ! isset( $option_lookup[ $group_slug ][ (string) $selected ] ) ) {
+				return new WP_Error(
+					'wcs_invalid_selection',
+					sprintf(
+						/* translators: 1: selected value, 2: group slug */
+						__( 'Selection "%1$s" is not available for %2$s.', 'woo-spiegelloft-configurator' ),
+						(string) $selected,
+						$group_slug
+					)
+				);
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Validate a formula-based numeric range rule.
+	 *
+	 * @param array<string, mixed> $selections Selections.
+	 * @param array<string, mixed> $template   Template data.
+	 * @param array<string, mixed> $rule       Rule.
+	 * @return true|WP_Error
+	 */
+	private function validate_range_rule( array $selections, array $template, array $rule ) {
+		$target_path = (string) ( $rule['target_value'] ?? $rule['target'] ?? '' );
+		if ( '' === $target_path && ! empty( $rule['target'] ) ) {
+			$target_path = (string) $rule['target'];
+		}
+
+		$actual = $this->get_selection_path_value( $selections, $target_path );
+		if ( $this->is_empty_selection( $actual ) || ! is_numeric( $actual ) ) {
+			return $this->range_error( $target_path, $rule, __( 'Invalid numeric value for %s.', 'woo-spiegelloft-configurator' ) );
+		}
+
+		$context = $this->build_formula_context( $selections, $template );
+		$min     = $this->evaluate_formula( (string) ( $rule['min'] ?? '' ), $context );
+		$max     = $this->evaluate_formula( (string) ( $rule['max'] ?? '' ), $context );
+		$value   = (float) $actual;
+
+		if ( null !== $min && $value < $min ) {
+			return $this->range_error( $target_path, $rule, __( 'Value for %s is below the allowed minimum.', 'woo-spiegelloft-configurator' ) );
+		}
+
+		if ( null !== $max && $value > $max ) {
+			return $this->range_error( $target_path, $rule, __( 'Value for %s is above the allowed maximum.', 'woo-spiegelloft-configurator' ) );
+		}
+
+		return true;
+	}
+
+	/**
+	 * Build a range validation error.
+	 *
+	 * @param string               $target_path Target path.
+	 * @param array<string, mixed> $rule        Rule.
+	 * @param string               $fallback    Fallback message.
+	 */
+	private function range_error( string $target_path, array $rule, string $fallback ): WP_Error {
+		$message = (string) ( $rule['message'] ?? '' );
+		if ( '' === $message ) {
+			$message = sprintf( $fallback, $target_path );
+		}
+
+		return new WP_Error( 'wcs_rule_failed', $message );
 	}
 
 	/**
@@ -221,12 +328,256 @@ class WCS_Validation_Engine {
 	 * @param string $field     Rule comparison field.
 	 * @return mixed
 	 */
-	private function get_comparable_selection_value( $selection, string $field ) {
+	private function get_comparable_selection_value( $selection, string $field, string $group_path = '', array $option_lookup = array() ) {
 		if ( is_array( $selection ) && isset( $selection[ $field ] ) ) {
 			return $selection[ $field ];
 		}
 
+		if ( in_array( $field, array( 'price', 'text', 'name' ), true ) ) {
+			$group_slug = strtok( $group_path, '.' );
+			if ( $group_slug && ! is_array( $selection ) && isset( $option_lookup[ $group_slug ][ (string) $selection ] ) ) {
+				return $option_lookup[ $group_slug ][ (string) $selection ][ $field ] ?? $option_lookup[ $group_slug ][ (string) $selection ]['name'] ?? $selection;
+			}
+		}
+
 		return $selection;
+	}
+
+	/**
+	 * Resolve target value according to target type/path.
+	 *
+	 * @param array<string, mixed> $selections   Selections.
+	 * @param string               $target       Target group/path.
+	 * @param string               $target_value Target value/path.
+	 * @param string               $target_type  Target type.
+	 * @return mixed
+	 */
+	private function get_rule_target_value( array $selections, string $target, string $target_value, string $target_type ) {
+		if ( in_array( $target_type, array( 'nested', 'dimension' ), true ) && '' !== $target_value ) {
+			return $this->get_selection_path_value( $selections, $target_value );
+		}
+
+		return $this->get_selection_path_value( $selections, $target );
+	}
+
+	/**
+	 * Resolve dot-path values from selection state.
+	 *
+	 * @param array<string, mixed> $selections Selections.
+	 * @param string               $path       Dot path.
+	 * @return mixed
+	 */
+	private function get_selection_path_value( array $selections, string $path ) {
+		if ( '' === $path ) {
+			return null;
+		}
+
+		if ( array_key_exists( $path, $selections ) ) {
+			return $selections[ $path ];
+		}
+
+		$value = $selections;
+		foreach ( explode( '.', $path ) as $part ) {
+			if ( is_array( $value ) && array_key_exists( $part, $value ) ) {
+				$value = $value[ $part ];
+				continue;
+			}
+			return null;
+		}
+
+		return $value;
+	}
+
+	/**
+	 * Build formula context from submitted selections and template dimensions.
+	 *
+	 * @param array<string, mixed> $selections Selections.
+	 * @param array<string, mixed> $template   Template data.
+	 * @return array<string, float>
+	 */
+	private function build_formula_context( array $selections, array $template ): array {
+		$dimensions = (array) ( $template['dimensions'] ?? array() );
+		$context    = array(
+			'min_width'        => (float) ( $dimensions['min_width'] ?? 0 ),
+			'max_width'        => (float) ( $dimensions['max_width'] ?? 0 ),
+			'min_height'       => (float) ( $dimensions['min_height'] ?? 0 ),
+			'max_height'       => (float) ( $dimensions['max_height'] ?? 0 ),
+			'top_min_width'    => (float) ( $dimensions['top_min_width'] ?? 0 ),
+			'top_max_width'    => (float) ( $dimensions['top_max_width'] ?? 2000 ),
+			'bottom_min_width' => (float) ( $dimensions['bottom_min_width'] ?? 0 ),
+			'bottom_max_width' => (float) ( $dimensions['bottom_max_width'] ?? 2000 ),
+			'left_min_height'  => (float) ( $dimensions['left_min_height'] ?? 0 ),
+			'left_max_height'  => (float) ( $dimensions['left_max_height'] ?? 2000 ),
+			'right_min_height' => (float) ( $dimensions['right_min_height'] ?? 0 ),
+			'right_max_height' => (float) ( $dimensions['right_max_height'] ?? 2000 ),
+		);
+
+		foreach ( $selections as $key => $value ) {
+			if ( is_numeric( $value ) ) {
+				$context[ sanitize_key( (string) $key ) ] = (float) $value;
+			}
+		}
+
+		return $context;
+	}
+
+	/**
+	 * Evaluate a simple formula expression.
+	 *
+	 * @param string               $formula Formula.
+	 * @param array<string, float> $context Values.
+	 * @return float|null
+	 */
+	private function evaluate_formula( string $formula, array $context ): ?float {
+		$formula = trim( $formula );
+		if ( '' === $formula ) {
+			return null;
+		}
+
+		if ( is_numeric( $formula ) ) {
+			return (float) $formula;
+		}
+
+		if ( preg_match( '/^floor\((.+)\)$/', $formula, $matches ) ) {
+			$value = $this->evaluate_formula( $matches[1], $context );
+			return null === $value ? null : floor( $value );
+		}
+
+		if ( preg_match( '/^(max|min)\(([^,]+),([^)]+)\)(?:\s*([+-])\s*(.+))?$/', $formula, $matches ) ) {
+			$left  = $this->evaluate_formula( $matches[2], $context );
+			$right = $this->evaluate_formula( $matches[3], $context );
+			if ( null === $left || null === $right ) {
+				return null;
+			}
+			$value = 'max' === $matches[1] ? max( $left, $right ) : min( $left, $right );
+			if ( ! empty( $matches[4] ) ) {
+				$delta = $this->evaluate_formula( $matches[5], $context );
+				if ( null === $delta ) {
+					return null;
+				}
+				$value = '+' === $matches[4] ? $value + $delta : $value - $delta;
+			}
+			return $value;
+		}
+
+		if ( preg_match( '/^count_gte\(([^,]+),([^,]+),([^,]+),([^,]+),([^)]+)\)$/', $formula, $matches ) ) {
+			$threshold = $this->evaluate_formula( $matches[5], $context );
+			if ( null === $threshold ) {
+				return null;
+			}
+
+			$count = 0;
+			for ( $i = 1; $i <= 4; $i++ ) {
+				$value = $this->evaluate_formula( $matches[ $i ], $context );
+				if ( null !== $value && $value >= $threshold ) {
+					$count++;
+				}
+			}
+			return (float) $count;
+		}
+
+		foreach ( array( '+', '-' ) as $operator ) {
+			$parts = $this->split_formula( $formula, $operator );
+			if ( $parts ) {
+				$left  = $this->evaluate_formula( $parts[0], $context );
+				$right = $this->evaluate_formula( $parts[1], $context );
+				if ( null === $left || null === $right ) {
+					return null;
+				}
+				return '+' === $operator ? $left + $right : $left - $right;
+			}
+		}
+
+		$parts = $this->split_formula( $formula, '/' );
+		if ( $parts ) {
+			$left  = $this->evaluate_formula( $parts[0], $context );
+			$right = $this->evaluate_formula( $parts[1], $context );
+			if ( null === $left || null === $right || 0.0 === $right ) {
+				return null;
+			}
+			return $left / $right;
+		}
+
+		$key = sanitize_key( $formula );
+		return array_key_exists( $key, $context ) ? (float) $context[ $key ] : null;
+	}
+
+	/**
+	 * Split a formula at a top-level operator.
+	 *
+	 * @param string $formula  Formula.
+	 * @param string $operator Operator.
+	 * @return array<int, string>|null
+	 */
+	private function split_formula( string $formula, string $operator ): ?array {
+		$depth = 0;
+		for ( $i = strlen( $formula ) - 1; $i >= 0; $i-- ) {
+			$char = $formula[ $i ];
+			if ( ')' === $char ) {
+				$depth++;
+			} elseif ( '(' === $char ) {
+				$depth--;
+			} elseif ( 0 === $depth && $operator === $char && 0 !== $i ) {
+				return array( trim( substr( $formula, 0, $i ) ), trim( substr( $formula, $i + 1 ) ) );
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Check whether a selection is empty or a placeholder.
+	 *
+	 * @param mixed $value Selection value.
+	 */
+	private function is_empty_selection( $value ): bool {
+		return null === $value || '' === $value || 'none' === $value || '---' === $value || array() === $value;
+	}
+
+	/**
+	 * Determine if a submitted key is a supported dimension field.
+	 *
+	 * @param string $key Selection key.
+	 */
+	private function is_dimension_key( string $key ): bool {
+		return in_array(
+			$key,
+			array(
+				'width',
+				'height',
+				'diameter',
+				'top_width',
+				'bottom_width',
+				'left_height',
+				'right_height',
+			),
+			true
+		);
+	}
+
+	/**
+	 * Convert a selection into comparable option values.
+	 *
+	 * @param mixed $value Selection.
+	 * @return array<int, mixed>
+	 */
+	private function selection_to_values( $value ): array {
+		if ( ! is_array( $value ) ) {
+			return array( $value );
+		}
+
+		if ( isset( $value['value'] ) ) {
+			return array( $value['value'] );
+		}
+
+		return array_values(
+			array_filter(
+				$value,
+				static function ( $item ): bool {
+					return ! is_array( $item );
+				}
+			)
+		);
 	}
 
 	/**
@@ -237,6 +588,9 @@ class WCS_Validation_Engine {
 	 */
 	private function selection_contains( $actual, $expected ): bool {
 		if ( is_array( $actual ) ) {
+			if ( isset( $actual['value'] ) ) {
+				return (string) $actual['value'] === (string) $expected;
+			}
 			return in_array( (string) $expected, array_map( 'strval', $actual ), true );
 		}
 

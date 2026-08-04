@@ -120,25 +120,28 @@ class WCS_Config_Builder {
 			$all_options    = $this->extras_catalog->get_options_by_group( $group_slug );
 			$allowed_ids    = (array) ( $option_map[ $group_slug ] ?? array() );
 			$filtered       = array();
+			$allowed_lookup = array_flip( array_map( 'intval', $allowed_ids ) );
 
 			foreach ( $all_options as $option ) {
 				$option_id = (int) ( $option['id'] ?? 0 );
 				if ( ! empty( $allowed_ids ) && ! in_array( $option_id, $allowed_ids, true ) ) {
 					continue;
 				}
-				$filtered[] = $this->format_shopify_option( $option, $definition );
+				$filtered[ $option_id ] = $this->format_shopify_option( $option, $definition );
 			}
 
-			usort(
-				$filtered,
-				static function ( array $a, array $b ): int {
-					return ( $a['id'] ?? 0 ) <=> ( $b['id'] ?? 0 );
-				}
-			);
+			if ( ! empty( $allowed_ids ) ) {
+				uksort(
+					$filtered,
+					static function ( int $a, int $b ) use ( $allowed_lookup ): int {
+						return ( $allowed_lookup[ $a ] ?? PHP_INT_MAX ) <=> ( $allowed_lookup[ $b ] ?? PHP_INT_MAX );
+					}
+				);
+			}
 
 			$extras_output[ $group_slug ] = array(
 				'title' => (string) ( $definition['category_title'] ?? $definition['label'] ?? $group_slug ),
-				'value' => $filtered,
+				'value' => array_values( $filtered ),
 			);
 		}
 
@@ -174,6 +177,7 @@ class WCS_Config_Builder {
 			'max_height'       => (int) ( $dimensions['max_height'] ?? 2500 ),
 			'extras'           => $extras_output,
 			'validation_rules' => (array) ( $template_data['validation_rules'] ?? $template_data['rules'] ?? array() ),
+			'behavior_rules'   => (array) ( $template_data['behavior_rules'] ?? $template_data['validation_rules'] ?? $template_data['rules'] ?? array() ),
 		);
 
 		/**
@@ -233,7 +237,7 @@ class WCS_Config_Builder {
 
 		foreach ( $selections as $group_slug => $selected ) {
 			$options = $this->extras_catalog->get_options_by_group( (string) $group_slug );
-			$slugs   = is_array( $selected ) ? $selected : array( $selected );
+			$slugs   = $this->selection_to_slugs( $selected );
 
 			foreach ( $slugs as $slug ) {
 				foreach ( $options as $option ) {
@@ -251,6 +255,34 @@ class WCS_Config_Builder {
 	}
 
 	/**
+	 * Normalize plain, multi, or enriched selections into option slugs.
+	 *
+	 * @param mixed $selected Selection.
+	 * @return array<int, string>
+	 */
+	private function selection_to_slugs( $selected ): array {
+		if ( ! is_array( $selected ) ) {
+			return array( (string) $selected );
+		}
+
+		if ( isset( $selected['value'] ) ) {
+			return array( (string) $selected['value'] );
+		}
+
+		$slugs = array();
+		foreach ( $selected as $value ) {
+			if ( is_array( $value ) ) {
+				if ( isset( $value['value'] ) ) {
+					$slugs[] = (string) $value['value'];
+				}
+				continue;
+			}
+			$slugs[] = (string) $value;
+		}
+		return $slugs;
+	}
+
+	/**
 	 * Validate and build cart line item meta.
 	 *
 	 * @param int                  $product_id Product ID.
@@ -265,6 +297,7 @@ class WCS_Config_Builder {
 		}
 
 		$selections = $this->validation->sanitize_selections( $selections );
+		$template['_option_lookup'] = $this->build_option_lookup( $template );
 		$valid      = $this->validation->validate( $selections, $template, $this->extras_registry->get_groups() );
 		if ( is_wp_error( $valid ) ) {
 			return $valid;
@@ -282,5 +315,52 @@ class WCS_Config_Builder {
 			'template_id' => $template_id,
 			'price'       => $price,
 		);
+	}
+
+	/**
+	 * Build option lookup for backend validation.
+	 *
+	 * @param array<string, mixed> $template Template data.
+	 * @return array<string, array<string, array<string, mixed>>>
+	 */
+	private function build_option_lookup( array $template ): array {
+		$lookup     = array();
+		$enabled    = (array) ( $template['enabled_groups'] ?? $template['groups'] ?? array() );
+		$option_map = (array) ( $template['extra_option_map'] ?? array() );
+		$groups     = $this->extras_registry->get_groups();
+
+		foreach ( $enabled as $group_slug ) {
+			$group_slug = (string) $group_slug;
+			if ( ! isset( $groups[ $group_slug ] ) ) {
+				continue;
+			}
+
+			$allowed_ids = (array) ( $option_map[ $group_slug ] ?? array() );
+			foreach ( $this->extras_catalog->get_options_by_group( $group_slug ) as $option ) {
+				$option_id = (int) ( $option['id'] ?? 0 );
+				if ( ! empty( $allowed_ids ) && ! in_array( $option_id, $allowed_ids, true ) ) {
+					continue;
+				}
+
+				$meta        = (array) ( $option['meta'] ?? array() );
+				$option_data = (array) ( $meta['_wcs_option_data'] ?? array() );
+				$slug        = (string) ( $option_data['value'] ?? $option['slug'] ?? '' );
+
+				if ( '' === $slug ) {
+					continue;
+				}
+
+				$lookup[ $group_slug ][ $slug ] = array(
+					'id'    => $option_id,
+					'value' => $slug,
+					'text'  => (string) ( $option_data['name'] ?? $option['title'] ?? '' ),
+					'name'  => (string) ( $option_data['name'] ?? $option['title'] ?? '' ),
+					'price' => (float) ( $option_data['price'] ?? $meta['_wcs_price'] ?? 0 ),
+					'data'  => $option_data,
+				);
+			}
+		}
+
+		return $lookup;
 	}
 }

@@ -113,6 +113,7 @@ class WCS_Template {
 			'enabled_groups'    => (array) ( $data['enabled_groups'] ?? $data['groups'] ?? array() ),
 			'extra_option_map'  => (array) ( $data['extra_option_map'] ?? array() ),
 			'validation_rules'  => (array) ( $data['validation_rules'] ?? $data['rules'] ?? array() ),
+			'behavior_rules'    => (array) ( $data['behavior_rules'] ?? $data['validation_rules'] ?? $data['rules'] ?? array() ),
 			'edge_override'     => (array) ( $data['edge_override'] ?? array() ),
 			'groups'            => (array) ( $data['enabled_groups'] ?? $data['groups'] ?? array() ),
 			'rules'             => (array) ( $data['validation_rules'] ?? $data['rules'] ?? array() ),
@@ -146,6 +147,7 @@ class WCS_Template {
 			'enabled_groups'   => array_values( array_map( 'sanitize_text_field', (array) ( $data['enabled_groups'] ?? array() ) ) ),
 			'extra_option_map' => is_array( $data['extra_option_map'] ?? null ) ? $data['extra_option_map'] : array(),
 			'validation_rules' => is_array( $data['validation_rules'] ?? null ) ? $data['validation_rules'] : array(),
+			'behavior_rules'   => is_array( $data['behavior_rules'] ?? null ) ? $data['behavior_rules'] : array(),
 			'edge_override'    => is_array( $data['edge_override'] ?? null ) ? $data['edge_override'] : array(),
 		);
 
