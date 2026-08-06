@@ -180,6 +180,7 @@ class WCS_Loader {
 				'nonce'   => wp_create_nonce( 'wcs_admin_nonce' ),
 				'i18n'    => array(
 					'saved'         => __( 'Saved.', 'woo-spiegelloft-configurator' ),
+					'saving'        => __( 'Saving...', 'woo-spiegelloft-configurator' ),
 					'error'         => __( 'An error occurred.', 'woo-spiegelloft-configurator' ),
 					'confirm'       => __( 'Are you sure?', 'woo-spiegelloft-configurator' ),
 					'deleteConfirm' => __( 'Delete this choice?', 'woo-spiegelloft-configurator' ),

@@ -262,6 +262,94 @@
 		});
 	}
 
+	function slugifyInlinePosition(value) {
+		return String(value || '')
+			.toLowerCase()
+			.trim()
+			.replace(/[^a-z0-9]+/g, '-')
+			.replace(/^-+|-+$/g, '');
+	}
+
+	function buildInlinePositionRow() {
+		return $('<div class="wcs-inline-position-option">' +
+			'<input type="text" class="wcs-inline-position-option-label" placeholder="top center">' +
+			'<input type="text" class="wcs-inline-position-option-value" placeholder="top-center">' +
+			'<button type="button" class="button wcs-inline-position-add">+</button>' +
+			'<button type="button" class="button wcs-inline-position-remove">-</button>' +
+			'</div>');
+	}
+
+	function collectInlinePositions($wrap) {
+		var rows = [];
+		$wrap.find('.wcs-inline-position-option').each(function () {
+			var label = $(this).find('.wcs-inline-position-option-label').val();
+			var value = $(this).find('.wcs-inline-position-option-value').val();
+			if (label || value) {
+				rows.push({ label: label, value: value });
+			}
+		});
+		return rows;
+	}
+
+	function bindInlinePositions() {
+		$(document).on('change', '.wcs-inline-position-enabled', function () {
+			var enabled = $(this).is(':checked');
+			$(this).closest('.wcs-inline-positions').toggleClass('is-enabled', enabled);
+		});
+
+		$(document).on('click', '.wcs-inline-position-add', function (e) {
+			e.preventDefault();
+			$(this).closest('.wcs-inline-position-options').append(buildInlinePositionRow());
+		});
+
+		$(document).on('click', '.wcs-inline-position-remove', function (e) {
+			e.preventDefault();
+			var $rows = $(this).closest('.wcs-inline-position-options').find('.wcs-inline-position-option');
+			if ($rows.length <= 1) {
+				$(this).closest('.wcs-inline-position-option').find('input').val('');
+				return;
+			}
+			$(this).closest('.wcs-inline-position-option').remove();
+		});
+
+		$(document).on('blur', '.wcs-inline-position-option-label', function () {
+			var $row = $(this).closest('.wcs-inline-position-option');
+			var $value = $row.find('.wcs-inline-position-option-value');
+			if (!$value.val()) {
+				$value.val(slugifyInlinePosition($(this).val()));
+			}
+		});
+
+		$(document).on('click', '.wcs-inline-position-save', function (e) {
+			e.preventDefault();
+			var $button = $(this);
+			var $wrap = $button.closest('.wcs-inline-positions');
+			var labels = window.wcsAdmin && wcsAdmin.i18n ? wcsAdmin.i18n : {};
+			$button.prop('disabled', true);
+			$wrap.find('.wcs-inline-position-status').text(labels.saving || 'Saving...');
+
+			$.post(wcsAdmin.ajaxUrl, {
+				action: $wrap.data('group') ? 'wcs_save_group_positions' : 'wcs_save_choice_positions',
+				group: $wrap.data('group') || '',
+				choice_id: $wrap.data('choice-id'),
+				nonce: $wrap.data('nonce'),
+				enabled: $wrap.find('.wcs-inline-position-enabled').is(':checked') ? 1 : 0,
+				label: $wrap.find('.wcs-inline-position-label').val(),
+				show_when: $wrap.find('.wcs-inline-position-condition').val() || '',
+				positions: collectInlinePositions($wrap)
+			})
+				.done(function (response) {
+					$wrap.find('.wcs-inline-position-status').text(response && response.success ? (labels.saved || 'Saved.') : (response.data && response.data.message ? response.data.message : (labels.error || 'An error occurred.')));
+				})
+				.fail(function () {
+					$wrap.find('.wcs-inline-position-status').text(labels.error || 'An error occurred.');
+				})
+				.always(function () {
+					$button.prop('disabled', false);
+				});
+		});
+	}
+
 	$(function () {
 		bindAccordion();
 		bindTemplateSlug();
@@ -269,5 +357,6 @@
 		bindDeleteChoice();
 		bindChoiceSorting();
 		bindGroupSorting();
+		bindInlinePositions();
 	});
 }(jQuery));

@@ -6,6 +6,7 @@
  *
  * @var array<string, array<string,mixed>> $all_groups     Group definitions.
  * @var array<string, array<int,mixed>>    $group_options  Options per group.
+ * @var array<string, array<string,mixed>> $group_position_settings Position settings per group.
  * @var int                                $total_options  Total option count.
  */
 
@@ -71,6 +72,55 @@ defined( 'ABSPATH' ) || exit;
 							<a class="button button-secondary" href="<?php echo esc_url( $add_url ); ?>">
 								<?php esc_html_e( 'Add choice', 'woo-spiegelloft-configurator' ); ?>
 							</a>
+						</div>
+						<?php
+						$position_settings = (array) ( $group_position_settings[ $slug ] ?? array() );
+						$position_enabled  = ! empty( $position_settings['enabled'] );
+						$position_label    = (string) ( $position_settings['label'] ?? '' );
+						$position_show_when = (string) ( $position_settings['show_when'] ?? '' );
+						$position_rows     = ! empty( $position_settings['options'] ) && is_array( $position_settings['options'] )
+							? (array) $position_settings['options']
+							: array( array( 'label' => '', 'value' => '' ) );
+						?>
+						<div
+							class="wcs-inline-positions wcs-group-positions <?php echo $position_enabled ? 'is-enabled' : ''; ?>"
+							data-group="<?php echo esc_attr( $slug ); ?>"
+							data-nonce="<?php echo esc_attr( wp_create_nonce( 'wcs_group_positions_' . $slug ) ); ?>"
+						>
+							<div class="wcs-inline-position-head">
+								<label class="wcs-inline-position-toggle">
+									<input type="checkbox" class="wcs-inline-position-enabled" <?php checked( $position_enabled ); ?>>
+									<span>
+										<strong><?php esc_html_e( 'Position dropdown', 'woo-spiegelloft-configurator' ); ?></strong>
+										<small><?php esc_html_e( 'Show a position selector for this category when the condition matches.', 'woo-spiegelloft-configurator' ); ?></small>
+									</span>
+								</label>
+							</div>
+							<div class="wcs-inline-position-fields">
+								<input type="text" class="wcs-inline-position-label" value="<?php echo esc_attr( $position_label ); ?>" placeholder="<?php esc_attr_e( 'Position label', 'woo-spiegelloft-configurator' ); ?>">
+								<select class="wcs-inline-position-condition">
+									<option value=""><?php esc_html_e( 'Show for any selected choice', 'woo-spiegelloft-configurator' ); ?></option>
+									<?php foreach ( $options as $condition_option ) : ?>
+										<?php $condition_slug = (string) ( $condition_option['slug'] ?? '' ); ?>
+										<option value="<?php echo esc_attr( $condition_slug ); ?>" <?php selected( $position_show_when, $condition_slug ); ?>>
+											<?php echo esc_html( (string) ( $condition_option['title'] ?? $condition_slug ) ); ?>
+										</option>
+									<?php endforeach; ?>
+								</select>
+								<div class="wcs-inline-position-options">
+									<div class="wcs-inline-position-options-title"><?php esc_html_e( 'Dropdown values', 'woo-spiegelloft-configurator' ); ?></div>
+									<?php foreach ( $position_rows as $position_row ) : ?>
+										<div class="wcs-inline-position-option">
+											<input type="text" class="wcs-inline-position-option-label" value="<?php echo esc_attr( (string) ( $position_row['label'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'top center', 'woo-spiegelloft-configurator' ); ?>">
+											<input type="text" class="wcs-inline-position-option-value" value="<?php echo esc_attr( (string) ( $position_row['value'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'top-center', 'woo-spiegelloft-configurator' ); ?>">
+											<button type="button" class="button wcs-inline-position-add">+</button>
+											<button type="button" class="button wcs-inline-position-remove">-</button>
+										</div>
+									<?php endforeach; ?>
+								</div>
+								<button type="button" class="button button-small wcs-inline-position-save"><?php esc_html_e( 'Save positions', 'woo-spiegelloft-configurator' ); ?></button>
+								<span class="wcs-inline-position-status" aria-live="polite"></span>
+							</div>
 						</div>
 						<?php if ( empty( $options ) ) : ?>
 							<p class="description"><?php esc_html_e( 'No choices in this category yet.', 'woo-spiegelloft-configurator' ); ?></p>

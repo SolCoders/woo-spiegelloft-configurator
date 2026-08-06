@@ -102,6 +102,8 @@ class WCS_Config_Builder {
 		$edge_override  = (array) ( $template_data['edge_override'] ?? array() );
 		$extras_output  = array();
 		$step_map       = (array) ( $template_data['step_map'] ?? array() );
+		$group_positions = get_option( 'wcs_group_position_settings', array() );
+		$group_positions = is_array( $group_positions ) ? $group_positions : array();
 		$steps_output   = array(
 			1 => array(
 				'number' => 1,
@@ -151,6 +153,13 @@ class WCS_Config_Builder {
 				'title' => (string) ( $definition['category_title'] ?? $definition['label'] ?? $group_slug ),
 				'value' => array_values( $filtered ),
 			);
+			if ( ! empty( $group_positions[ $group_slug ]['enabled'] ) && ! empty( $group_positions[ $group_slug ]['options'] ) ) {
+				$extras_output[ $group_slug ]['position_config'] = array(
+					'label'     => (string) ( $group_positions[ $group_slug ]['label'] ?? __( 'Position', 'woo-spiegelloft-configurator' ) ),
+					'show_when' => (string) ( $group_positions[ $group_slug ]['show_when'] ?? '' ),
+					'options'   => array_values( (array) $group_positions[ $group_slug ]['options'] ),
+				);
+			}
 
 			$step_number = max( 1, (int) ( $step_map[ $group_slug ] ?? 2 ) );
 			if ( ! isset( $steps_output[ $step_number ] ) ) {
@@ -240,6 +249,11 @@ class WCS_Config_Builder {
 			'image' => (string) ( $option_data['image'] ?? $meta['_wcs_image'] ?? '' ),
 			'price' => (float) ( $option_data['price'] ?? $meta['_wcs_price'] ?? 0 ),
 		);
+
+		if ( ! empty( $option_data['position_enabled'] ) && ! empty( $option_data['position_options'] ) && is_array( $option_data['position_options'] ) ) {
+			$output['position_label']   = (string) ( $option_data['position_label'] ?? '' );
+			$output['position_options'] = array_values( $option_data['position_options'] );
+		}
 
 		$optional_fields = (array) ( $group_def['optional_fields'] ?? array() );
 		foreach ( array_keys( $optional_fields ) as $nested_key ) {

@@ -220,6 +220,51 @@
 		});
 	}
 
+	function reindexPositionRows() {
+		$('.wcs-position-row').each(function (index) {
+			$(this).find('[name]').each(function () {
+				$(this).attr('name', $(this).attr('name').replace(/wcs_position_options\[\d+\]/, 'wcs_position_options[' + index + ']'));
+			});
+		});
+	}
+
+	function buildPositionRow() {
+		var $template = $('.wcs-position-row').first().clone();
+		$template.find('input').val('');
+		return $template;
+	}
+
+	function bindPositionOptions() {
+		$(document).on('change', '.wcs-position-toggle input', function () {
+			$('.wcs-position-fields').prop('hidden', !$(this).is(':checked'));
+		});
+
+		$(document).on('click', '.wcs-position-add', function (e) {
+			e.preventDefault();
+			$(this).closest('.wcs-position-options').append(buildPositionRow());
+			reindexPositionRows();
+		});
+
+		$(document).on('click', '.wcs-position-remove', function (e) {
+			e.preventDefault();
+			var $rows = $('.wcs-position-row');
+			if ($rows.length <= 1) {
+				$(this).closest('.wcs-position-row').find('input').val('');
+				return;
+			}
+			$(this).closest('.wcs-position-row').remove();
+			reindexPositionRows();
+		});
+
+		$(document).on('blur', '.wcs-position-row input[name$="[label]"]', function () {
+			var $row = $(this).closest('.wcs-position-row');
+			var $value = $row.find('input[name$="[value]"]');
+			if (!$value.val()) {
+				$value.val(slugify($(this).val()));
+			}
+		});
+	}
+
 	$(function () {
 		if (!$('.wcs-choice-details').length) {
 			return;
@@ -228,6 +273,7 @@
 		bindRepeaters();
 		bindAccordion();
 		bindCategoryChange();
+		bindPositionOptions();
 		toggleNestedSections();
 	});
 }(jQuery));

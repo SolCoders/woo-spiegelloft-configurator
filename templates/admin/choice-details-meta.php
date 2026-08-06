@@ -12,6 +12,9 @@
  * @var string                             $price       Price string.
  * @var string                             $image       Image URL.
  * @var string                             $value       Option value slug.
+ * @var bool                               $position_enabled Whether position choices are enabled.
+ * @var string                             $position_label Position field label.
+ * @var array<int, array<string, string>>  $position_options Position option rows.
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -50,6 +53,34 @@ $name = (string) ( $option_data['name'] ?? '' );
 				<?php if ( $image ) : ?>
 					<img src="<?php echo esc_url( $image ); ?>" alt="">
 				<?php endif; ?>
+			</div>
+		</div>
+	</div>
+
+	<div class="wcs-field wcs-position-settings">
+		<label class="wcs-position-toggle">
+			<input type="checkbox" name="wcs_position_enabled" value="1" <?php checked( $position_enabled ); ?>>
+			<strong><?php esc_html_e( 'Enable position choices', 'woo-spiegelloft-configurator' ); ?></strong>
+		</label>
+		<div class="wcs-position-fields" <?php echo $position_enabled ? '' : 'hidden'; ?>>
+			<label class="wcs-position-label">
+				<span><?php esc_html_e( 'Position label', 'woo-spiegelloft-configurator' ); ?></span>
+				<input type="text" class="regular-text" name="wcs_position_label" value="<?php echo esc_attr( $position_label ); ?>" placeholder="<?php esc_attr_e( 'Position of this choice', 'woo-spiegelloft-configurator' ); ?>">
+			</label>
+			<div class="wcs-position-options">
+				<?php
+				$rows = ! empty( $position_options ) ? $position_options : array( array( 'label' => '', 'value' => '' ) );
+				foreach ( $rows as $index => $row ) :
+					$row_label = (string) ( $row['label'] ?? '' );
+					$row_value = (string) ( $row['value'] ?? '' );
+					?>
+					<div class="wcs-position-row">
+						<button type="button" class="button wcs-position-remove" aria-label="<?php esc_attr_e( 'Remove position', 'woo-spiegelloft-configurator' ); ?>">-</button>
+						<input type="text" name="wcs_position_options[<?php echo esc_attr( (string) $index ); ?>][label]" value="<?php echo esc_attr( $row_label ); ?>" placeholder="<?php esc_attr_e( 'top center', 'woo-spiegelloft-configurator' ); ?>">
+						<input type="text" name="wcs_position_options[<?php echo esc_attr( (string) $index ); ?>][value]" value="<?php echo esc_attr( $row_value ); ?>" placeholder="<?php esc_attr_e( 'top-center', 'woo-spiegelloft-configurator' ); ?>">
+						<button type="button" class="button wcs-position-add" aria-label="<?php esc_attr_e( 'Add position', 'woo-spiegelloft-configurator' ); ?>">+</button>
+					</div>
+				<?php endforeach; ?>
 			</div>
 		</div>
 	</div>

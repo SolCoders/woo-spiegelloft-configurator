@@ -6,6 +6,15 @@
 		return $('.woocommerce-Price-currencySymbol').first().text() + formatted;
 	}
 
+	function escapeHtml(value) {
+		return String(value || '')
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#039;');
+	}
+
 	function collect($wrap) {
 		var selections = {};
 		var total = parseFloat($wrap.data('base-price')) || 0;
@@ -30,8 +39,49 @@
 			}
 		});
 
+		$wrap.find('.wcs-position-choice').each(function () {
+			var group = $(this).data('group');
+			var value = $(this).val();
+			if (group && value) {
+				selections[group + '_position'] = value;
+			}
+		});
+
 		$wrap.find('.wcs-selections-input').val(JSON.stringify(selections));
 		$wrap.find('.wcs-configurator__price').text(money(total));
+	}
+
+	function parsePositions($element) {
+		var raw = $element.attr('data-position-options') || '[]';
+		try {
+			var parsed = JSON.parse(raw);
+			return Array.isArray(parsed) ? parsed : [];
+		} catch (e) {
+			return [];
+		}
+	}
+
+	function refreshPositionSelect($select) {
+		var group = $select.data('group');
+		var $target = $select.closest('.wcs-step-option-group').find('.wcs-position-select');
+		var showWhen = $target.data('show-when') || '';
+		var selected = $select.val() || '';
+		var positions = parsePositions($target);
+		var label = $target.data('position-label') || 'Position';
+
+		if (!selected || !positions.length || (showWhen && showWhen !== selected)) {
+			$target.prop('hidden', true).empty();
+			return;
+		}
+
+		var html = '<h3>' + escapeHtml(label) + '</h3><label class="wcs-option-select"><select class="wcs-position-choice" data-group="' + escapeHtml(group) + '">';
+		positions.forEach(function (position) {
+			var value = position.value || position.label || '';
+			var text = position.label || value;
+			html += '<option value="' + escapeHtml(value) + '">' + escapeHtml(text) + '</option>';
+		});
+		html += '</select></label>';
+		$target.html(html).prop('hidden', false);
 	}
 
 	function activateStep($wrap, index) {
@@ -64,6 +114,9 @@
 		});
 
 		$(document).on('input change', '.wcs-configurator input, .wcs-configurator select', function () {
+			if ($(this).hasClass('wcs-choice-select')) {
+				refreshPositionSelect($(this));
+			}
 			collect($(this).closest('.wcs-configurator'));
 		});
 

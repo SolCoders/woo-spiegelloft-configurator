@@ -88,6 +88,14 @@ foreach ( $steps as $step ) {
 							<?php endforeach; ?>
 						</select>
 					</label>
+					<div
+						class="wcs-position-select"
+						data-group="<?php echo esc_attr( $group_slug ); ?>"
+						data-show-when="<?php echo esc_attr( (string) ( $group['position_config']['show_when'] ?? '' ) ); ?>"
+						data-position-label="<?php echo esc_attr( (string) ( $group['position_config']['label'] ?? '' ) ); ?>"
+						data-position-options="<?php echo esc_attr( wp_json_encode( (array) ( $group['position_config']['options'] ?? array() ) ) ); ?>"
+						hidden
+					></div>
 				</div>
 			<?php endforeach; ?>
 		</section>
@@ -130,6 +138,14 @@ foreach ( $steps as $step ) {
 								<?php endforeach; ?>
 							</select>
 						</label>
+						<div
+							class="wcs-position-select"
+							data-group="<?php echo esc_attr( $group_slug ); ?>"
+							data-show-when="<?php echo esc_attr( (string) ( $group['position_config']['show_when'] ?? '' ) ); ?>"
+							data-position-label="<?php echo esc_attr( (string) ( $group['position_config']['label'] ?? '' ) ); ?>"
+							data-position-options="<?php echo esc_attr( wp_json_encode( (array) ( $group['position_config']['options'] ?? array() ) ) ); ?>"
+							hidden
+						></div>
 					</div>
 				<?php endforeach; ?>
 			</section>

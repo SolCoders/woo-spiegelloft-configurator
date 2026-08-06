@@ -51,6 +51,8 @@ class WCS_Extras_Admin {
 		add_action( 'pre_get_posts', array( $this, 'filter_by_taxonomy' ) );
 		add_action( 'wp_ajax_wcs_get_group_options', array( $this, 'ajax_get_group_options' ) );
 		add_action( 'wp_ajax_wcs_delete_choice', array( $this, 'ajax_delete_choice' ) );
+		add_action( 'wp_ajax_wcs_save_choice_positions', array( $this, 'ajax_save_choice_positions' ) );
+		add_action( 'wp_ajax_wcs_save_group_positions', array( $this, 'ajax_save_group_positions' ) );
 	}
 
 	/**
@@ -117,6 +119,8 @@ class WCS_Extras_Admin {
 
 		$all_groups    = $this->registry->get_groups();
 		$group_options = array();
+		$group_position_settings = get_option( 'wcs_group_position_settings', array() );
+		$group_position_settings = is_array( $group_position_settings ) ? $group_position_settings : array();
 		$total_options = 0;
 
 		foreach ( array_keys( $all_groups ) as $group_slug ) {
@@ -287,5 +291,118 @@ class WCS_Extras_Admin {
 				'message'   => __( 'Choice deleted.', 'woo-spiegelloft-configurator' ),
 			)
 		);
+	}
+
+	/**
+	 * AJAX: save inline position choices.
+	 */
+	public function ajax_save_choice_positions(): void {
+		$choice_id = isset( $_POST['choice_id'] ) ? absint( wp_unslash( $_POST['choice_id'] ) ) : 0;
+
+		check_ajax_referer( 'wcs_choice_positions_' . $choice_id, 'nonce' );
+
+		if ( ! current_user_can( 'manage_woocommerce' ) || ! current_user_can( 'edit_post', $choice_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'woo-spiegelloft-configurator' ) ), 403 );
+		}
+
+		$post = get_post( $choice_id );
+		if ( ! $post || 'wcs_extra_option' !== $post->post_type ) {
+			wp_send_json_error( array( 'message' => __( 'Choice not found.', 'woo-spiegelloft-configurator' ) ), 404 );
+		}
+
+		$option_data = get_post_meta( $choice_id, '_wcs_option_data', true );
+		$option_data = is_array( $option_data ) ? $option_data : array();
+
+		$enabled = ! empty( $_POST['enabled'] );
+		$label   = isset( $_POST['label'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['label'] ) ) : '';
+		$rows    = isset( $_POST['positions'] ) ? wp_unslash( $_POST['positions'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$positions = array();
+
+		if ( $enabled && is_array( $rows ) ) {
+			foreach ( $rows as $row ) {
+				if ( ! is_array( $row ) ) {
+					continue;
+				}
+				$row_label = sanitize_text_field( (string) ( $row['label'] ?? '' ) );
+				$row_value = sanitize_title( (string) ( $row['value'] ?? $row_label ) );
+				if ( '' === $row_label && '' === $row_value ) {
+					continue;
+				}
+				$positions[] = array(
+					'label' => $row_label ?: $row_value,
+					'value' => $row_value,
+				);
+			}
+		}
+
+		unset( $option_data['position_enabled'], $option_data['position_label'], $option_data['position_options'] );
+		if ( $enabled && ! empty( $positions ) ) {
+			$option_data['position_enabled'] = true;
+			$option_data['position_label']   = $label ?: sprintf(
+				/* translators: %s: choice title */
+				__( 'Position of the %s', 'woo-spiegelloft-configurator' ),
+				get_the_title( $choice_id )
+			);
+			$option_data['position_options'] = $positions;
+		}
+
+		update_post_meta( $choice_id, '_wcs_option_data', $option_data );
+		$this->catalog->invalidate_cache( $choice_id );
+
+		wp_send_json_success( array( 'message' => __( 'Positions saved.', 'woo-spiegelloft-configurator' ) ) );
+	}
+
+	/**
+	 * AJAX: save category-level position choices.
+	 */
+	public function ajax_save_group_positions(): void {
+		$group = isset( $_POST['group'] ) ? sanitize_title( wp_unslash( (string) $_POST['group'] ) ) : '';
+
+		check_ajax_referer( 'wcs_group_positions_' . $group, 'nonce' );
+
+		if ( ! current_user_can( 'manage_woocommerce' ) || ! $this->registry->get_group( $group ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'woo-spiegelloft-configurator' ) ), 403 );
+		}
+
+		$enabled   = ! empty( $_POST['enabled'] );
+		$label     = isset( $_POST['label'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['label'] ) ) : '';
+		$show_when = isset( $_POST['show_when'] ) ? sanitize_title( wp_unslash( (string) $_POST['show_when'] ) ) : '';
+		$rows      = isset( $_POST['positions'] ) ? wp_unslash( $_POST['positions'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$positions = array();
+
+		if ( $enabled && is_array( $rows ) ) {
+			foreach ( $rows as $row ) {
+				if ( ! is_array( $row ) ) {
+					continue;
+				}
+				$row_label = sanitize_text_field( (string) ( $row['label'] ?? '' ) );
+				$row_value = sanitize_title( (string) ( $row['value'] ?? $row_label ) );
+				if ( '' === $row_label && '' === $row_value ) {
+					continue;
+				}
+				$positions[] = array(
+					'label' => $row_label ?: $row_value,
+					'value' => $row_value,
+				);
+			}
+		}
+
+		$settings = get_option( 'wcs_group_position_settings', array() );
+		$settings = is_array( $settings ) ? $settings : array();
+		unset( $settings[ $group ] );
+
+		if ( $enabled && ! empty( $positions ) ) {
+			$settings[ $group ] = array(
+				'enabled'   => true,
+				'label'     => $label ?: __( 'Position', 'woo-spiegelloft-configurator' ),
+				'show_when' => $show_when,
+				'options'   => $positions,
+			);
+		}
+
+		update_option( 'wcs_group_position_settings', $settings, false );
+		$this->catalog->invalidate_cache( 0 );
+
+		wp_send_json_success( array( 'message' => __( 'Positions saved.', 'woo-spiegelloft-configurator' ) ) );
 	}
 }

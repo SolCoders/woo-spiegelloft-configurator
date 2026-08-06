@@ -133,6 +133,11 @@ class WCS_Choice_Meta {
 		$price       = (string) ( $option_data['price'] ?? get_post_meta( $post->ID, '_wcs_price', true ) );
 		$image       = (string) ( $option_data['image'] ?? get_post_meta( $post->ID, '_wcs_image', true ) );
 		$value       = (string) ( $option_data['value'] ?? $slug );
+		$position_enabled = ! empty( $option_data['position_enabled'] );
+		$position_label   = (string) ( $option_data['position_label'] ?? '' );
+		$position_options = isset( $option_data['position_options'] ) && is_array( $option_data['position_options'] )
+			? $option_data['position_options']
+			: array();
 
 		include WCS_PLUGIN_DIR . 'templates/admin/choice-details-meta.php';
 	}
@@ -197,6 +202,36 @@ class WCS_Choice_Meta {
 			'price' => (float) $price,
 			'image' => $image,
 		);
+
+		$position_enabled = ! empty( $_POST['wcs_position_enabled'] );
+		$position_label   = isset( $_POST['wcs_position_label'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['wcs_position_label'] ) ) : '';
+		$position_raw     = isset( $_POST['wcs_position_options'] ) ? wp_unslash( $_POST['wcs_position_options'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$positions        = array();
+		if ( $position_enabled && is_array( $position_raw ) ) {
+			foreach ( $position_raw as $row ) {
+				if ( ! is_array( $row ) ) {
+					continue;
+				}
+				$label = sanitize_text_field( (string) ( $row['label'] ?? '' ) );
+				$value_slug = sanitize_title( (string) ( $row['value'] ?? $label ) );
+				if ( '' === $label && '' === $value_slug ) {
+					continue;
+				}
+				$positions[] = array(
+					'label' => $label ?: $value_slug,
+					'value' => $value_slug,
+				);
+			}
+		}
+		if ( $position_enabled && ! empty( $positions ) ) {
+			$option_data['position_enabled'] = true;
+			$option_data['position_label']   = $position_label ?: sprintf(
+				/* translators: %s: choice label */
+				__( 'Position of the %s', 'woo-spiegelloft-configurator' ),
+				$name
+			);
+			$option_data['position_options'] = $positions;
+		}
 
 		$group_def = $group_slug ? $this->registry->get_group( $group_slug ) : null;
 		if ( $group_def && ! empty( $group_def['optional_fields'] ) && isset( $_POST['wcs_nested'] ) && is_array( $_POST['wcs_nested'] ) ) {
