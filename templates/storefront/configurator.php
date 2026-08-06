@@ -13,6 +13,14 @@ defined( 'ABSPATH' ) || exit;
 
 $base_price = (float) $product->get_price();
 $extras     = (array) ( $config['extras'] ?? array() );
+$steps      = (array) ( $config['steps'] ?? array() );
+$step_one_groups = array();
+foreach ( $steps as $step ) {
+	if ( 1 === (int) ( $step['number'] ?? 0 ) ) {
+		$step_one_groups = (array) ( $step['groups'] ?? array() );
+		break;
+	}
+}
 ?>
 <div class="wcs-configurator" data-base-price="<?php echo esc_attr( (string) $base_price ); ?>">
 	<input type="hidden" name="wcs_selections" class="wcs-selections-input" value="">
@@ -53,30 +61,77 @@ $extras     = (array) ( $config['extras'] ?? array() );
 					<em><?php esc_html_e( 'mm', 'woo-spiegelloft-configurator' ); ?></em>
 				</label>
 			</div>
+			<?php foreach ( $step_one_groups as $group_slug ) : ?>
+				<?php
+				$group_slug = (string) $group_slug;
+				$group      = (array) ( $extras[ $group_slug ] ?? array() );
+				if ( 'edge' === $group_slug || empty( $group['value'] ) || ! is_array( $group['value'] ) ) {
+					continue;
+				}
+				$options = (array) $group['value'];
+				?>
+				<div class="wcs-step-option-group">
+					<div class="wcs-option-heading">
+						<h3><?php echo esc_html( (string) ( $group['title'] ?? $group_slug ) ); ?></h3>
+						<span class="wcs-option-info" aria-hidden="true">i</span>
+					</div>
+					<label class="wcs-option-select">
+						<select class="wcs-choice-select" data-group="<?php echo esc_attr( $group_slug ); ?>">
+							<option value=""><?php esc_html_e( 'Please select', 'woo-spiegelloft-configurator' ); ?></option>
+							<?php foreach ( $options as $option ) : ?>
+								<option value="<?php echo esc_attr( (string) ( $option['value'] ?? '' ) ); ?>" data-price="<?php echo esc_attr( (string) ( $option['price'] ?? 0 ) ); ?>">
+									<?php echo esc_html( (string) ( $option['name'] ?? $option['value'] ?? '' ) ); ?>
+									<?php if ( ! empty( $option['price'] ) ) : ?>
+										<?php echo esc_html( ' +' . wp_strip_all_tags( wc_price( (float) $option['price'] ) ) ); ?>
+									<?php endif; ?>
+								</option>
+							<?php endforeach; ?>
+						</select>
+					</label>
+				</div>
+			<?php endforeach; ?>
 		</section>
 
-		<?php foreach ( $extras as $group_slug => $group ) : ?>
+		<?php foreach ( $steps as $step ) : ?>
 			<?php
-			if ( 'edge' === $group_slug || empty( $group['value'] ) || ! is_array( $group['value'] ) ) {
+			if ( 1 === (int) ( $step['number'] ?? 0 ) ) {
 				continue;
 			}
-			$options = (array) $group['value'];
+			$step_groups = (array) ( $step['groups'] ?? array() );
+			if ( empty( $step_groups ) ) {
+				continue;
+			}
 			?>
 			<section class="wcs-configurator__section wcs-option-section">
-				<h3><?php echo esc_html( (string) ( $group['title'] ?? $group_slug ) ); ?></h3>
-				<label class="wcs-option-select">
-					<select class="wcs-choice-select" data-group="<?php echo esc_attr( (string) $group_slug ); ?>">
-						<option value=""><?php esc_html_e( 'Please select', 'woo-spiegelloft-configurator' ); ?></option>
-						<?php foreach ( $options as $option ) : ?>
-							<option value="<?php echo esc_attr( (string) ( $option['value'] ?? '' ) ); ?>" data-price="<?php echo esc_attr( (string) ( $option['price'] ?? 0 ) ); ?>">
-								<?php echo esc_html( (string) ( $option['name'] ?? $option['value'] ?? '' ) ); ?>
-								<?php if ( ! empty( $option['price'] ) ) : ?>
-									<?php echo esc_html( ' +' . wp_strip_all_tags( wc_price( (float) $option['price'] ) ) ); ?>
-								<?php endif; ?>
-							</option>
-						<?php endforeach; ?>
-					</select>
-				</label>
+				<?php foreach ( $step_groups as $group_slug ) : ?>
+					<?php
+					$group_slug = (string) $group_slug;
+					$group      = (array) ( $extras[ $group_slug ] ?? array() );
+					if ( 'edge' === $group_slug || empty( $group['value'] ) || ! is_array( $group['value'] ) ) {
+						continue;
+					}
+					$options = (array) $group['value'];
+					?>
+					<div class="wcs-step-option-group">
+						<div class="wcs-option-heading">
+							<h3><?php echo esc_html( (string) ( $group['title'] ?? $group_slug ) ); ?></h3>
+							<span class="wcs-option-info" aria-hidden="true">i</span>
+						</div>
+						<label class="wcs-option-select">
+							<select class="wcs-choice-select" data-group="<?php echo esc_attr( $group_slug ); ?>">
+								<option value=""><?php esc_html_e( 'Please select', 'woo-spiegelloft-configurator' ); ?></option>
+								<?php foreach ( $options as $option ) : ?>
+									<option value="<?php echo esc_attr( (string) ( $option['value'] ?? '' ) ); ?>" data-price="<?php echo esc_attr( (string) ( $option['price'] ?? 0 ) ); ?>">
+										<?php echo esc_html( (string) ( $option['name'] ?? $option['value'] ?? '' ) ); ?>
+										<?php if ( ! empty( $option['price'] ) ) : ?>
+											<?php echo esc_html( ' +' . wp_strip_all_tags( wc_price( (float) $option['price'] ) ) ); ?>
+										<?php endif; ?>
+									</option>
+								<?php endforeach; ?>
+							</select>
+						</label>
+					</div>
+				<?php endforeach; ?>
 			</section>
 		<?php endforeach; ?>
 

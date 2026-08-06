@@ -126,6 +126,7 @@ class WCS_Template_Admin {
 		$option_map     = (array) ( $data['extra_option_map'] ?? array() );
 		$all_groups     = $this->registry->get_groups();
 		$group_order    = (array) ( $data['group_order'] ?? array() );
+		$step_map       = (array) ( $data['step_map'] ?? array() );
 		$group_options  = array();
 
 		if ( ! empty( $group_order ) ) {
@@ -178,8 +179,19 @@ class WCS_Template_Admin {
 
 		$enabled_groups_raw = isset( $_POST['wcs_enabled_groups'] ) ? (array) wp_unslash( $_POST['wcs_enabled_groups'] ) : array();
 		$group_order_raw    = isset( $_POST['wcs_group_order'] ) ? (array) wp_unslash( $_POST['wcs_group_order'] ) : array();
+		$step_map_raw       = isset( $_POST['wcs_group_steps'] ) ? wp_unslash( $_POST['wcs_group_steps'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$enabled_groups     = array_values( array_unique( array_map( 'sanitize_text_field', $enabled_groups_raw ) ) );
 		$group_order        = array_values( array_unique( array_map( 'sanitize_text_field', $group_order_raw ) ) );
+		$step_map           = array();
+		if ( is_array( $step_map_raw ) ) {
+			foreach ( $step_map_raw as $group_slug => $step ) {
+				$group_slug = sanitize_text_field( (string) $group_slug );
+				$step       = max( 1, absint( $step ) );
+				if ( '' !== $group_slug ) {
+					$step_map[ $group_slug ] = $step;
+				}
+			}
+		}
 		if ( ! empty( $group_order ) ) {
 			$enabled_lookup = array_flip( $enabled_groups );
 			$enabled_groups = array_values(
@@ -265,6 +277,7 @@ class WCS_Template_Admin {
 				),
 				'enabled_groups'    => $enabled_groups,
 				'group_order'       => $group_order,
+				'step_map'          => $step_map,
 				'extra_option_map'  => $option_map,
 				'validation_rules'  => $rules,
 				'behavior_rules'    => $rules,

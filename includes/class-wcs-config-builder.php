@@ -101,6 +101,14 @@ class WCS_Config_Builder {
 		$dimensions     = (array) ( $template_data['dimensions'] ?? array() );
 		$edge_override  = (array) ( $template_data['edge_override'] ?? array() );
 		$extras_output  = array();
+		$step_map       = (array) ( $template_data['step_map'] ?? array() );
+		$steps_output   = array(
+			1 => array(
+				'number' => 1,
+				'title'  => __( 'Size selection', 'woo-spiegelloft-configurator' ),
+				'groups' => array(),
+			),
+		);
 
 		foreach ( $enabled as $group_slug ) {
 			$group_slug = (string) $group_slug;
@@ -143,7 +151,23 @@ class WCS_Config_Builder {
 				'title' => (string) ( $definition['category_title'] ?? $definition['label'] ?? $group_slug ),
 				'value' => array_values( $filtered ),
 			);
+
+			$step_number = max( 1, (int) ( $step_map[ $group_slug ] ?? 2 ) );
+			if ( ! isset( $steps_output[ $step_number ] ) ) {
+				$steps_output[ $step_number ] = array(
+					'number' => $step_number,
+					'title'  => sprintf(
+						/* translators: %d: step number */
+						__( 'Step %d', 'woo-spiegelloft-configurator' ),
+						$step_number
+					),
+					'groups' => array(),
+				);
+			}
+			$steps_output[ $step_number ]['groups'][] = $group_slug;
 		}
+
+		ksort( $steps_output );
 
 		$images = array();
 		$image_id = $product->get_image_id();
@@ -176,6 +200,8 @@ class WCS_Config_Builder {
 			'min_height'       => (int) ( $dimensions['min_height'] ?? 400 ),
 			'max_height'       => (int) ( $dimensions['max_height'] ?? 2500 ),
 			'extras'           => $extras_output,
+			'steps'            => array_values( $steps_output ),
+			'step_map'         => $step_map,
 			'validation_rules' => (array) ( $template_data['validation_rules'] ?? $template_data['rules'] ?? array() ),
 			'behavior_rules'   => (array) ( $template_data['behavior_rules'] ?? $template_data['validation_rules'] ?? $template_data['rules'] ?? array() ),
 		);

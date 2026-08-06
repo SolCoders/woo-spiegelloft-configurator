@@ -25,6 +25,7 @@ defined( 'ABSPATH' ) || exit;
 			$is_enabled   = in_array( $slug, $enabled_groups, true );
 			$options      = $group_options[ $slug ] ?? array();
 			$selected_ids = (array) ( $option_map[ $slug ] ?? array() );
+			$group_step   = max( 1, absint( $step_map[ $slug ] ?? 2 ) );
 			$add_url      = add_query_arg(
 				array(
 					'post_type'       => 'wcs_extra_option',
@@ -51,6 +52,22 @@ defined( 'ABSPATH' ) || exit;
 								?>
 							</small>
 						</span>
+					</label>
+					<label class="wcs-group-step-field">
+						<span><?php esc_html_e( 'Step', 'woo-spiegelloft-configurator' ); ?></span>
+						<select name="wcs_group_steps[<?php echo esc_attr( $slug ); ?>]">
+							<?php for ( $step_index = 1; $step_index <= 8; $step_index++ ) : ?>
+								<option value="<?php echo esc_attr( (string) $step_index ); ?>" <?php selected( $group_step, $step_index ); ?>>
+									<?php
+									printf(
+										/* translators: %d: step number */
+										esc_html__( 'Step %d', 'woo-spiegelloft-configurator' ),
+										$step_index
+									);
+									?>
+								</option>
+							<?php endfor; ?>
+						</select>
 					</label>
 					<button type="button" class="wcs-accordion-toggle" aria-expanded="false">
 						<span class="wcs-accordion-icon" aria-hidden="true"></span>
