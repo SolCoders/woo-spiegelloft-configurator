@@ -236,7 +236,7 @@
 
 	function bindPositionOptions() {
 		$(document).on('change', '.wcs-position-toggle input', function () {
-			$('.wcs-position-fields').prop('hidden', !$(this).is(':checked'));
+			$(this).closest('.wcs-position-settings').toggleClass('is-enabled', $(this).is(':checked'));
 		});
 
 		$(document).on('click', '.wcs-position-add', function (e) {

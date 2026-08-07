@@ -307,10 +307,7 @@
 }
 
 .wcs-position-settings {
-	padding: 12px;
-	border: 1px solid #dcdcde;
-	border-radius: 6px;
-	background: #f6f7f7;
+	padding: 0;
 }
 
 .wcs-position-toggle {
@@ -320,9 +317,7 @@
 }
 
 .wcs-position-fields {
-	display: grid;
-	gap: 10px;
-	margin-top: 10px;
+	margin-top: 0;
 }
 
 .wcs-position-label {
@@ -339,25 +334,18 @@
 
 .wcs-position-options {
 	display: grid;
-	gap: 6px;
 }
 
 .wcs-position-row {
-	display: grid;
-	grid-template-columns: 32px minmax(120px, 1fr) minmax(120px, 1fr) 32px;
-	gap: 6px;
-	align-items: center;
-	max-width: 640px;
+	max-width: none;
 }
 
 .wcs-position-row .button {
-	min-height: 30px;
-	padding: 0;
 	line-height: 1;
 }
 
 .wcs-position-row input {
-	min-height: 30px;
+	min-height: 40px;
 }
 
 .wcs-inline-position-row td {
