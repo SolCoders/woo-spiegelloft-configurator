@@ -40,12 +40,20 @@ class WCS_Order {
 		$config = $values['wcs_configuration'];
 		$item->add_meta_data( '_wcs_configuration', wp_json_encode( $config ), true );
 
-		if ( ! empty( $config['selections'] ) && is_array( $config['selections'] ) ) {
-			foreach ( $config['selections'] as $group => $value ) {
-				$display = is_array( $value ) ? implode( ', ', $value ) : (string) $value;
+		if ( ! empty( $config['items'] ) && is_array( $config['items'] ) ) {
+			foreach ( $config['items'] as $config_item ) {
+				$label = (string) ( $config_item['label'] ?? '' );
+				$value = (string) ( $config_item['value'] ?? '' );
+				$price = (float) ( $config_item['price'] ?? 0 );
+				if ( '' === $label || '' === $value ) {
+					continue;
+				}
+				if ( $price > 0 ) {
+					$value .= ' (' . wp_strip_all_tags( wc_price( $price ) ) . ')';
+				}
 				$item->add_meta_data(
-					ucwords( str_replace( '_', ' ', (string) $group ) ),
-					$display,
+					$label,
+					$value,
 					true
 				);
 			}
@@ -68,15 +76,23 @@ class WCS_Order {
 		}
 
 		$config = json_decode( (string) $raw, true );
-		if ( ! is_array( $config ) || empty( $config['selections'] ) ) {
+		if ( ! is_array( $config ) || ( empty( $config['items'] ) && empty( $config['selections'] ) ) ) {
 			return;
 		}
 
 		echo '<dl class="wcs-order-configuration">';
-		foreach ( (array) $config['selections'] as $group => $value ) {
-			$display = is_array( $value ) ? implode( ', ', $value ) : (string) $value;
-			echo '<dt>' . esc_html( ucwords( str_replace( '_', ' ', (string) $group ) ) ) . '</dt>';
-			echo '<dd>' . esc_html( $display ) . '</dd>';
+		foreach ( (array) ( $config['items'] ?? array() ) as $config_item ) {
+			$label = (string) ( $config_item['label'] ?? '' );
+			$value = (string) ( $config_item['value'] ?? '' );
+			$price = (float) ( $config_item['price'] ?? 0 );
+			if ( '' === $label || '' === $value ) {
+				continue;
+			}
+			if ( $price > 0 ) {
+				$value .= ' (' . wp_strip_all_tags( wc_price( $price ) ) . ')';
+			}
+			echo '<dt>' . esc_html( $label ) . '</dt>';
+			echo '<dd>' . esc_html( $value ) . '</dd>';
 		}
 		echo '</dl>';
 	}

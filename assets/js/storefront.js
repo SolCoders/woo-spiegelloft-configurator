@@ -182,7 +182,8 @@
 		$sections.removeClass('is-active').eq(active).addClass('is-active');
 		$wrap.data('active-step', active);
 		$wrap.find('.wcs-step-back').prop('disabled', active <= 0);
-		$wrap.find('.wcs-step-next').text(active >= max ? 'Done' : (active === max - 1 ? 'Review' : 'Further'));
+		$wrap.find('.wcs-step-next').text(active === max - 1 ? 'Review' : 'Further').toggle(active < max);
+		$wrap.find('.wcs-add-to-cart').toggle(active >= max);
 		if (animate) {
 			scrollStepTop($wrap);
 		}

@@ -64,6 +64,18 @@ class WCS_Cart {
 			return false;
 		}
 
+		$builder = wcs_get_config_builder();
+		if ( ! $builder ) {
+			wc_add_notice( __( 'Configurator is not available right now.', 'woo-spiegelloft-configurator' ), 'error' );
+			return false;
+		}
+
+		$config = $builder->build_cart_configuration( $product_id, $selections );
+		if ( is_wp_error( $config ) ) {
+			wc_add_notice( $config->get_error_message(), 'error' );
+			return false;
+		}
+
 		return $passed;
 	}
 
@@ -89,10 +101,22 @@ class WCS_Cart {
 			return $cart_item_data;
 		}
 
-		$selections = $this->validation->sanitize_selections( $selections );
+		$builder = wcs_get_config_builder();
+		if ( ! $builder ) {
+			return $cart_item_data;
+		}
+
+		$config = $builder->build_cart_configuration( $product_id, $selections );
+		if ( is_wp_error( $config ) ) {
+			return $cart_item_data;
+		}
+
+		$selections = (array) ( $config['selections'] ?? array() );
 
 		$cart_item_data['wcs_configuration'] = array(
 			'selections' => $selections,
+			'items'      => $this->build_display_items( $product_id, $selections ),
+			'price'      => (float) ( $config['price'] ?? 0 ),
 			'unique_key' => md5( wp_json_encode( $selections ) . microtime( true ) ),
 		);
 
@@ -134,10 +158,10 @@ class WCS_Cart {
 			}
 
 			/** @var WC_Product $product */
-			$product    = $cart_item['data'];
-			$product_id = (int) ( $cart_item['product_id'] ?? 0 );
-			$selections = (array) $cart_item['wcs_configuration']['selections'];
-			$price      = $builder->calculate_price( (float) $product->get_regular_price(), $selections );
+			$product = $cart_item['data'];
+			$price   = isset( $cart_item['wcs_configuration']['price'] )
+				? (float) $cart_item['wcs_configuration']['price']
+				: $builder->calculate_price( (float) $product->get_regular_price(), (array) $cart_item['wcs_configuration']['selections'] );
 
 			$product->set_price( $price );
 		}
@@ -155,15 +179,118 @@ class WCS_Cart {
 			return $item_data;
 		}
 
-		foreach ( (array) $cart_item['wcs_configuration']['selections'] as $group => $value ) {
-			$display = is_array( $value ) ? implode( ', ', $value ) : (string) $value;
+		$items = (array) ( $cart_item['wcs_configuration']['items'] ?? array() );
+		if ( empty( $items ) ) {
+			$items = $this->build_display_items( (int) ( $cart_item['product_id'] ?? 0 ), (array) $cart_item['wcs_configuration']['selections'] );
+		}
+
+		foreach ( $items as $item ) {
+			$label = (string) ( $item['label'] ?? '' );
+			$value = (string) ( $item['value'] ?? '' );
+			$price = (float) ( $item['price'] ?? 0 );
+			if ( '' === $label || '' === $value ) {
+				continue;
+			}
+			if ( $price > 0 ) {
+				$value .= ' (' . wp_strip_all_tags( wc_price( $price ) ) . ')';
+			}
 			$item_data[] = array(
-				'key'   => ucwords( str_replace( '_', ' ', (string) $group ) ),
-				'value' => esc_html( $display ),
+				'key'   => esc_html( $label ),
+				'value' => esc_html( $value ),
 			);
 		}
 
 		return $item_data;
+	}
+
+	/**
+	 * Build human-readable cart meta rows from the active product config.
+	 *
+	 * @param int                  $product_id  Product ID.
+	 * @param array<string, mixed> $selections  Sanitized selections.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function build_display_items( int $product_id, array $selections ): array {
+		$builder = wcs_get_config_builder();
+		if ( ! $builder ) {
+			return array();
+		}
+
+		$config = $builder->build_for_product( $product_id );
+		if ( is_wp_error( $config ) ) {
+			return array();
+		}
+
+		$items = array();
+		foreach ( array( 'width', 'height', 'diameter', 'top_width', 'bottom_width', 'left_height', 'right_height' ) as $dimension ) {
+			if ( isset( $selections[ $dimension ] ) && '' !== (string) $selections[ $dimension ] ) {
+				$items[] = array(
+					'label' => ucwords( str_replace( '_', ' ', $dimension ) ),
+					'value' => (string) $selections[ $dimension ] . ' mm',
+					'price' => 0,
+				);
+			}
+		}
+
+		$extras = (array) ( $config['extras'] ?? array() );
+		foreach ( $extras as $group_slug => $group ) {
+			if ( empty( $selections[ $group_slug ] ) ) {
+				continue;
+			}
+
+			$option = $this->find_option( (array) ( $group['value'] ?? array() ), (string) $selections[ $group_slug ] );
+			if ( empty( $option ) ) {
+				continue;
+			}
+
+			$items[] = array(
+				'label' => (string) ( $group['title'] ?? ucwords( str_replace( '_', ' ', (string) $group_slug ) ) ),
+				'value' => (string) ( $option['name'] ?? $option['value'] ?? $selections[ $group_slug ] ),
+				'price' => (float) ( $option['price'] ?? 0 ),
+			);
+
+			$position_key = (string) $group_slug . '_position';
+			if ( ! empty( $selections[ $position_key ] ) ) {
+				$items[] = array(
+					'label' => (string) ( $group['position_config']['label'] ?? __( 'Position', 'woo-spiegelloft-configurator' ) ),
+					'value' => $this->find_position_label( (array) ( $group['position_config']['options'] ?? array() ), (string) $selections[ $position_key ] ),
+					'price' => 0,
+				);
+			}
+		}
+
+		return $items;
+	}
+
+	/**
+	 * Find a configured option by slug.
+	 *
+	 * @param array<int, array<string, mixed>> $options Options.
+	 * @param string                           $slug    Selected slug.
+	 * @return array<string, mixed>
+	 */
+	private function find_option( array $options, string $slug ): array {
+		foreach ( $options as $option ) {
+			if ( (string) ( $option['value'] ?? '' ) === $slug ) {
+				return $option;
+			}
+		}
+		return array();
+	}
+
+	/**
+	 * Resolve a saved position value to its display label.
+	 *
+	 * @param array<int, array<string, string>> $positions Position options.
+	 * @param string                            $value     Saved value.
+	 */
+	private function find_position_label( array $positions, string $value ): string {
+		foreach ( $positions as $position ) {
+			if ( (string) ( $position['value'] ?? '' ) === $value ) {
+				return (string) ( $position['label'] ?? $value );
+			}
+		}
+		return $value;
 	}
 }
 

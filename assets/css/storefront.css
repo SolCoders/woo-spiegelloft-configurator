@@ -12,11 +12,11 @@
 .wcs-configurator-product div.product .summary > .product_title,
 .wcs-configurator-product div.product .summary > .price,
 .wcs-configurator-product div.product .summary > .woocommerce-product-details__short-description,
-.wcs-configurator-product div.product .summary > form.cart,
+.wcs-configurator-product div.product .summary > form.cart:not(.wcs-configurator),
 .wcs-configurator-product div.product .entry-summary > .product_title,
 .wcs-configurator-product div.product .entry-summary > .price,
 .wcs-configurator-product div.product .entry-summary > .woocommerce-product-details__short-description,
-.wcs-configurator-product div.product .entry-summary > form.cart {
+.wcs-configurator-product div.product .entry-summary > form.cart:not(.wcs-configurator) {
 	display: none;
 }
 
@@ -521,11 +521,16 @@
 	cursor: default;
 }
 
-.wcs-configurator__footer .wcs-step-next {
+.wcs-configurator__footer .wcs-step-next,
+.wcs-configurator__footer .wcs-add-to-cart {
 	background: #2f5bea;
 	color: #fff;
 	border-color: #2f5bea;
 	box-shadow: 0 2px 0 #173ebc;
+}
+
+.wcs-configurator__footer .wcs-add-to-cart {
+	display: none;
 }
 
 .single-product form.cart .wcs-configurator + .quantity {

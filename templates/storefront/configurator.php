@@ -22,8 +22,10 @@ foreach ( $steps as $step ) {
 	}
 }
 ?>
-<div class="wcs-configurator" data-base-price="<?php echo esc_attr( (string) $base_price ); ?>">
+<form class="cart wcs-configurator" method="post" enctype="multipart/form-data" data-base-price="<?php echo esc_attr( (string) $base_price ); ?>">
 	<input type="hidden" name="wcs_selections" class="wcs-selections-input" value="">
+	<input type="hidden" name="quantity" value="1">
+	<button type="submit" name="add-to-cart" value="<?php echo esc_attr( (string) $product->get_id() ); ?>" class="single_add_to_cart_button" hidden></button>
 
 	<div class="wcs-configurator__panel">
 		<header class="wcs-configurator__header">
@@ -161,6 +163,7 @@ foreach ( $steps as $step ) {
 		<nav class="wcs-configurator__footer" aria-label="<?php esc_attr_e( 'Configurator navigation', 'woo-spiegelloft-configurator' ); ?>">
 			<button type="button" class="button wcs-step-back"><?php esc_html_e( 'Back', 'woo-spiegelloft-configurator' ); ?></button>
 			<button type="button" class="button alt wcs-step-next"><?php esc_html_e( 'Further', 'woo-spiegelloft-configurator' ); ?></button>
+			<button type="submit" name="add-to-cart" value="<?php echo esc_attr( (string) $product->get_id() ); ?>" class="button alt wcs-add-to-cart"><?php esc_html_e( 'Add to cart', 'woo-spiegelloft-configurator' ); ?></button>
 		</nav>
 	</div>
-</div>
+</form>
