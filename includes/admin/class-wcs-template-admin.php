@@ -63,8 +63,8 @@ class WCS_Template_Admin {
 	public function register_submenu(): void {
 		add_submenu_page(
 			'wcs-configurator',
-			__( 'Mirror templates', 'woo-spiegelloft-configurator' ),
-			__( 'Mirror templates', 'woo-spiegelloft-configurator' ),
+			__( 'Mirror Layouts', 'woo-spiegelloft-configurator' ),
+			__( 'Mirror Layouts', 'woo-spiegelloft-configurator' ),
 			'manage_woocommerce',
 			'edit.php?post_type=wcs_template'
 		);

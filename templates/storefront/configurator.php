@@ -34,9 +34,12 @@ foreach ( $steps as $step ) {
 			<strong class="wcs-configurator__price"><?php echo wp_kses_post( wc_price( $base_price ) ); ?></strong>
 		</header>
 
-		<p class="wcs-configurator__notice"><?php esc_html_e( 'Please note: The configurator is for visual representation purposes only.', 'woo-spiegelloft-configurator' ); ?></p>
+		<p class="wcs-configurator__notice">
+			<span><?php esc_html_e( 'Bitte beachten: Der Konfigurator dient nur zur visuellen Darstellung.', 'woo-spiegelloft-configurator' ); ?></span>
+		</p>
 
-		<section class="wcs-configurator__section">
+		<div class="wcs-configurator__content">
+			<section class="wcs-configurator__section">
 			<h3><?php esc_html_e( 'Size selection', 'woo-spiegelloft-configurator' ); ?></h3>
 			<button type="button" class="wcs-configurator__help">
 				<span aria-hidden="true">?</span>
@@ -98,9 +101,9 @@ foreach ( $steps as $step ) {
 					></div>
 				</div>
 			<?php endforeach; ?>
-		</section>
+			</section>
 
-		<?php foreach ( $steps as $step ) : ?>
+			<?php foreach ( $steps as $step ) : ?>
 			<?php
 			if ( 1 === (int) ( $step['number'] ?? 0 ) ) {
 				continue;
@@ -110,7 +113,7 @@ foreach ( $steps as $step ) {
 				continue;
 			}
 			?>
-			<section class="wcs-configurator__section wcs-option-section">
+				<section class="wcs-configurator__section wcs-option-section">
 				<?php foreach ( $step_groups as $group_slug ) : ?>
 					<?php
 					$group_slug = (string) $group_slug;
@@ -148,8 +151,12 @@ foreach ( $steps as $step ) {
 						></div>
 					</div>
 				<?php endforeach; ?>
+				</section>
+			<?php endforeach; ?>
+			<section class="wcs-configurator__section wcs-review-section">
+				<div class="wcs-review" aria-live="polite"></div>
 			</section>
-		<?php endforeach; ?>
+		</div>
 
 		<nav class="wcs-configurator__footer" aria-label="<?php esc_attr_e( 'Configurator navigation', 'woo-spiegelloft-configurator' ); ?>">
 			<button type="button" class="button wcs-step-back"><?php esc_html_e( 'Back', 'woo-spiegelloft-configurator' ); ?></button>

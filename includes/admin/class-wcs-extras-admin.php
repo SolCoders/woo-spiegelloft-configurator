@@ -85,8 +85,8 @@ class WCS_Extras_Admin {
 	public function register_submenu(): void {
 		add_submenu_page(
 			'wcs-configurator',
-			__( 'Customization choices', 'woo-spiegelloft-configurator' ),
-			__( 'Customization choices', 'woo-spiegelloft-configurator' ),
+			__( 'Customer Options', 'woo-spiegelloft-configurator' ),
+			__( 'Customer Options', 'woo-spiegelloft-configurator' ),
 			'manage_woocommerce',
 			'wcs-choices',
 			array( $this, 'render_choices_page' )
@@ -94,16 +94,16 @@ class WCS_Extras_Admin {
 
 		add_submenu_page(
 			'wcs-configurator',
-			__( 'Add customization choice', 'woo-spiegelloft-configurator' ),
-			__( 'Add choice', 'woo-spiegelloft-configurator' ),
+			__( 'Add Option', 'woo-spiegelloft-configurator' ),
+			__( 'Add Option', 'woo-spiegelloft-configurator' ),
 			'manage_woocommerce',
 			'post-new.php?post_type=wcs_extra_option'
 		);
 
 		add_submenu_page(
 			'wcs-configurator',
-			__( 'Choice categories', 'woo-spiegelloft-configurator' ),
-			__( 'Choice categories', 'woo-spiegelloft-configurator' ),
+			__( 'Option Groups', 'woo-spiegelloft-configurator' ),
+			__( 'Option Groups', 'woo-spiegelloft-configurator' ),
 			'manage_woocommerce',
 			'edit-tags.php?taxonomy=wcs_extra_group&post_type=wcs_extra_option'
 		);

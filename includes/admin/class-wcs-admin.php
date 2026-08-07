@@ -26,8 +26,8 @@ class WCS_Admin {
 	 */
 	public function register_menu(): void {
 		add_menu_page(
-			__( 'Mirror Customizer', 'woo-spiegelloft-configurator' ),
-			__( 'Mirror Customizer', 'woo-spiegelloft-configurator' ),
+			__( 'Mirror Builder', 'woo-spiegelloft-configurator' ),
+			__( 'Mirror Builder', 'woo-spiegelloft-configurator' ),
 			'manage_woocommerce',
 			'wcs-configurator',
 			array( $this, 'render_dashboard' ),
@@ -37,8 +37,8 @@ class WCS_Admin {
 
 		add_submenu_page(
 			'wcs-configurator',
-			__( 'Getting Started', 'woo-spiegelloft-configurator' ),
-			__( 'Getting Started', 'woo-spiegelloft-configurator' ),
+			__( 'Setup Guide', 'woo-spiegelloft-configurator' ),
+			__( 'Setup Guide', 'woo-spiegelloft-configurator' ),
 			'manage_woocommerce',
 			'wcs-configurator',
 			array( $this, 'render_dashboard' )
