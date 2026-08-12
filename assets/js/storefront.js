@@ -27,6 +27,14 @@
 			}
 		});
 
+		$wrap.find('.wcs-nested-input').each(function () {
+			var key = $(this).data('key');
+			var value = $(this).val();
+			if (key && value !== '') {
+				selections[key] = value;
+			}
+		});
+
 		$wrap.find('.wcs-choice-select').each(function () {
 			var $select = $(this);
 			var group = $select.data('group');
@@ -93,6 +101,10 @@
 			if ($position.length && $position.val()) {
 				lines.push({ label: $select.closest('.wcs-step-option-group').find('.wcs-position-select h3').text() || 'Position', value: cleanOptionText($position.find(':selected').text()) });
 			}
+			var $length = $select.closest('.wcs-step-option-group').find('.wcs-nested-input[data-key="' + group + '.length"]');
+			if ($length.length && $length.val()) {
+				lines.push({ label: 'Length', value: $length.val() + ' mm' });
+			}
 			rows.push(reviewRow(title, lines));
 		});
 
@@ -134,6 +146,35 @@
 		html += '</select></label>';
 		$target.html(html).prop('hidden', false);
 		buildCustomSelect($target.find('select'));
+	}
+
+	function refreshDependentFields($select) {
+		var $group = $select.closest('.wcs-step-option-group');
+		var selected = $select.val() || '';
+		var $length = $group.find('.wcs-nested-input[data-key="' + $select.data('group') + '.length"]');
+
+		if (!$length.length) {
+			return;
+		}
+
+		if (!selected) {
+			$length.val('');
+			$length.closest('.wcs-dependent-field').prop('hidden', true);
+			return;
+		}
+
+		var $wrap = $select.closest('.wcs-configurator');
+		var width = parseFloat($wrap.find('.wcs-dimension-input[data-key="width"]').val());
+		var diameter = parseFloat($wrap.find('.wcs-dimension-input[data-key="diameter"]').val());
+		var max = Math.max(100, (isNaN(diameter) ? width : diameter) - 100);
+
+		if (!isNaN(max)) {
+			$length.attr('max', max);
+		}
+		if (!$length.val()) {
+			$length.val(Math.min(600, max));
+		}
+		$length.closest('.wcs-dependent-field').prop('hidden', false);
 	}
 
 	function syncCustomSelect($select) {
@@ -200,6 +241,9 @@
 
 			activateStep($wrap, 0, false);
 			buildCustomSelect($wrap.find('.wcs-choice-select'));
+			$wrap.find('.wcs-choice-select').each(function () {
+				refreshDependentFields($(this));
+			});
 			collect($wrap);
 		});
 
@@ -216,6 +260,7 @@
 		$(document).on('input change', '.wcs-configurator input, .wcs-configurator select', function () {
 			if ($(this).hasClass('wcs-choice-select')) {
 				refreshPositionSelect($(this));
+				refreshDependentFields($(this));
 			}
 			syncCustomSelect($(this));
 			collect($(this).closest('.wcs-configurator'));

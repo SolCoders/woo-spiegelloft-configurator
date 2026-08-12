@@ -26,9 +26,10 @@ class WCS_Validation_Engine {
 		$enabled_groups = (array) ( $template['enabled_groups'] ?? $template['groups'] ?? array() );
 
 		foreach ( $selections as $group_slug => $value ) {
-			$group_slug = sanitize_key( (string) $group_slug );
+			$group_slug = $this->sanitize_selection_key( (string) $group_slug );
+			$root_slug  = strtok( $group_slug, '.' ) ?: $group_slug;
 
-			if ( ! in_array( $group_slug, $enabled_groups, true ) && ! $this->is_dimension_key( $group_slug ) ) {
+			if ( ! in_array( $root_slug, $enabled_groups, true ) && ! $this->is_dimension_key( $group_slug ) ) {
 				return new WP_Error(
 					'wcs_invalid_group',
 					sprintf(
@@ -37,6 +38,10 @@ class WCS_Validation_Engine {
 						$group_slug
 					)
 				);
+			}
+
+			if ( $root_slug !== $group_slug ) {
+				continue;
 			}
 
 			if ( ! isset( $groups[ $group_slug ] ) ) {
@@ -610,7 +615,7 @@ class WCS_Validation_Engine {
 	public function sanitize_selections( array $selections ): array {
 		$sanitized = array();
 		foreach ( $selections as $key => $value ) {
-			$key = sanitize_key( (string) $key );
+			$key = $this->sanitize_selection_key( (string) $key );
 			if ( is_array( $value ) ) {
 				$sanitized[ $key ] = $this->sanitize_selection_array( $value );
 			} else {
@@ -618,6 +623,15 @@ class WCS_Validation_Engine {
 			}
 		}
 		return $sanitized;
+	}
+
+	/**
+	 * Sanitize a selection key while preserving rule dot paths.
+	 *
+	 * @param string $key Raw key.
+	 */
+	private function sanitize_selection_key( string $key ): string {
+		return preg_replace( '/[^a-z0-9_.-]/', '', strtolower( $key ) ) ?? '';
 	}
 
 	/**
@@ -629,7 +643,7 @@ class WCS_Validation_Engine {
 	private function sanitize_selection_array( array $value ): array {
 		$sanitized = array();
 		foreach ( $value as $item_key => $item_value ) {
-			$key = is_string( $item_key ) ? sanitize_key( $item_key ) : $item_key;
+			$key = is_string( $item_key ) ? $this->sanitize_selection_key( $item_key ) : $item_key;
 			if ( is_array( $item_value ) ) {
 				$sanitized[ $key ] = $this->sanitize_selection_array( $item_value );
 				continue;

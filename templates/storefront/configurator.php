@@ -151,6 +151,16 @@ foreach ( $steps as $step ) {
 							data-position-options="<?php echo esc_attr( wp_json_encode( (array) ( $group['position_config']['options'] ?? array() ) ) ); ?>"
 							hidden
 						></div>
+						<?php if ( 'glass_shelf' === $group_slug ) : ?>
+							<label class="wcs-dependent-field wcs-shelf-length" hidden>
+								<span>
+									<?php esc_html_e( 'Shelf length', 'woo-spiegelloft-configurator' ); ?>
+									<small><?php esc_html_e( '100 mm minimum', 'woo-spiegelloft-configurator' ); ?></small>
+								</span>
+								<input type="number" class="wcs-nested-input" data-key="glass_shelf.length" min="100" step="1">
+								<em><?php esc_html_e( 'mm', 'woo-spiegelloft-configurator' ); ?></em>
+							</label>
+						<?php endif; ?>
 					</div>
 				<?php endforeach; ?>
 				</section>

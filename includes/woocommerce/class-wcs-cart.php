@@ -249,6 +249,19 @@ class WCS_Cart {
 				'price' => (float) ( $option['price'] ?? 0 ),
 			);
 
+			$length_key = (string) $group_slug . '.length';
+			if ( isset( $selections[ $length_key ] ) && '' !== (string) $selections[ $length_key ] ) {
+				$items[] = array(
+					'label' => sprintf(
+						/* translators: %s: option group title */
+						__( '%s length', 'woo-spiegelloft-configurator' ),
+						(string) ( $group['title'] ?? ucwords( str_replace( '_', ' ', (string) $group_slug ) ) )
+					),
+					'value' => (string) $selections[ $length_key ] . ' mm',
+					'price' => 0,
+				);
+			}
+
 			$position_key = (string) $group_slug . '_position';
 			if ( ! empty( $selections[ $position_key ] ) ) {
 				$items[] = array(
