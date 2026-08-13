@@ -15,7 +15,14 @@
 
 	function updateImagePreview($input) {
 		var url = $input.val();
-		var $preview = $input.closest('.wcs-image-picker, .wcs-image-field').find('.wcs-image-preview');
+		var $field = $input.closest('.wcs-image-picker, .wcs-image-field');
+		var $square = $field.find('.wcs-image-square');
+		if ($square.length) {
+			$square.toggleClass('has-image', !!url).html(url ? '<img src="' + url + '" alt="">' : '<span aria-hidden="true">+</span>');
+			$field.find('.wcs-remove-image').prop('hidden', !url);
+			return;
+		}
+		var $preview = $field.find('.wcs-image-preview');
 		if (!$preview.length) {
 			$preview = $('<div class="wcs-image-preview"></div>').insertAfter($input);
 		}
@@ -51,6 +58,13 @@
 
 		$(document).on('change', '.wcs-image-url', function () {
 			updateImagePreview($(this));
+		});
+
+		$(document).on('click', '.wcs-remove-image', function (e) {
+			e.preventDefault();
+			e.stopPropagation();
+			var $input = $(this).closest('.wcs-image-field').find('.wcs-image-url');
+			$input.val('').trigger('change');
 		});
 	}
 
@@ -276,6 +290,7 @@
 		} else {
 			if ($input.hasClass('wcs-customer-field-option-label')) suffix = '[label]';
 			else if ($input.hasClass('wcs-customer-field-option-value')) suffix = '[value]';
+			else if ($input.hasClass('wcs-image-url')) suffix = '[image]';
 			else if ($input.hasClass('wcs-customer-field-option-price')) suffix = '[price]';
 			else suffix = '[nested_enabled]';
 		}
@@ -301,6 +316,8 @@
 		var $template = $field.children('.wcs-customer-field-options').children('.wcs-customer-field-option').first().clone();
 		$template.find('input[type="text"]').val('');
 		$template.find('input[type="checkbox"]').prop('checked', false);
+		$template.find('.wcs-image-url').val('').trigger('change');
+		$template.find('.wcs-image-preview').empty();
 		$template.find('> .wcs-customer-option-position-fields > .wcs-customer-field-list > .wcs-customer-field-row').remove();
 		$template.removeClass('has-nested-fields is-enabled').find('.wcs-customer-option-position').removeClass('is-enabled');
 		return $template;

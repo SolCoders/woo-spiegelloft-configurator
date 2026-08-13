@@ -44,7 +44,9 @@ class WCS_Extras_Admin {
 	 */
 	public function register(): void {
 		add_action( 'admin_menu', array( $this, 'register_submenu' ), 20 );
+		add_action( 'admin_init', array( $this, 'redirect_legacy_choices_page' ) );
 		add_action( 'init', array( $this, 'register_post_type_labels' ), 15 );
+		add_action( 'admin_head-edit.php', array( $this, 'hide_add_new_choice_button' ) );
 		add_filter( 'manage_wcs_extra_option_posts_columns', array( $this, 'list_columns' ) );
 		add_action( 'manage_wcs_extra_option_posts_custom_column', array( $this, 'render_list_column' ), 10, 2 );
 		add_action( 'restrict_manage_posts', array( $this, 'taxonomy_filter_dropdown' ) );
@@ -88,48 +90,32 @@ class WCS_Extras_Admin {
 			__( 'Customer Options', 'woo-spiegelloft-configurator' ),
 			__( 'Customer Options', 'woo-spiegelloft-configurator' ),
 			'manage_woocommerce',
-			'wcs-choices',
-			array( $this, 'render_choices_page' )
-		);
-
-		add_submenu_page(
-			'wcs-configurator',
-			__( 'Add Option', 'woo-spiegelloft-configurator' ),
-			__( 'Add Option', 'woo-spiegelloft-configurator' ),
-			'manage_woocommerce',
-			'post-new.php?post_type=wcs_extra_option'
-		);
-
-		add_submenu_page(
-			'wcs-configurator',
-			__( 'Option Groups', 'woo-spiegelloft-configurator' ),
-			__( 'Option Groups', 'woo-spiegelloft-configurator' ),
-			'manage_woocommerce',
-			'edit-tags.php?taxonomy=wcs_extra_group&post_type=wcs_extra_option'
+			'edit.php?post_type=wcs_extra_option'
 		);
 	}
 
 	/**
-	 * Render category-first customization choices page.
+	 * Hide the native Add New button on the choices list.
 	 */
-	public function render_choices_page(): void {
-		if ( ! current_user_can( 'manage_woocommerce' ) ) {
-			wp_die( esc_html__( 'You do not have permission to view this page.', 'woo-spiegelloft-configurator' ) );
+	public function hide_add_new_choice_button(): void {
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( ! $screen || 'wcs_extra_option' !== ( $screen->post_type ?? '' ) ) {
+			return;
 		}
 
-		$all_groups    = $this->registry->get_groups();
-		$group_options = array();
-		$group_position_settings = get_option( 'wcs_group_position_settings', array() );
-		$group_position_settings = is_array( $group_position_settings ) ? $group_position_settings : array();
-		$total_options = 0;
+		echo '<style>.post-type-wcs_extra_option .page-title-action{display:none!important;}</style>';
+	}
 
-		foreach ( array_keys( $all_groups ) as $group_slug ) {
-			$options                     = $this->catalog->get_options_by_group( $group_slug );
-			$group_options[ $group_slug ] = $options;
-			$total_options              += count( $options );
+	/**
+	 * Redirect the removed category-first choices page to the native CPT list.
+	 */
+	public function redirect_legacy_choices_page(): void {
+		if ( ! is_admin() || empty( $_GET['page'] ) || 'wcs-choices' !== sanitize_key( wp_unslash( (string) $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return;
 		}
 
-		include WCS_PLUGIN_DIR . 'templates/admin/choices-categories-page.php';
+		wp_safe_redirect( admin_url( 'edit.php?post_type=wcs_extra_option' ) );
+		exit;
 	}
 
 	/**

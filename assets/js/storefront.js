@@ -218,6 +218,9 @@
 					var price = parseFloat(option.price) || 0;
 					var nestedFields = option.customer_fields ? JSON.stringify(option.customer_fields || []) : '';
 					html += '<option value="' + escapeHtml(option.value || '') + '" data-price="' + escapeHtml(price) + '"';
+					if (option.image) {
+						html += ' data-image="' + escapeHtml(option.image) + '"';
+					}
 					if (nestedFields) {
 						html += ' data-customer-fields="' + escapeHtml(nestedFields) + '"';
 					}
@@ -279,7 +282,9 @@
 				var $option = $(this);
 				var disabled = $option.is(':disabled') || $option.data('required-message');
 				var message = $option.data('required-message') || $option.attr('title') || 'This option requires additional conditions.';
+				var image = $option.data('image') || '';
 				optionsHtml += '<button type="button" class="wcs-custom-select__option' + (disabled ? ' is-disabled' : '') + '" data-value="' + escapeHtml($option.val()) + '">' +
+					(image ? '<img src="' + escapeHtml(image) + '" alt="">' : '') +
 					'<span>' + escapeHtml(cleanOptionText($option.text()) || '---') + '</span>' +
 					($option.is(':selected') ? '<b aria-hidden="true">✓</b>' : '<b aria-hidden="true">✓</b>') +
 					(disabled ? '<em>' + escapeHtml(message) + '</em>' : '') +

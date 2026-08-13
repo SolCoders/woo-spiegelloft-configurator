@@ -505,6 +505,7 @@ class WCS_Config_Builder {
 		$row = array(
 			'label' => $label,
 			'value' => $value,
+			'image' => (string) ( $option['image'] ?? '' ),
 			'price' => (float) ( $option['price'] ?? 0 ),
 		);
 

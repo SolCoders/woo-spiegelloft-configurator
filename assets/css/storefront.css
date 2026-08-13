@@ -395,8 +395,9 @@
 
 .wcs-custom-select__option {
 	display: grid;
-	grid-template-columns: 1fr 18px;
+	grid-template-columns: auto 1fr 18px;
 	gap: 12px;
+	align-items: center;
 	width: 100%;
 	min-height: 43px;
 	padding: 10px 16px;
@@ -406,6 +407,14 @@
 	font-size: 14px;
 	text-align: left;
 	cursor: pointer;
+}
+
+.wcs-custom-select__option img {
+	width: 42px;
+	height: 42px;
+	border-radius: 4px;
+	object-fit: cover;
+	background: #f3f4f6;
 }
 
 .wcs-custom-select__option:hover,

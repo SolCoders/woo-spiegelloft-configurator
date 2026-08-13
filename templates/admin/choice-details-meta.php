@@ -10,7 +10,6 @@
  * @var int                                $legacy_id   Legacy Shopify ID.
  * @var string                             $slug        Internal value slug.
  * @var string                             $price       Price string.
- * @var string                             $image       Image URL.
  * @var string                             $value       Option value slug.
  */
 
@@ -40,19 +39,6 @@ $name = (string) ( $option_data['name'] ?? '' );
 		<label for="wcs_price"><strong><?php esc_html_e( 'Price', 'woo-spiegelloft-configurator' ); ?></strong></label>
 		<input type="text" class="regular-text" name="wcs_price" id="wcs_price" value="<?php echo esc_attr( $price ); ?>" placeholder="0.00">
 	</p>
-
-	<div class="wcs-field wcs-image-field">
-		<label for="wcs_image"><strong><?php esc_html_e( 'Image', 'woo-spiegelloft-configurator' ); ?></strong></label>
-		<div class="wcs-image-picker">
-			<input type="text" class="widefat wcs-image-url" name="wcs_image" id="wcs_image" value="<?php echo esc_attr( $image ); ?>">
-			<button type="button" class="button wcs-upload-image"><?php esc_html_e( 'Choose image', 'woo-spiegelloft-configurator' ); ?></button>
-			<div class="wcs-image-preview">
-				<?php if ( $image ) : ?>
-					<img src="<?php echo esc_url( $image ); ?>" alt="">
-				<?php endif; ?>
-			</div>
-		</div>
-	</div>
 
 	<details class="wcs-advanced">
 		<summary><?php esc_html_e( 'Advanced settings', 'woo-spiegelloft-configurator' ); ?></summary>

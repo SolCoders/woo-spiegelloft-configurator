@@ -199,7 +199,6 @@ class WCS_Choice_Meta {
 		$name  = isset( $_POST['wcs_option_name'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['wcs_option_name'] ) ) : get_the_title( $post_id );
 		$value = isset( $_POST['wcs_option_value'] ) ? sanitize_title( wp_unslash( (string) $_POST['wcs_option_value'] ) ) : '';
 		$price = isset( $_POST['wcs_price'] ) ? wc_format_decimal( wp_unslash( (string) $_POST['wcs_price'] ) ) : '0';
-		$image = isset( $_POST['wcs_image'] ) ? esc_url_raw( wp_unslash( (string) $_POST['wcs_image'] ) ) : '';
 
 		if ( $name && $name !== get_the_title( $post_id ) ) {
 			wp_update_post(
@@ -216,7 +215,6 @@ class WCS_Choice_Meta {
 			'name'  => $name,
 			'value' => $value,
 			'price' => (float) $price,
-			'image' => $image,
 		);
 
 		$customer_fields_raw = isset( $_POST['wcs_customer_fields'] ) ? wp_unslash( $_POST['wcs_customer_fields'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
@@ -242,7 +240,6 @@ class WCS_Choice_Meta {
 		update_post_meta( $post_id, '_wcs_option_data', $option_data );
 		update_post_meta( $post_id, '_wcs_option_slug', $value );
 		update_post_meta( $post_id, '_wcs_price', $price );
-		update_post_meta( $post_id, '_wcs_image', $image );
 		update_post_meta( $post_id, '_wcs_legacy_id', $legacy_id );
 	}
 
@@ -349,6 +346,7 @@ class WCS_Choice_Meta {
 			$options[] = array(
 				'label' => $label ?: $value,
 				'value' => $value,
+				'image' => esc_url_raw( (string) ( $option['image'] ?? '' ) ),
 				'price' => $price_enabled ? (float) wc_format_decimal( (string) ( $option['price'] ?? '0' ) ) : 0,
 			) + $this->sanitize_nested_customer_fields_for_option( $option );
 		}
