@@ -531,9 +531,10 @@
 
 .wcs-customer-field-grid {
 	display: grid;
-	grid-template-columns: minmax(130px, 1fr) 150px minmax(110px, 0.75fr) minmax(120px, 0.85fr) 70px 82px 70px 86px 118px;
+	grid-template-columns: minmax(0, 1.15fr) minmax(120px, 150px) minmax(0, 0.8fr) minmax(0, 0.85fr) 70px 76px 54px 66px 76px;
 	gap: 8px;
 	align-items: center;
+	min-width: 0;
 }
 
 .wcs-customer-field-grid input[type="text"],
@@ -541,6 +542,7 @@
 .wcs-customer-field-grid select,
 .wcs-customer-field-option input[type="text"] {
 	min-height: 38px;
+	min-width: 0;
 	width: 100%;
 	border-color: #d7dce3;
 	border-radius: 4px;
@@ -551,24 +553,35 @@
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
+	min-width: 0;
+	margin: 0;
+	white-space: nowrap;
+}
+
+.wcs-customer-field-grid label input[type="checkbox"] {
+	flex: 0 0 auto;
 	margin: 0;
 }
 
 .wcs-customer-field-add,
 .wcs-customer-field-remove {
 	min-height: 34px;
+	min-width: 0;
 	align-self: center;
+	justify-self: stretch;
+	overflow: hidden;
+	white-space: nowrap;
 }
 
 .wcs-customer-field-grid .wcs-customer-field-add {
-	max-width: 86px;
-	padding: 0 8px;
+	max-width: none;
+	padding: 0 6px;
 	font-size: 12px;
 }
 
 .wcs-customer-field-remove {
-	max-width: 118px;
-	padding: 0 10px;
+	max-width: none;
+	padding: 0 6px;
 	font-size: 12px;
 }
 
@@ -686,6 +699,11 @@
 
 .wcs-customer-option-position-fields .wcs-customer-field-row {
 	background: #fff;
+}
+
+.wcs-customer-option-position-fields .wcs-customer-field-grid {
+	grid-template-columns: minmax(0, 1.05fr) minmax(116px, 140px) minmax(0, 0.78fr) minmax(0, 0.78fr) 70px 72px 52px 64px 74px;
+	gap: 7px;
 }
 
 @media (max-width: 960px) {

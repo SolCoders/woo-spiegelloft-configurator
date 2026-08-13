@@ -310,6 +310,9 @@
 		$(document).on('click', '.wcs-customer-field-add', function (e) {
 			e.preventDefault();
 			var $list = $(this).closest('.wcs-customer-field-list');
+			if (!$list.length) {
+				$list = $(this).closest('.wcs-customer-fields').children('.wcs-customer-field-list');
+			}
 			$list.append(buildCustomerFieldRow($list));
 			reindexCustomerFields();
 		});
