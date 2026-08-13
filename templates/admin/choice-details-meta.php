@@ -12,9 +12,7 @@
  * @var string                             $price       Price string.
  * @var string                             $image       Image URL.
  * @var string                             $value       Option value slug.
- * @var bool                               $position_enabled Whether position choices are enabled.
- * @var string                             $position_label Position field label.
- * @var array<int, array<string, string>>  $position_options Position option rows.
+ * @var array<int, array<string, mixed>>   $customer_fields Conditional customer field rows.
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -57,34 +55,60 @@ $name = (string) ( $option_data['name'] ?? '' );
 		</div>
 	</div>
 
-	<div class="wcs-field wcs-position-settings wcs-group-positions <?php echo $position_enabled ? 'is-enabled' : ''; ?>">
-		<div class="wcs-inline-position-head">
-			<label class="wcs-inline-position-toggle wcs-position-toggle">
-				<input type="checkbox" name="wcs_position_enabled" value="1" <?php checked( $position_enabled ); ?>>
-				<span>
-					<strong><?php esc_html_e( 'Position dropdown', 'woo-spiegelloft-configurator' ); ?></strong>
-					<small><?php esc_html_e( 'Show a position selector when this choice is selected.', 'woo-spiegelloft-configurator' ); ?></small>
-				</span>
-			</label>
-		</div>
-		<div class="wcs-position-fields wcs-inline-position-fields">
-			<input type="text" class="wcs-inline-position-label" name="wcs_position_label" value="<?php echo esc_attr( $position_label ); ?>" placeholder="<?php esc_attr_e( 'Position label', 'woo-spiegelloft-configurator' ); ?>">
-			<div class="wcs-position-options wcs-inline-position-options">
-				<div class="wcs-inline-position-options-title"><?php esc_html_e( 'Dropdown values', 'woo-spiegelloft-configurator' ); ?></div>
-				<?php
-				$rows = ! empty( $position_options ) ? $position_options : array( array( 'label' => '', 'value' => '' ) );
-				foreach ( $rows as $index => $row ) :
-					$row_label = (string) ( $row['label'] ?? '' );
-					$row_value = (string) ( $row['value'] ?? '' );
-					?>
-					<div class="wcs-position-row wcs-inline-position-option">
-						<input type="text" name="wcs_position_options[<?php echo esc_attr( (string) $index ); ?>][label]" value="<?php echo esc_attr( $row_label ); ?>" placeholder="<?php esc_attr_e( 'top center', 'woo-spiegelloft-configurator' ); ?>">
-						<input type="text" name="wcs_position_options[<?php echo esc_attr( (string) $index ); ?>][value]" value="<?php echo esc_attr( $row_value ); ?>" placeholder="<?php esc_attr_e( 'top-center', 'woo-spiegelloft-configurator' ); ?>">
-						<button type="button" class="button wcs-position-add" aria-label="<?php esc_attr_e( 'Add position', 'woo-spiegelloft-configurator' ); ?>">+</button>
-						<button type="button" class="button wcs-position-remove" aria-label="<?php esc_attr_e( 'Remove position', 'woo-spiegelloft-configurator' ); ?>">-</button>
-					</div>
-				<?php endforeach; ?>
+	<div class="wcs-field wcs-customer-fields">
+		<div class="wcs-customer-fields__head">
+			<div>
+				<strong><?php esc_html_e( 'Customer fields', 'woo-spiegelloft-configurator' ); ?></strong>
+				<p><?php esc_html_e( 'Show extra fields on the storefront only when this choice is selected.', 'woo-spiegelloft-configurator' ); ?></p>
 			</div>
+			<button type="button" class="button wcs-customer-field-add"><?php esc_html_e( 'Add field', 'woo-spiegelloft-configurator' ); ?></button>
+		</div>
+		<div class="wcs-customer-field-list">
+			<?php
+			$field_rows = ! empty( $customer_fields ) ? $customer_fields : array(
+				array(
+					'label'         => '',
+					'key'           => '',
+					'type'          => 'dropdown',
+					'required'      => false,
+					'price_enabled' => false,
+					'placeholder'   => '',
+					'options'       => array( array( 'label' => '', 'value' => '', 'price' => '' ) ),
+				),
+			);
+			foreach ( $field_rows as $field_index => $field ) :
+				$field_type    = 'text' === (string) ( $field['type'] ?? 'dropdown' ) ? 'text' : 'dropdown';
+				$field_options = ! empty( $field['options'] ) && is_array( $field['options'] )
+					? (array) $field['options']
+					: array( array( 'label' => '', 'value' => '', 'price' => '' ) );
+				?>
+				<div class="wcs-customer-field-row" data-field-index="<?php echo esc_attr( (string) $field_index ); ?>">
+					<div class="wcs-customer-field-grid">
+						<input type="text" class="wcs-customer-field-label" name="wcs_customer_fields[<?php echo esc_attr( (string) $field_index ); ?>][label]" value="<?php echo esc_attr( (string) ( $field['label'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'Field label', 'woo-spiegelloft-configurator' ); ?>">
+						<select class="wcs-customer-field-type" name="wcs_customer_fields[<?php echo esc_attr( (string) $field_index ); ?>][type]">
+							<option value="dropdown" <?php selected( $field_type, 'dropdown' ); ?>><?php esc_html_e( 'Dropdown', 'woo-spiegelloft-configurator' ); ?></option>
+							<option value="text" <?php selected( $field_type, 'text' ); ?>><?php esc_html_e( 'Text / number input', 'woo-spiegelloft-configurator' ); ?></option>
+						</select>
+						<input type="text" class="wcs-customer-field-key" name="wcs_customer_fields[<?php echo esc_attr( (string) $field_index ); ?>][key]" value="<?php echo esc_attr( (string) ( $field['key'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'internal-key', 'woo-spiegelloft-configurator' ); ?>">
+						<input type="text" class="wcs-customer-field-placeholder" name="wcs_customer_fields[<?php echo esc_attr( (string) $field_index ); ?>][placeholder]" value="<?php echo esc_attr( (string) ( $field['placeholder'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'Placeholder', 'woo-spiegelloft-configurator' ); ?>">
+						<label><input type="checkbox" name="wcs_customer_fields[<?php echo esc_attr( (string) $field_index ); ?>][required]" value="1" <?php checked( ! empty( $field['required'] ) ); ?>> <?php esc_html_e( 'Required', 'woo-spiegelloft-configurator' ); ?></label>
+						<label class="wcs-customer-field-price-toggle"><input type="checkbox" name="wcs_customer_fields[<?php echo esc_attr( (string) $field_index ); ?>][price_enabled]" value="1" <?php checked( ! empty( $field['price_enabled'] ) ); ?>> <?php esc_html_e( 'Prices on dropdown values', 'woo-spiegelloft-configurator' ); ?></label>
+						<button type="button" class="button wcs-customer-field-remove"><?php esc_html_e( 'Remove field', 'woo-spiegelloft-configurator' ); ?></button>
+					</div>
+					<div class="wcs-customer-field-options">
+						<div class="wcs-inline-position-options-title"><?php esc_html_e( 'Dropdown values', 'woo-spiegelloft-configurator' ); ?></div>
+						<?php foreach ( $field_options as $option_index => $field_option ) : ?>
+							<div class="wcs-customer-field-option">
+								<input type="text" class="wcs-customer-field-option-label" name="wcs_customer_fields[<?php echo esc_attr( (string) $field_index ); ?>][options][<?php echo esc_attr( (string) $option_index ); ?>][label]" value="<?php echo esc_attr( (string) ( $field_option['label'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'top center', 'woo-spiegelloft-configurator' ); ?>">
+								<input type="text" class="wcs-customer-field-option-value" name="wcs_customer_fields[<?php echo esc_attr( (string) $field_index ); ?>][options][<?php echo esc_attr( (string) $option_index ); ?>][value]" value="<?php echo esc_attr( (string) ( $field_option['value'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'top-center', 'woo-spiegelloft-configurator' ); ?>">
+								<input type="text" class="wcs-customer-field-option-price" name="wcs_customer_fields[<?php echo esc_attr( (string) $field_index ); ?>][options][<?php echo esc_attr( (string) $option_index ); ?>][price]" value="<?php echo esc_attr( (string) ( $field_option['price'] ?? '' ) ); ?>" placeholder="0.00">
+								<button type="button" class="button wcs-customer-option-add" aria-label="<?php esc_attr_e( 'Add value', 'woo-spiegelloft-configurator' ); ?>">+</button>
+								<button type="button" class="button wcs-customer-option-remove" aria-label="<?php esc_attr_e( 'Remove value', 'woo-spiegelloft-configurator' ); ?>">-</button>
+							</div>
+						<?php endforeach; ?>
+					</div>
+				</div>
+			<?php endforeach; ?>
 		</div>
 	</div>
 

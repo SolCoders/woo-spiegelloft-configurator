@@ -163,6 +163,9 @@ class WCS_Validation_Engine {
 		$target_actual = $this->get_rule_target_value( $selections, $target, $target_value, $target_type );
 
 		if ( 'require' === $then && $target && $this->is_empty_selection( $target_actual ) ) {
+			if ( $this->is_superseded_by_customer_field( $selections, $target, $option_lookup ) ) {
+				return true;
+			}
 			return new WP_Error(
 				'wcs_rule_failed',
 				sprintf(
@@ -261,6 +264,9 @@ class WCS_Validation_Engine {
 
 		$actual = $this->get_selection_path_value( $selections, $target_path );
 		if ( $this->is_empty_selection( $actual ) || ! is_numeric( $actual ) ) {
+			if ( $this->is_superseded_by_customer_field( $selections, $target_path, (array) ( $template['_option_lookup'] ?? array() ) ) ) {
+				return true;
+			}
 			return $this->range_error( $target_path, $rule, __( 'Invalid numeric value for %s.', 'woo-spiegelloft-configurator' ) );
 		}
 
@@ -558,6 +564,35 @@ class WCS_Validation_Engine {
 			),
 			true
 		);
+	}
+
+	/**
+	 * Determine whether a legacy group.field rule is handled by a selected option field.
+	 *
+	 * @param array<string, mixed> $selections    Selections.
+	 * @param string               $target_path   Legacy target path.
+	 * @param array<string, mixed> $option_lookup Option lookup.
+	 */
+	private function is_superseded_by_customer_field( array $selections, string $target_path, array $option_lookup ): bool {
+		$parts = explode( '.', $target_path );
+		if ( 2 !== count( $parts ) ) {
+			return false;
+		}
+
+		$group_slug = $parts[0];
+		$field_key  = $parts[1];
+		$selected   = (string) ( $selections[ $group_slug ] ?? '' );
+		if ( '' === $selected || empty( $option_lookup[ $group_slug ][ $selected ]['data']['customer_fields'] ) ) {
+			return false;
+		}
+
+		foreach ( (array) $option_lookup[ $group_slug ][ $selected ]['data']['customer_fields'] as $field ) {
+			if ( is_array( $field ) && sanitize_key( (string) ( $field['key'] ?? '' ) ) === sanitize_key( $field_key ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

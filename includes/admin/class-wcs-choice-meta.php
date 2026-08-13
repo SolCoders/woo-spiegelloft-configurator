@@ -133,11 +133,7 @@ class WCS_Choice_Meta {
 		$price       = (string) ( $option_data['price'] ?? get_post_meta( $post->ID, '_wcs_price', true ) );
 		$image       = (string) ( $option_data['image'] ?? get_post_meta( $post->ID, '_wcs_image', true ) );
 		$value       = (string) ( $option_data['value'] ?? $slug );
-		$position_enabled = ! empty( $option_data['position_enabled'] );
-		$position_label   = (string) ( $option_data['position_label'] ?? '' );
-		$position_options = isset( $option_data['position_options'] ) && is_array( $option_data['position_options'] )
-			? $option_data['position_options']
-			: array();
+		$customer_fields = $this->get_customer_fields_for_admin( $option_data );
 
 		include WCS_PLUGIN_DIR . 'templates/admin/choice-details-meta.php';
 	}
@@ -203,34 +199,10 @@ class WCS_Choice_Meta {
 			'image' => $image,
 		);
 
-		$position_enabled = ! empty( $_POST['wcs_position_enabled'] );
-		$position_label   = isset( $_POST['wcs_position_label'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['wcs_position_label'] ) ) : '';
-		$position_raw     = isset( $_POST['wcs_position_options'] ) ? wp_unslash( $_POST['wcs_position_options'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		$positions        = array();
-		if ( $position_enabled && is_array( $position_raw ) ) {
-			foreach ( $position_raw as $row ) {
-				if ( ! is_array( $row ) ) {
-					continue;
-				}
-				$label = sanitize_text_field( (string) ( $row['label'] ?? '' ) );
-				$value_slug = sanitize_title( (string) ( $row['value'] ?? $label ) );
-				if ( '' === $label && '' === $value_slug ) {
-					continue;
-				}
-				$positions[] = array(
-					'label' => $label ?: $value_slug,
-					'value' => $value_slug,
-				);
-			}
-		}
-		if ( $position_enabled && ! empty( $positions ) ) {
-			$option_data['position_enabled'] = true;
-			$option_data['position_label']   = $position_label ?: sprintf(
-				/* translators: %s: choice label */
-				__( 'Position of the %s', 'woo-spiegelloft-configurator' ),
-				$name
-			);
-			$option_data['position_options'] = $positions;
+		$customer_fields_raw = isset( $_POST['wcs_customer_fields'] ) ? wp_unslash( $_POST['wcs_customer_fields'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$customer_fields     = $this->sanitize_customer_fields( $customer_fields_raw );
+		if ( ! empty( $customer_fields ) ) {
+			$option_data['customer_fields'] = $customer_fields;
 		}
 
 		$group_def = $group_slug ? $this->registry->get_group( $group_slug ) : null;
@@ -252,6 +224,114 @@ class WCS_Choice_Meta {
 		update_post_meta( $post_id, '_wcs_price', $price );
 		update_post_meta( $post_id, '_wcs_image', $image );
 		update_post_meta( $post_id, '_wcs_legacy_id', $legacy_id );
+	}
+
+	/**
+	 * Return new customer fields, or adapt legacy per-choice position settings.
+	 *
+	 * @param array<string, mixed> $option_data Option data.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function get_customer_fields_for_admin( array $option_data ): array {
+		if ( ! empty( $option_data['customer_fields'] ) && is_array( $option_data['customer_fields'] ) ) {
+			return array_values( $option_data['customer_fields'] );
+		}
+
+		if ( empty( $option_data['position_enabled'] ) || empty( $option_data['position_options'] ) || ! is_array( $option_data['position_options'] ) ) {
+			return array();
+		}
+
+		return array(
+			array(
+				'label'       => (string) ( $option_data['position_label'] ?? __( 'Position', 'woo-spiegelloft-configurator' ) ),
+				'key'         => 'position',
+				'type'        => 'dropdown',
+				'required'    => false,
+				'price_enabled' => false,
+				'placeholder' => '',
+				'options'     => array_values( $option_data['position_options'] ),
+			),
+		);
+	}
+
+	/**
+	 * Sanitize merchant-defined conditional customer fields.
+	 *
+	 * @param mixed $raw Raw field rows.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function sanitize_customer_fields( $raw ): array {
+		if ( ! is_array( $raw ) ) {
+			return array();
+		}
+
+		$fields = array();
+		foreach ( $raw as $field ) {
+			if ( ! is_array( $field ) ) {
+				continue;
+			}
+
+			$label = sanitize_text_field( (string) ( $field['label'] ?? '' ) );
+			$key   = sanitize_title( (string) ( $field['key'] ?? $label ) );
+			$type  = 'text' === (string) ( $field['type'] ?? 'dropdown' ) ? 'text' : 'dropdown';
+			if ( '' === $label && '' === $key ) {
+				continue;
+			}
+
+			$row = array(
+				'label'       => $label ?: ucwords( str_replace( '-', ' ', $key ) ),
+				'key'         => $key,
+				'type'        => $type,
+				'required'    => ! empty( $field['required'] ),
+				'placeholder' => sanitize_text_field( (string) ( $field['placeholder'] ?? '' ) ),
+			);
+
+			if ( 'dropdown' === $type ) {
+				$row['price_enabled'] = ! empty( $field['price_enabled'] );
+				$row['options']       = $this->sanitize_customer_field_options( $field['options'] ?? array(), ! empty( $row['price_enabled'] ) );
+				if ( empty( $row['options'] ) ) {
+					continue;
+				}
+			}
+
+			$fields[] = $row;
+		}
+
+		return $fields;
+	}
+
+	/**
+	 * Sanitize dropdown values for a customer field.
+	 *
+	 * @param mixed $raw           Raw option rows.
+	 * @param bool  $price_enabled Whether row prices are active.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function sanitize_customer_field_options( $raw, bool $price_enabled ): array {
+		if ( ! is_array( $raw ) ) {
+			return array();
+		}
+
+		$options = array();
+		foreach ( $raw as $option ) {
+			if ( ! is_array( $option ) ) {
+				continue;
+			}
+
+			$label = sanitize_text_field( (string) ( $option['label'] ?? '' ) );
+			$value = sanitize_title( (string) ( $option['value'] ?? $label ) );
+			if ( '' === $label && '' === $value ) {
+				continue;
+			}
+
+			$options[] = array(
+				'label' => $label ?: $value,
+				'value' => $value,
+				'price' => $price_enabled ? (float) wc_format_decimal( (string) ( $option['price'] ?? '0' ) ) : 0,
+			);
+		}
+
+		return $options;
 	}
 
 	/**

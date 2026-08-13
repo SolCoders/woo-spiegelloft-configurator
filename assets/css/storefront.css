@@ -157,6 +157,37 @@
 	margin-top: 36px;
 }
 
+.wcs-customer-field-target {
+	display: grid;
+	gap: 16px;
+	margin-top: 22px;
+}
+
+.wcs-customer-field {
+	display: grid;
+	gap: 8px;
+	margin: 0;
+}
+
+.wcs-customer-field__label {
+	color: #020617;
+	font-size: 13px;
+	font-weight: 700;
+}
+
+.wcs-customer-field input,
+.wcs-customer-field select {
+	width: 100%;
+	height: 47px;
+	min-height: 47px;
+	padding: 0 17px;
+	border: 1px solid #d7dce3;
+	border-radius: 999px;
+	background-color: #fff;
+	color: #020617;
+	font-size: 14px;
+}
+
 .wcs-option-heading {
 	display: flex;
 	align-items: center;

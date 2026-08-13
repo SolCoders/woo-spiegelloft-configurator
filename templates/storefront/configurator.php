@@ -84,7 +84,7 @@ foreach ( $steps as $step ) {
 						<select class="wcs-choice-select" data-group="<?php echo esc_attr( $group_slug ); ?>">
 							<option value=""><?php esc_html_e( 'Please select', 'woo-spiegelloft-configurator' ); ?></option>
 							<?php foreach ( $options as $option ) : ?>
-								<option value="<?php echo esc_attr( (string) ( $option['value'] ?? '' ) ); ?>" data-price="<?php echo esc_attr( (string) ( $option['price'] ?? 0 ) ); ?>">
+								<option value="<?php echo esc_attr( (string) ( $option['value'] ?? '' ) ); ?>" data-price="<?php echo esc_attr( (string) ( $option['price'] ?? 0 ) ); ?>" data-customer-fields="<?php echo esc_attr( wp_json_encode( (array) ( $option['customer_fields'] ?? array() ) ) ); ?>">
 									<?php echo esc_html( (string) ( $option['name'] ?? $option['value'] ?? '' ) ); ?>
 									<?php if ( ! empty( $option['price'] ) ) : ?>
 										<?php echo esc_html( ' +' . wp_strip_all_tags( wc_price( (float) $option['price'] ) ) ); ?>
@@ -101,6 +101,7 @@ foreach ( $steps as $step ) {
 						data-position-options="<?php echo esc_attr( wp_json_encode( (array) ( $group['position_config']['options'] ?? array() ) ) ); ?>"
 						hidden
 					></div>
+					<div class="wcs-customer-field-target" hidden></div>
 				</div>
 			<?php endforeach; ?>
 			</section>
@@ -134,7 +135,7 @@ foreach ( $steps as $step ) {
 							<select class="wcs-choice-select" data-group="<?php echo esc_attr( $group_slug ); ?>">
 								<option value=""><?php esc_html_e( 'Please select', 'woo-spiegelloft-configurator' ); ?></option>
 								<?php foreach ( $options as $option ) : ?>
-									<option value="<?php echo esc_attr( (string) ( $option['value'] ?? '' ) ); ?>" data-price="<?php echo esc_attr( (string) ( $option['price'] ?? 0 ) ); ?>">
+									<option value="<?php echo esc_attr( (string) ( $option['value'] ?? '' ) ); ?>" data-price="<?php echo esc_attr( (string) ( $option['price'] ?? 0 ) ); ?>" data-customer-fields="<?php echo esc_attr( wp_json_encode( (array) ( $option['customer_fields'] ?? array() ) ) ); ?>">
 										<?php echo esc_html( (string) ( $option['name'] ?? $option['value'] ?? '' ) ); ?>
 										<?php if ( ! empty( $option['price'] ) ) : ?>
 											<?php echo esc_html( ' +' . wp_strip_all_tags( wc_price( (float) $option['price'] ) ) ); ?>
@@ -151,16 +152,7 @@ foreach ( $steps as $step ) {
 							data-position-options="<?php echo esc_attr( wp_json_encode( (array) ( $group['position_config']['options'] ?? array() ) ) ); ?>"
 							hidden
 						></div>
-						<?php if ( 'glass_shelf' === $group_slug ) : ?>
-							<label class="wcs-dependent-field wcs-shelf-length" hidden>
-								<span>
-									<?php esc_html_e( 'Shelf length', 'woo-spiegelloft-configurator' ); ?>
-									<small><?php esc_html_e( '100 mm minimum', 'woo-spiegelloft-configurator' ); ?></small>
-								</span>
-								<input type="number" class="wcs-nested-input" data-key="glass_shelf.length" min="100" step="1">
-								<em><?php esc_html_e( 'mm', 'woo-spiegelloft-configurator' ); ?></em>
-							</label>
-						<?php endif; ?>
+						<div class="wcs-customer-field-target" hidden></div>
 					</div>
 				<?php endforeach; ?>
 				</section>

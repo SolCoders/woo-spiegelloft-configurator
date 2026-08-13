@@ -27,11 +27,14 @@
 			}
 		});
 
-		$wrap.find('.wcs-nested-input').each(function () {
+		$wrap.find('.wcs-customer-field-input').each(function () {
 			var key = $(this).data('key');
 			var value = $(this).val();
 			if (key && value !== '') {
 				selections[key] = value;
+				if ($(this).is('select')) {
+					total += parseFloat($(this).find(':selected').data('price')) || 0;
+				}
 			}
 		});
 
@@ -93,6 +96,7 @@
 			var title = $select.closest('.wcs-step-option-group').find('.wcs-option-heading h3, > h3').first().text();
 			var optionText = cleanOptionText($select.find(':selected').text());
 			var price = parseFloat($select.find(':selected').data('price')) || 0;
+			var group = $select.data('group');
 			var lines = [{ label: optionText, value: '' }];
 			if (price) {
 				lines.push({ label: 'Price', value: '+' + money(price) });
@@ -101,10 +105,20 @@
 			if ($position.length && $position.val()) {
 				lines.push({ label: $select.closest('.wcs-step-option-group').find('.wcs-position-select h3').text() || 'Position', value: cleanOptionText($position.find(':selected').text()) });
 			}
-			var $length = $select.closest('.wcs-step-option-group').find('.wcs-nested-input[data-key="' + group + '.length"]');
-			if ($length.length && $length.val()) {
-				lines.push({ label: 'Length', value: $length.val() + ' mm' });
-			}
+			$select.closest('.wcs-step-option-group').find('.wcs-customer-field-input').each(function () {
+				var $field = $(this);
+				var fieldValue = $field.val();
+				if (!fieldValue) {
+					return;
+				}
+				var fieldLabel = $field.closest('.wcs-customer-field').find('.wcs-customer-field__label').first().text();
+				var displayValue = $field.is('select') ? cleanOptionText($field.find(':selected').text()) : fieldValue;
+				var fieldPrice = $field.is('select') ? (parseFloat($field.find(':selected').data('price')) || 0) : 0;
+				lines.push({ label: fieldLabel || group, value: displayValue });
+				if (fieldPrice) {
+					lines.push({ label: fieldLabel + ' price', value: '+' + money(fieldPrice) });
+				}
+			});
 			rows.push(reviewRow(title, lines));
 		});
 
@@ -116,6 +130,16 @@
 
 	function parsePositions($element) {
 		var raw = $element.attr('data-position-options') || '[]';
+		try {
+			var parsed = JSON.parse(raw);
+			return Array.isArray(parsed) ? parsed : [];
+		} catch (e) {
+			return [];
+		}
+	}
+
+	function parseCustomerFields($select) {
+		var raw = $select.find(':selected').attr('data-customer-fields') || '[]';
 		try {
 			var parsed = JSON.parse(raw);
 			return Array.isArray(parsed) ? parsed : [];
@@ -148,33 +172,51 @@
 		buildCustomSelect($target.find('select'));
 	}
 
-	function refreshDependentFields($select) {
+	function refreshCustomerFields($select) {
 		var $group = $select.closest('.wcs-step-option-group');
+		var group = $select.data('group') || '';
 		var selected = $select.val() || '';
-		var $length = $group.find('.wcs-nested-input[data-key="' + $select.data('group') + '.length"]');
+		var fields = selected ? parseCustomerFields($select) : [];
+		var $target = $group.find('.wcs-customer-field-target');
 
-		if (!$length.length) {
+		if (!$target.length) {
 			return;
 		}
 
-		if (!selected) {
-			$length.val('');
-			$length.closest('.wcs-dependent-field').prop('hidden', true);
+		if (!fields.length) {
+			$target.prop('hidden', true).empty();
 			return;
 		}
 
-		var $wrap = $select.closest('.wcs-configurator');
-		var width = parseFloat($wrap.find('.wcs-dimension-input[data-key="width"]').val());
-		var diameter = parseFloat($wrap.find('.wcs-dimension-input[data-key="diameter"]').val());
-		var max = Math.max(100, (isNaN(diameter) ? width : diameter) - 100);
+		var html = '';
+		fields.forEach(function (field) {
+			var key = group + '.' + selected + '.' + (field.key || '');
+			var label = field.label || field.key || '';
+			var placeholder = field.placeholder ? ' placeholder="' + escapeHtml(field.placeholder) + '"' : '';
+			if (!field.key || !label) {
+				return;
+			}
+			html += '<label class="wcs-customer-field"><span class="wcs-customer-field__label">' + escapeHtml(label) + '</span>';
+			if (field.type === 'text') {
+				html += '<input type="text" class="wcs-customer-field-input" data-key="' + escapeHtml(key) + '"' + placeholder + '>';
+			} else {
+				html += '<select class="wcs-customer-field-input wcs-customer-field-select" data-key="' + escapeHtml(key) + '">';
+				html += '<option value="">' + escapeHtml(field.placeholder || 'Please select') + '</option>';
+				(field.options || []).forEach(function (option) {
+					var price = parseFloat(option.price) || 0;
+					html += '<option value="' + escapeHtml(option.value || '') + '" data-price="' + escapeHtml(price) + '">' + escapeHtml(option.label || option.value || '');
+					if (price) {
+						html += ' +' + escapeHtml(money(price));
+					}
+					html += '</option>';
+				});
+				html += '</select>';
+			}
+			html += '</label>';
+		});
 
-		if (!isNaN(max)) {
-			$length.attr('max', max);
-		}
-		if (!$length.val()) {
-			$length.val(Math.min(600, max));
-		}
-		$length.closest('.wcs-dependent-field').prop('hidden', false);
+		$target.html(html).prop('hidden', !html);
+		buildCustomSelect($target.find('select'));
 	}
 
 	function syncCustomSelect($select) {
@@ -242,7 +284,7 @@
 			activateStep($wrap, 0, false);
 			buildCustomSelect($wrap.find('.wcs-choice-select'));
 			$wrap.find('.wcs-choice-select').each(function () {
-				refreshDependentFields($(this));
+				refreshCustomerFields($(this));
 			});
 			collect($wrap);
 		});
@@ -260,7 +302,7 @@
 		$(document).on('input change', '.wcs-configurator input, .wcs-configurator select', function () {
 			if ($(this).hasClass('wcs-choice-select')) {
 				refreshPositionSelect($(this));
-				refreshDependentFields($(this));
+				refreshCustomerFields($(this));
 			}
 			syncCustomSelect($(this));
 			collect($(this).closest('.wcs-configurator'));

@@ -249,18 +249,7 @@ class WCS_Cart {
 				'price' => (float) ( $option['price'] ?? 0 ),
 			);
 
-			$length_key = (string) $group_slug . '.length';
-			if ( isset( $selections[ $length_key ] ) && '' !== (string) $selections[ $length_key ] ) {
-				$items[] = array(
-					'label' => sprintf(
-						/* translators: %s: option group title */
-						__( '%s length', 'woo-spiegelloft-configurator' ),
-						(string) ( $group['title'] ?? ucwords( str_replace( '_', ' ', (string) $group_slug ) ) )
-					),
-					'value' => (string) $selections[ $length_key ] . ' mm',
-					'price' => 0,
-				);
-			}
+			$items = array_merge( $items, $this->build_customer_field_items( (string) $group_slug, (string) $selections[ $group_slug ], $option, $selections ) );
 
 			$position_key = (string) $group_slug . '_position';
 			if ( ! empty( $selections[ $position_key ] ) ) {
@@ -304,6 +293,65 @@ class WCS_Cart {
 			}
 		}
 		return $value;
+	}
+
+	/**
+	 * Build readable rows for conditional customer fields.
+	 *
+	 * @param string               $group_slug Group slug.
+	 * @param string               $selected   Selected option slug.
+	 * @param array<string, mixed> $option     Selected option payload.
+	 * @param array<string, mixed> $selections Sanitized selections.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function build_customer_field_items( string $group_slug, string $selected, array $option, array $selections ): array {
+		$items = array();
+		foreach ( (array) ( $option['customer_fields'] ?? array() ) as $field ) {
+			if ( ! is_array( $field ) ) {
+				continue;
+			}
+
+			$key   = $group_slug . '.' . $selected . '.' . (string) ( $field['key'] ?? '' );
+			$value = (string) ( $selections[ $key ] ?? '' );
+			if ( '' === $value ) {
+				continue;
+			}
+
+			$display_value = $value;
+			$price         = 0.0;
+			if ( 'dropdown' === (string) ( $field['type'] ?? '' ) ) {
+				$field_option = $this->find_customer_field_option( (array) ( $field['options'] ?? array() ), $value );
+				if ( $field_option ) {
+					$display_value = (string) ( $field_option['label'] ?? $value );
+					$price         = ! empty( $field['price_enabled'] ) ? (float) ( $field_option['price'] ?? 0 ) : 0;
+				}
+			}
+
+			$items[] = array(
+				'label' => (string) ( $field['label'] ?? $key ),
+				'value' => $display_value,
+				'price' => $price,
+			);
+		}
+
+		return $items;
+	}
+
+	/**
+	 * Find a selected customer-field dropdown option.
+	 *
+	 * @param array<int, array<string, mixed>> $options Field options.
+	 * @param string                           $value   Selected value.
+	 * @return array<string, mixed>|null
+	 */
+	private function find_customer_field_option( array $options, string $value ): ?array {
+		foreach ( $options as $option ) {
+			if ( (string) ( $option['value'] ?? '' ) === $value ) {
+				return $option;
+			}
+		}
+
+		return null;
 	}
 }
 

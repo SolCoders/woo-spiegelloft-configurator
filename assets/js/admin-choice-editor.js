@@ -220,49 +220,118 @@
 		});
 	}
 
-	function reindexPositionRows() {
-		$('.wcs-position-row').each(function (index) {
+	function refreshCustomerFieldRow($row) {
+		var isDropdown = $row.find('.wcs-customer-field-type').val() !== 'text';
+		var prices = $row.find('.wcs-customer-field-price-toggle input').is(':checked');
+		$row.toggleClass('is-dropdown', isDropdown);
+		$row.toggleClass('has-prices', prices);
+		$row.find('.wcs-customer-field-options').toggle(isDropdown);
+		$row.find('.wcs-customer-field-price-toggle').toggle(isDropdown);
+		$row.find('.wcs-customer-field-option-price').toggle(isDropdown && prices);
+	}
+
+	function reindexCustomerFields() {
+		$('.wcs-customer-field-row').each(function (fieldIndex) {
+			$(this).attr('data-field-index', fieldIndex);
 			$(this).find('[name]').each(function () {
-				$(this).attr('name', $(this).attr('name').replace(/wcs_position_options\[\d+\]/, 'wcs_position_options[' + index + ']'));
+				var name = $(this).attr('name');
+				if (!name) {
+					return;
+				}
+				name = name.replace(/wcs_customer_fields\[\d+\]/, 'wcs_customer_fields[' + fieldIndex + ']');
+				$(this).attr('name', name);
 			});
+
+			$(this).find('.wcs-customer-field-option').each(function (optionIndex) {
+				$(this).find('[name]').each(function () {
+					var name = $(this).attr('name');
+					if (!name) {
+						return;
+					}
+					$(this).attr('name', name.replace(/\[options\]\[\d+\]/, '[options][' + optionIndex + ']'));
+				});
+			});
+			refreshCustomerFieldRow($(this));
 		});
 	}
 
-	function buildPositionRow() {
-		var $template = $('.wcs-position-row').first().clone();
+	function buildCustomerFieldRow() {
+		var $template = $('.wcs-customer-field-row').first().clone();
+		$template.find('input[type="text"]').val('');
+		$template.find('input[type="checkbox"]').prop('checked', false);
+		$template.find('select').val('dropdown');
+		$template.find('.wcs-customer-field-option').not(':first').remove();
+		refreshCustomerFieldRow($template);
+		return $template;
+	}
+
+	function buildCustomerOptionRow($field) {
+		var $template = $field.find('.wcs-customer-field-option').first().clone();
 		$template.find('input').val('');
 		return $template;
 	}
 
-	function bindPositionOptions() {
-		$(document).on('change', '.wcs-position-toggle input', function () {
-			$(this).closest('.wcs-position-settings').toggleClass('is-enabled', $(this).is(':checked'));
+	function bindCustomerFields() {
+		$(document).on('click', '.wcs-customer-field-add', function (e) {
+			e.preventDefault();
+			$('.wcs-customer-field-list').append(buildCustomerFieldRow());
+			reindexCustomerFields();
 		});
 
-		$(document).on('click', '.wcs-position-add', function (e) {
+		$(document).on('click', '.wcs-customer-field-remove', function (e) {
 			e.preventDefault();
-			$(this).closest('.wcs-position-options').append(buildPositionRow());
-			reindexPositionRows();
-		});
-
-		$(document).on('click', '.wcs-position-remove', function (e) {
-			e.preventDefault();
-			var $rows = $('.wcs-position-row');
+			var $rows = $('.wcs-customer-field-row');
 			if ($rows.length <= 1) {
-				$(this).closest('.wcs-position-row').find('input').val('');
+				$(this).closest('.wcs-customer-field-row').find('input[type="text"]').val('');
+				$(this).closest('.wcs-customer-field-row').find('input[type="checkbox"]').prop('checked', false);
+				$(this).closest('.wcs-customer-field-row').find('select').val('dropdown');
+				refreshCustomerFieldRow($(this).closest('.wcs-customer-field-row'));
 				return;
 			}
-			$(this).closest('.wcs-position-row').remove();
-			reindexPositionRows();
+			$(this).closest('.wcs-customer-field-row').remove();
+			reindexCustomerFields();
 		});
 
-		$(document).on('blur', '.wcs-position-row input[name$="[label]"]', function () {
-			var $row = $(this).closest('.wcs-position-row');
-			var $value = $row.find('input[name$="[value]"]');
+		$(document).on('change', '.wcs-customer-field-type, .wcs-customer-field-price-toggle input', function () {
+			refreshCustomerFieldRow($(this).closest('.wcs-customer-field-row'));
+		});
+
+		$(document).on('click', '.wcs-customer-option-add', function (e) {
+			e.preventDefault();
+			var $field = $(this).closest('.wcs-customer-field-row');
+			$field.find('.wcs-customer-field-options').append(buildCustomerOptionRow($field));
+			reindexCustomerFields();
+		});
+
+		$(document).on('click', '.wcs-customer-option-remove', function (e) {
+			e.preventDefault();
+			var $field = $(this).closest('.wcs-customer-field-row');
+			var $options = $field.find('.wcs-customer-field-option');
+			if ($options.length <= 1) {
+				$(this).closest('.wcs-customer-field-option').find('input').val('');
+				return;
+			}
+			$(this).closest('.wcs-customer-field-option').remove();
+			reindexCustomerFields();
+		});
+
+		$(document).on('blur', '.wcs-customer-field-label', function () {
+			var $row = $(this).closest('.wcs-customer-field-row');
+			var $key = $row.find('.wcs-customer-field-key');
+			if (!$key.val()) {
+				$key.val(slugify($(this).val()));
+			}
+		});
+
+		$(document).on('blur', '.wcs-customer-field-option-label', function () {
+			var $row = $(this).closest('.wcs-customer-field-option');
+			var $value = $row.find('.wcs-customer-field-option-value');
 			if (!$value.val()) {
 				$value.val(slugify($(this).val()));
 			}
 		});
+
+		reindexCustomerFields();
 	}
 
 	$(function () {
@@ -273,7 +342,7 @@
 		bindRepeaters();
 		bindAccordion();
 		bindCategoryChange();
-		bindPositionOptions();
+		bindCustomerFields();
 		toggleNestedSections();
 	});
 }(jQuery));

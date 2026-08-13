@@ -99,10 +99,6 @@ $disable_value = static function ( string $when_source, string $when_path, strin
 
 $common_rules = static function ( string $size_field = 'width', string $height_field = 'height' ) use ( $rule, $range, $require, $clear, $disable_value ): array {
 	return array(
-		$require( 'glass_shelf', 'glass_shelf.length', 'Glass shelf length is required when a shelf is selected.' ),
-		$range( 'glass_shelf.length', '100', $size_field . ' - 100', 'Glass shelf length must fit inside the mirror width.' ),
-		$clear( 'glass_shelf', 'glass_shelf.length', 'Shelf length is cleared when no shelf is selected.' ),
-
 		$disable_value( 'dimension', $size_field, 'less_than', '500', 'makeup_mirror', 'beleuchtet', 'Illuminated makeup mirror requires minimum dimensions of 500 x 500 mm.' ),
 		$disable_value( 'dimension', $height_field, 'less_than', '500', 'makeup_mirror', 'beleuchtet', 'Illuminated makeup mirror requires minimum dimensions of 500 x 500 mm.' ),
 		$require( 'makeup_mirror', 'makeup_mirror.type', 'Choose the makeup mirror type.' ),
@@ -155,7 +151,6 @@ $round_rules = array_merge(
 	),
 	$common_rules( 'diameter', 'diameter' )
 );
-$round_rules[2] = $range( 'glass_shelf.length', '100', 'diameter - 100', 'Glass shelf length must fit inside the mirror diameter.' );
 
 $sloping_rules = array_merge(
 	array(
@@ -167,7 +162,6 @@ $sloping_rules = array_merge(
 		$disable_value( 'dimension', 'count_gte(top_width,bottom_width,left_height,right_height,400)', 'less_than', '3', 'makeup_mirror', 'beleuchtet', 'Makeup mirror requires at least three sides of 400 mm or more.' ),
 		$disable_value( 'dimension', 'max(top_width,bottom_width)', 'less_than', '101', 'glass_shelf', 'clear-glass', 'Glass shelf requires a usable top or bottom width.' ),
 		$disable_value( 'dimension', 'max(top_width,bottom_width)', 'less_than', '101', 'glass_shelf', 'satin-glass', 'Glass shelf requires a usable top or bottom width.' ),
-		$range( 'glass_shelf.length', '0', 'max(top_width,bottom_width) - 100', 'Glass shelf length must fit inside the widest sloping-roof side.' ),
 		$range( 'makeup_mirror.side_distance', '150', 'floor(top_width / 2)', 'Makeup mirror side distance is outside the allowed range.' ),
 		$range( 'makeup_mirror.bottom_distance', '150', 'max(left_height,right_height) - 150', 'Makeup mirror bottom distance is outside the allowed range.' ),
 	),

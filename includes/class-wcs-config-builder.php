@@ -255,6 +255,11 @@ class WCS_Config_Builder {
 			$output['position_options'] = array_values( $option_data['position_options'] );
 		}
 
+		$customer_fields = $this->normalize_customer_fields( $option_data );
+		if ( ! empty( $customer_fields ) ) {
+			$output['customer_fields'] = $customer_fields;
+		}
+
 		$optional_fields = (array) ( $group_def['optional_fields'] ?? array() );
 		foreach ( array_keys( $optional_fields ) as $nested_key ) {
 			if ( array_key_exists( $nested_key, $option_data ) ) {
@@ -276,16 +281,22 @@ class WCS_Config_Builder {
 		$total = $base_price;
 
 		foreach ( $selections as $group_slug => $selected ) {
+			if ( false !== strpos( (string) $group_slug, '.' ) ) {
+				continue;
+			}
+
 			$options = $this->extras_catalog->get_options_by_group( (string) $group_slug );
 			$slugs   = $this->selection_to_slugs( $selected );
 
 			foreach ( $slugs as $slug ) {
 				foreach ( $options as $option ) {
-					if ( ( $option['slug'] ?? '' ) === (string) $slug ) {
-						$meta  = (array) ( $option['meta'] ?? array() );
-						$data  = (array) ( $meta['_wcs_option_data'] ?? array() );
+					$meta        = (array) ( $option['meta'] ?? array() );
+					$data        = (array) ( $meta['_wcs_option_data'] ?? array() );
+					$option_slug = (string) ( $data['value'] ?? $option['slug'] ?? '' );
+					if ( $option_slug === (string) $slug ) {
 						$price = (float) ( $data['price'] ?? $meta['_wcs_price'] ?? 0 );
 						$total += $price;
+						$total += $this->calculate_customer_field_prices( (string) $group_slug, (string) $slug, $data, $selections );
 					}
 				}
 			}
@@ -339,6 +350,11 @@ class WCS_Config_Builder {
 		$selections = $this->validation->sanitize_selections( $selections );
 		$template['_option_lookup'] = $this->build_option_lookup( $template );
 		$valid      = $this->validation->validate( $selections, $template, $this->extras_registry->get_groups() );
+		if ( is_wp_error( $valid ) ) {
+			return $valid;
+		}
+
+		$valid = $this->validate_customer_fields( $selections );
 		if ( is_wp_error( $valid ) ) {
 			return $valid;
 		}
@@ -402,5 +418,206 @@ class WCS_Config_Builder {
 		}
 
 		return $lookup;
+	}
+
+	/**
+	 * Normalize new or legacy per-choice customer fields.
+	 *
+	 * @param array<string, mixed> $option_data Option data.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function normalize_customer_fields( array $option_data ): array {
+		if ( ! empty( $option_data['customer_fields'] ) && is_array( $option_data['customer_fields'] ) ) {
+			return array_values( array_filter( array_map( array( $this, 'normalize_customer_field' ), $option_data['customer_fields'] ) ) );
+		}
+
+		if ( empty( $option_data['position_enabled'] ) || empty( $option_data['position_options'] ) || ! is_array( $option_data['position_options'] ) ) {
+			return array();
+		}
+
+		return array(
+			array(
+				'label'         => (string) ( $option_data['position_label'] ?? __( 'Position', 'woo-spiegelloft-configurator' ) ),
+				'key'           => 'position',
+				'type'          => 'dropdown',
+				'required'      => false,
+				'placeholder'   => '',
+				'price_enabled' => false,
+				'options'       => array_values( $option_data['position_options'] ),
+			),
+		);
+	}
+
+	/**
+	 * Normalize one customer field for storefront output.
+	 *
+	 * @param mixed $field Raw field.
+	 * @return array<string, mixed>|null
+	 */
+	private function normalize_customer_field( $field ): ?array {
+		if ( ! is_array( $field ) ) {
+			return null;
+		}
+
+		$type = 'text' === (string) ( $field['type'] ?? 'dropdown' ) ? 'text' : 'dropdown';
+		$row  = array(
+			'label'       => (string) ( $field['label'] ?? '' ),
+			'key'         => sanitize_title( (string) ( $field['key'] ?? $field['label'] ?? '' ) ),
+			'type'        => $type,
+			'required'    => ! empty( $field['required'] ),
+			'placeholder' => (string) ( $field['placeholder'] ?? '' ),
+		);
+
+		if ( '' === $row['label'] || '' === $row['key'] ) {
+			return null;
+		}
+
+		if ( 'dropdown' === $type ) {
+			$row['price_enabled'] = ! empty( $field['price_enabled'] );
+			$row['options']       = array_values( array_filter( array_map( array( $this, 'normalize_customer_field_option' ), (array) ( $field['options'] ?? array() ) ) ) );
+			if ( empty( $row['options'] ) ) {
+				return null;
+			}
+		}
+
+		return $row;
+	}
+
+	/**
+	 * Normalize one customer-field dropdown option.
+	 *
+	 * @param mixed $option Raw option.
+	 * @return array<string, mixed>|null
+	 */
+	private function normalize_customer_field_option( $option ): ?array {
+		if ( ! is_array( $option ) ) {
+			return null;
+		}
+
+		$value = sanitize_title( (string) ( $option['value'] ?? $option['label'] ?? '' ) );
+		$label = (string) ( $option['label'] ?? $value );
+		if ( '' === $value || '' === $label ) {
+			return null;
+		}
+
+		return array(
+			'label' => $label,
+			'value' => $value,
+			'price' => (float) ( $option['price'] ?? 0 ),
+		);
+	}
+
+	/**
+	 * Validate required fields and dropdown values from trusted option metadata.
+	 *
+	 * @param array<string, mixed> $selections Sanitized selections.
+	 * @return true|WP_Error
+	 */
+	private function validate_customer_fields( array $selections ) {
+		foreach ( $selections as $group_slug => $selected ) {
+			if ( false !== strpos( (string) $group_slug, '.' ) ) {
+				continue;
+			}
+
+			$option = $this->find_catalog_option_data( (string) $group_slug, (string) $selected );
+			if ( empty( $option ) ) {
+				continue;
+			}
+
+			foreach ( $this->normalize_customer_fields( $option ) as $field ) {
+				$key   = (string) $group_slug . '.' . (string) $selected . '.' . (string) $field['key'];
+				$value = $selections[ $key ] ?? '';
+				if ( ! empty( $field['required'] ) && ( '' === (string) $value || '---' === (string) $value ) ) {
+					return new WP_Error(
+						'wcs_required_customer_field',
+						sprintf(
+							/* translators: %s: customer field label */
+							__( 'Required field missing for %s.', 'woo-spiegelloft-configurator' ),
+							(string) $field['label']
+						)
+					);
+				}
+
+				if ( 'dropdown' === (string) $field['type'] && '' !== (string) $value && ! $this->find_customer_field_option( $field, (string) $value ) ) {
+					return new WP_Error(
+						'wcs_invalid_customer_field',
+						sprintf(
+							/* translators: %s: customer field label */
+							__( 'Invalid value selected for %s.', 'woo-spiegelloft-configurator' ),
+							(string) $field['label']
+						)
+					);
+				}
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Add trusted dropdown-row prices for selected customer fields.
+	 *
+	 * @param string               $group_slug Group slug.
+	 * @param string               $selected   Selected option slug.
+	 * @param array<string, mixed> $option     Option data.
+	 * @param array<string, mixed> $selections Sanitized selections.
+	 */
+	private function calculate_customer_field_prices( string $group_slug, string $selected, array $option, array $selections ): float {
+		$total = 0.0;
+		foreach ( $this->normalize_customer_fields( $option ) as $field ) {
+			if ( 'dropdown' !== (string) $field['type'] || empty( $field['price_enabled'] ) ) {
+				continue;
+			}
+
+			$key   = $group_slug . '.' . $selected . '.' . (string) $field['key'];
+			$value = (string) ( $selections[ $key ] ?? '' );
+			if ( '' === $value ) {
+				continue;
+			}
+
+			$field_option = $this->find_customer_field_option( $field, $value );
+			if ( $field_option ) {
+				$total += (float) ( $field_option['price'] ?? 0 );
+			}
+		}
+
+		return $total;
+	}
+
+	/**
+	 * Find an option's saved data by group and selected slug.
+	 *
+	 * @param string $group_slug Group slug.
+	 * @param string $selected   Selected slug.
+	 * @return array<string, mixed>
+	 */
+	private function find_catalog_option_data( string $group_slug, string $selected ): array {
+		foreach ( $this->extras_catalog->get_options_by_group( $group_slug ) as $option ) {
+			$meta        = (array) ( $option['meta'] ?? array() );
+			$option_data = (array) ( $meta['_wcs_option_data'] ?? array() );
+			$slug        = (string) ( $option_data['value'] ?? $option['slug'] ?? '' );
+			if ( $slug === $selected ) {
+				return $option_data;
+			}
+		}
+
+		return array();
+	}
+
+	/**
+	 * Find a dropdown value inside a customer field.
+	 *
+	 * @param array<string, mixed> $field Field config.
+	 * @param string               $value Selected value.
+	 * @return array<string, mixed>|null
+	 */
+	private function find_customer_field_option( array $field, string $value ): ?array {
+		foreach ( (array) ( $field['options'] ?? array() ) as $option ) {
+			if ( is_array( $option ) && (string) ( $option['value'] ?? '' ) === $value ) {
+				return $option;
+			}
+		}
+
+		return null;
 	}
 }
