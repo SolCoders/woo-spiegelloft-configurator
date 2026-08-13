@@ -34,6 +34,8 @@
 				selections[key] = value;
 				if ($(this).is('select')) {
 					total += parseFloat($(this).find(':selected').data('price')) || 0;
+				} else {
+					total += parseFloat($(this).data('price')) || 0;
 				}
 			}
 		});
@@ -113,7 +115,7 @@
 				}
 				var fieldLabel = $field.closest('.wcs-customer-field').find('.wcs-customer-field__label').first().text();
 				var displayValue = $field.is('select') ? cleanOptionText($field.find(':selected').text()) : fieldValue;
-				var fieldPrice = $field.is('select') ? (parseFloat($field.find(':selected').data('price')) || 0) : 0;
+				var fieldPrice = $field.is('select') ? (parseFloat($field.find(':selected').data('price')) || 0) : (parseFloat($field.data('price')) || 0);
 				lines.push({ label: fieldLabel || group, value: displayValue });
 				if (fieldPrice) {
 					lines.push({ label: fieldLabel + ' price', value: '+' + money(fieldPrice) });
@@ -188,9 +190,19 @@
 			return;
 		}
 
-		var html = '';
+		var html = renderCustomerFields(fields, group + '.' + selected, false);
+
+		$target.html(html).prop('hidden', !html);
+		buildCustomSelect($target.find('select'));
+		$target.find('.wcs-customer-field-select').each(function () {
+			refreshNestedCustomerFields($(this));
+		});
+	}
+
+	function renderCustomerFields(fields, baseKey, nested) {
+		var html = nested ? '<div class="wcs-customer-nested-box">' : '';
 		fields.forEach(function (field) {
-			var key = group + '.' + selected + '.' + (field.key || '');
+			var key = baseKey + '.' + (field.key || '');
 			var label = field.label || field.key || '';
 			var placeholder = field.placeholder ? ' placeholder="' + escapeHtml(field.placeholder) + '"' : '';
 			if (!field.key || !label) {
@@ -198,13 +210,18 @@
 			}
 			html += '<label class="wcs-customer-field"><span class="wcs-customer-field__label">' + escapeHtml(label) + '</span>';
 			if (field.type === 'text') {
-				html += '<input type="text" class="wcs-customer-field-input" data-key="' + escapeHtml(key) + '"' + placeholder + '>';
+				html += '<input type="text" class="wcs-customer-field-input" data-key="' + escapeHtml(key) + '" data-price="' + escapeHtml(field.price_enabled ? (parseFloat(field.price) || 0) : 0) + '"' + placeholder + '>';
 			} else {
 				html += '<select class="wcs-customer-field-input wcs-customer-field-select" data-key="' + escapeHtml(key) + '">';
 				html += '<option value="">' + escapeHtml(field.placeholder || 'Please select') + '</option>';
 				(field.options || []).forEach(function (option) {
 					var price = parseFloat(option.price) || 0;
-					html += '<option value="' + escapeHtml(option.value || '') + '" data-price="' + escapeHtml(price) + '">' + escapeHtml(option.label || option.value || '');
+					var nestedFields = option.customer_fields ? JSON.stringify(option.customer_fields || []) : '';
+					html += '<option value="' + escapeHtml(option.value || '') + '" data-price="' + escapeHtml(price) + '"';
+					if (nestedFields) {
+						html += ' data-customer-fields="' + escapeHtml(nestedFields) + '"';
+					}
+					html += '>' + escapeHtml(option.label || option.value || '');
 					if (price) {
 						html += ' +' + escapeHtml(money(price));
 					}
@@ -212,11 +229,32 @@
 				});
 				html += '</select>';
 			}
+			html += '<div class="wcs-customer-nested-target" hidden></div>';
 			html += '</label>';
 		});
+		html += nested ? '</div>' : '';
+		return html;
+	}
 
+	function refreshNestedCustomerFields($field) {
+		var $target = $field.closest('.wcs-customer-field').children('.wcs-customer-nested-target');
+		var fields = parseCustomerFields($field);
+
+		if (!$target.length) {
+			return;
+		}
+
+		if (!fields.length) {
+			$target.prop('hidden', true).empty();
+			return;
+		}
+
+		var html = renderCustomerFields(fields, String($field.data('key') || '') + '.' + ($field.val() || ''), true);
 		$target.html(html).prop('hidden', !html);
 		buildCustomSelect($target.find('select'));
+		$target.find('.wcs-customer-field-select').each(function () {
+			refreshNestedCustomerFields($(this));
+		});
 	}
 
 	function syncCustomSelect($select) {
@@ -303,6 +341,9 @@
 			if ($(this).hasClass('wcs-choice-select')) {
 				refreshPositionSelect($(this));
 				refreshCustomerFields($(this));
+			}
+			if ($(this).hasClass('wcs-customer-field-select')) {
+				refreshNestedCustomerFields($(this));
 			}
 			syncCustomSelect($(this));
 			collect($(this).closest('.wcs-configurator'));

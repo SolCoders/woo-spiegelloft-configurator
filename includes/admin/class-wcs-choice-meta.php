@@ -69,6 +69,15 @@ class WCS_Choice_Meta {
 			'normal',
 			'default'
 		);
+
+		add_meta_box(
+			'wcs_choice_customer_fields',
+			__( 'Customer fields', 'woo-spiegelloft-configurator' ),
+			array( $this, 'render_customer_fields_meta_box' ),
+			'wcs_extra_option',
+			'normal',
+			'default'
+		);
 	}
 
 	/**
@@ -133,9 +142,20 @@ class WCS_Choice_Meta {
 		$price       = (string) ( $option_data['price'] ?? get_post_meta( $post->ID, '_wcs_price', true ) );
 		$image       = (string) ( $option_data['image'] ?? get_post_meta( $post->ID, '_wcs_image', true ) );
 		$value       = (string) ( $option_data['value'] ?? $slug );
-		$customer_fields = $this->get_customer_fields_for_admin( $option_data );
 
 		include WCS_PLUGIN_DIR . 'templates/admin/choice-details-meta.php';
+	}
+
+	/**
+	 * Render customer fields meta box.
+	 *
+	 * @param WP_Post $post Post object.
+	 */
+	public function render_customer_fields_meta_box( WP_Post $post ): void {
+		$option_data     = $this->get_option_data( (int) $post->ID );
+		$customer_fields = $this->get_customer_fields_for_admin( $option_data );
+
+		include WCS_PLUGIN_DIR . 'templates/admin/choice-customer-fields-meta.php';
 	}
 
 	/**
@@ -284,14 +304,16 @@ class WCS_Choice_Meta {
 				'type'        => $type,
 				'required'    => ! empty( $field['required'] ),
 				'placeholder' => sanitize_text_field( (string) ( $field['placeholder'] ?? '' ) ),
+				'price_enabled' => ! empty( $field['price_enabled'] ),
 			);
 
 			if ( 'dropdown' === $type ) {
-				$row['price_enabled'] = ! empty( $field['price_enabled'] );
 				$row['options']       = $this->sanitize_customer_field_options( $field['options'] ?? array(), ! empty( $row['price_enabled'] ) );
 				if ( empty( $row['options'] ) ) {
 					continue;
 				}
+			} elseif ( ! empty( $row['price_enabled'] ) ) {
+				$row['price'] = (float) wc_format_decimal( (string) ( $field['price'] ?? '0' ) );
 			}
 
 			$fields[] = $row;
@@ -328,10 +350,56 @@ class WCS_Choice_Meta {
 				'label' => $label ?: $value,
 				'value' => $value,
 				'price' => $price_enabled ? (float) wc_format_decimal( (string) ( $option['price'] ?? '0' ) ) : 0,
-			);
+			) + $this->sanitize_nested_customer_fields_for_option( $option );
 		}
 
 		return $options;
+	}
+
+	/**
+	 * Sanitize optional nested customer fields for one dropdown value.
+	 *
+	 * @param array<string, mixed> $option Raw dropdown option.
+	 * @return array<string, mixed>
+	 */
+	private function sanitize_nested_customer_fields_for_option( array $option ): array {
+		if ( empty( $option['nested_enabled'] ) && empty( $option['position_enabled'] ) ) {
+			return array();
+		}
+
+		$fields = $this->sanitize_customer_fields( $option['customer_fields'] ?? array() );
+		if ( empty( $fields ) && ! empty( $option['position_options'] ) ) {
+			$fields = $this->legacy_position_to_customer_fields( $option );
+		}
+
+		if ( empty( $fields ) ) {
+			return array();
+		}
+
+		return array(
+			'nested_enabled' => true,
+			'customer_fields' => $fields,
+		);
+	}
+
+	/**
+	 * Convert legacy per-value position rows into one nested dropdown field.
+	 *
+	 * @param array<string, mixed> $option Raw dropdown option.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function legacy_position_to_customer_fields( array $option ): array {
+		return array(
+			array(
+				'label'         => sanitize_text_field( (string) ( $option['position_label'] ?? __( 'Position', 'woo-spiegelloft-configurator' ) ) ),
+				'key'           => 'position',
+				'type'          => 'dropdown',
+				'required'      => true,
+				'placeholder'   => '',
+				'price_enabled' => false,
+				'options'       => $this->sanitize_customer_field_options( $option['position_options'] ?? array(), false ),
+			),
+		);
 	}
 
 	/**

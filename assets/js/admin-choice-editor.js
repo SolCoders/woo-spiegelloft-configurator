@@ -221,71 +221,108 @@
 	}
 
 	function refreshCustomerFieldRow($row) {
-		var isDropdown = $row.find('.wcs-customer-field-type').val() !== 'text';
-		var prices = $row.find('.wcs-customer-field-price-toggle input').is(':checked');
+		var $grid = $row.children('.wcs-customer-field-grid');
+		var $options = $row.children('.wcs-customer-field-options');
+		var isDropdown = $grid.find('.wcs-customer-field-type').first().val() !== 'text';
+		var prices = $grid.find('.wcs-customer-field-price-toggle input').first().is(':checked');
 		$row.toggleClass('is-dropdown', isDropdown);
 		$row.toggleClass('has-prices', prices);
-		$row.find('.wcs-customer-field-options').toggle(isDropdown);
-		$row.find('.wcs-customer-field-price-toggle').toggle(isDropdown);
-		$row.find('.wcs-customer-field-option-price').toggle(isDropdown && prices);
-	}
-
-	function reindexCustomerFields() {
-		$('.wcs-customer-field-row').each(function (fieldIndex) {
-			$(this).attr('data-field-index', fieldIndex);
-			$(this).find('[name]').each(function () {
-				var name = $(this).attr('name');
-				if (!name) {
-					return;
-				}
-				name = name.replace(/wcs_customer_fields\[\d+\]/, 'wcs_customer_fields[' + fieldIndex + ']');
-				$(this).attr('name', name);
-			});
-
-			$(this).find('.wcs-customer-field-option').each(function (optionIndex) {
-				$(this).find('[name]').each(function () {
-					var name = $(this).attr('name');
-					if (!name) {
-						return;
-					}
-					$(this).attr('name', name.replace(/\[options\]\[\d+\]/, '[options][' + optionIndex + ']'));
-				});
-			});
-			refreshCustomerFieldRow($(this));
+		$options.toggle(isDropdown);
+		$grid.find('.wcs-customer-field-price').toggle(!isDropdown && prices);
+		$options.children('.wcs-customer-field-option').children('.wcs-customer-field-option-price').toggle(isDropdown && prices);
+		$options.children('.wcs-customer-field-option').children('.wcs-customer-option-position').each(function () {
+			$(this).toggleClass('is-enabled', $(this).children('.wcs-customer-option-position-switch').find('.wcs-customer-option-position-toggle').is(':checked'));
 		});
 	}
 
-	function buildCustomerFieldRow() {
-		var $template = $('.wcs-customer-field-row').first().clone();
+	function reindexCustomerFields() {
+		reindexCustomerFieldList($('.wcs-customer-fields > .wcs-customer-field-list'), 'wcs_customer_fields');
+	}
+
+	function reindexCustomerFieldList($list, baseName) {
+		$list.children('.wcs-customer-field-row').each(function (fieldIndex) {
+			var fieldName = baseName + '[' + fieldIndex + ']';
+			var $field = $(this).attr('data-field-index', fieldIndex);
+
+			$field.children('.wcs-customer-field-grid').find('[name]').each(function () {
+				replaceCustomerFieldName($(this), fieldName, 'field');
+			});
+
+			$field.children('.wcs-customer-field-options').children('.wcs-customer-field-option').each(function (optionIndex) {
+				var optionName = fieldName + '[options][' + optionIndex + ']';
+				var $option = $(this);
+				$option.children('[name]').each(function () {
+					replaceCustomerFieldName($(this), optionName, 'option');
+				});
+				$option.children('.wcs-customer-option-position').find('.wcs-customer-option-position-toggle').each(function () {
+					replaceCustomerFieldName($(this), optionName, 'option');
+				});
+				reindexCustomerFieldList($option.find('> .wcs-customer-option-position-fields > .wcs-customer-field-list'), optionName + '[customer_fields]');
+			});
+			refreshCustomerFieldRow($field);
+		});
+	}
+
+	function replaceCustomerFieldName($input, baseName, scope) {
+		var suffix = '';
+		if (scope === 'field') {
+			if ($input.hasClass('wcs-customer-field-label')) suffix = '[label]';
+			else if ($input.hasClass('wcs-customer-field-type')) suffix = '[type]';
+			else if ($input.hasClass('wcs-customer-field-key')) suffix = '[key]';
+			else if ($input.hasClass('wcs-customer-field-placeholder')) suffix = '[placeholder]';
+			else if ($input.hasClass('wcs-customer-field-price')) suffix = '[price]';
+			else if ($input.closest('.wcs-customer-field-price-toggle').length) suffix = '[price_enabled]';
+			else suffix = '[required]';
+		} else {
+			if ($input.hasClass('wcs-customer-field-option-label')) suffix = '[label]';
+			else if ($input.hasClass('wcs-customer-field-option-value')) suffix = '[value]';
+			else if ($input.hasClass('wcs-customer-field-option-price')) suffix = '[price]';
+			else suffix = '[nested_enabled]';
+		}
+		$input.attr('name', baseName + suffix);
+	}
+
+	function buildCustomerFieldRow($list) {
+		var $source = $list && $list.children('.wcs-customer-field-row').length
+			? $list.children('.wcs-customer-field-row').first()
+			: $('.wcs-customer-field-row').first();
+		var $template = $source.clone();
 		$template.find('input[type="text"]').val('');
 		$template.find('input[type="checkbox"]').prop('checked', false);
-		$template.find('select').val('dropdown');
-		$template.find('.wcs-customer-field-option').not(':first').remove();
+		$template.children('.wcs-customer-field-options').children('.wcs-customer-field-option').not(':first').remove();
+		$template.find('.wcs-customer-field-option').removeClass('has-nested-fields');
+		$template.find('.wcs-customer-option-position').removeClass('is-enabled');
+		$template.find('.wcs-customer-option-position-fields > .wcs-customer-field-list').empty();
 		refreshCustomerFieldRow($template);
 		return $template;
 	}
 
 	function buildCustomerOptionRow($field) {
-		var $template = $field.find('.wcs-customer-field-option').first().clone();
-		$template.find('input').val('');
+		var $template = $field.children('.wcs-customer-field-options').children('.wcs-customer-field-option').first().clone();
+		$template.find('input[type="text"]').val('');
+		$template.find('input[type="checkbox"]').prop('checked', false);
+		$template.find('> .wcs-customer-option-position-fields > .wcs-customer-field-list > .wcs-customer-field-row').remove();
+		$template.removeClass('has-nested-fields is-enabled').find('.wcs-customer-option-position').removeClass('is-enabled');
 		return $template;
 	}
 
 	function bindCustomerFields() {
 		$(document).on('click', '.wcs-customer-field-add', function (e) {
 			e.preventDefault();
-			$('.wcs-customer-field-list').append(buildCustomerFieldRow());
+			var $list = $(this).closest('.wcs-customer-field-list');
+			$list.append(buildCustomerFieldRow($list));
 			reindexCustomerFields();
 		});
 
 		$(document).on('click', '.wcs-customer-field-remove', function (e) {
 			e.preventDefault();
-			var $rows = $('.wcs-customer-field-row');
+			var $list = $(this).closest('.wcs-customer-field-list');
+			var $rows = $list.children('.wcs-customer-field-row');
 			if ($rows.length <= 1) {
-				$(this).closest('.wcs-customer-field-row').find('input[type="text"]').val('');
-				$(this).closest('.wcs-customer-field-row').find('input[type="checkbox"]').prop('checked', false);
-				$(this).closest('.wcs-customer-field-row').find('select').val('dropdown');
-				refreshCustomerFieldRow($(this).closest('.wcs-customer-field-row'));
+				var $row = $(this).closest('.wcs-customer-field-row');
+				$row.find('input[type="text"]').val('');
+				$row.find('input[type="checkbox"]').prop('checked', false);
+				refreshCustomerFieldRow($row);
 				return;
 			}
 			$(this).closest('.wcs-customer-field-row').remove();
@@ -299,20 +336,33 @@
 		$(document).on('click', '.wcs-customer-option-add', function (e) {
 			e.preventDefault();
 			var $field = $(this).closest('.wcs-customer-field-row');
-			$field.find('.wcs-customer-field-options').append(buildCustomerOptionRow($field));
+			$field.children('.wcs-customer-field-options').append(buildCustomerOptionRow($field));
 			reindexCustomerFields();
 		});
 
 		$(document).on('click', '.wcs-customer-option-remove', function (e) {
 			e.preventDefault();
 			var $field = $(this).closest('.wcs-customer-field-row');
-			var $options = $field.find('.wcs-customer-field-option');
+			var $options = $field.children('.wcs-customer-field-options').children('.wcs-customer-field-option');
 			if ($options.length <= 1) {
 				$(this).closest('.wcs-customer-field-option').find('input').val('');
 				return;
 			}
 			$(this).closest('.wcs-customer-field-option').remove();
 			reindexCustomerFields();
+		});
+
+		$(document).on('change', '.wcs-customer-option-position-toggle', function () {
+			var $position = $(this).closest('.wcs-customer-option-position');
+			var $option = $(this).closest('.wcs-customer-field-option');
+			var enabled = $(this).is(':checked');
+			$position.toggleClass('is-enabled', enabled);
+			$option.toggleClass('has-nested-fields', enabled);
+			if (enabled && !$option.find('> .wcs-customer-option-position-fields > .wcs-customer-field-list > .wcs-customer-field-row').length) {
+				var $list = $option.find('> .wcs-customer-option-position-fields > .wcs-customer-field-list');
+				$list.append(buildCustomerFieldRow($list));
+				reindexCustomerFields();
+			}
 		});
 
 		$(document).on('blur', '.wcs-customer-field-label', function () {

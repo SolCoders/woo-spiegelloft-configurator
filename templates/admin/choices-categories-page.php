@@ -108,7 +108,6 @@ defined( 'ABSPATH' ) || exit;
 									<?php endforeach; ?>
 								</select>
 								<div class="wcs-inline-position-options">
-									<div class="wcs-inline-position-options-title"><?php esc_html_e( 'Dropdown values', 'woo-spiegelloft-configurator' ); ?></div>
 									<?php foreach ( $position_rows as $position_row ) : ?>
 										<div class="wcs-inline-position-option">
 											<input type="text" class="wcs-inline-position-option-label" value="<?php echo esc_attr( (string) ( $position_row['label'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'top center', 'woo-spiegelloft-configurator' ); ?>">

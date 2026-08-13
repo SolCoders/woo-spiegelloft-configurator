@@ -466,6 +466,7 @@ class WCS_Config_Builder {
 			'type'        => $type,
 			'required'    => ! empty( $field['required'] ),
 			'placeholder' => (string) ( $field['placeholder'] ?? '' ),
+			'price_enabled' => ! empty( $field['price_enabled'] ),
 		);
 
 		if ( '' === $row['label'] || '' === $row['key'] ) {
@@ -473,11 +474,12 @@ class WCS_Config_Builder {
 		}
 
 		if ( 'dropdown' === $type ) {
-			$row['price_enabled'] = ! empty( $field['price_enabled'] );
 			$row['options']       = array_values( array_filter( array_map( array( $this, 'normalize_customer_field_option' ), (array) ( $field['options'] ?? array() ) ) ) );
 			if ( empty( $row['options'] ) ) {
 				return null;
 			}
+		} elseif ( ! empty( $row['price_enabled'] ) ) {
+			$row['price'] = (float) ( $field['price'] ?? 0 );
 		}
 
 		return $row;
@@ -500,11 +502,31 @@ class WCS_Config_Builder {
 			return null;
 		}
 
-		return array(
+		$row = array(
 			'label' => $label,
 			'value' => $value,
 			'price' => (float) ( $option['price'] ?? 0 ),
 		);
+
+		if ( ! empty( $option['customer_fields'] ) && is_array( $option['customer_fields'] ) ) {
+			$row['nested_enabled']  = true;
+			$row['customer_fields'] = array_values( array_filter( array_map( array( $this, 'normalize_customer_field' ), $option['customer_fields'] ) ) );
+		} elseif ( ! empty( $option['position_enabled'] ) && ! empty( $option['position_options'] ) && is_array( $option['position_options'] ) ) {
+			$row['nested_enabled']  = true;
+			$row['customer_fields'] = array(
+				array(
+					'label'         => (string) ( $option['position_label'] ?? __( 'Position', 'woo-spiegelloft-configurator' ) ),
+					'key'           => 'position',
+					'type'          => 'dropdown',
+					'required'      => true,
+					'placeholder'   => '',
+					'price_enabled' => false,
+					'options'       => array_values( $option['position_options'] ),
+				),
+			);
+		}
+
+		return $row;
 	}
 
 	/**
@@ -524,29 +546,58 @@ class WCS_Config_Builder {
 				continue;
 			}
 
-			foreach ( $this->normalize_customer_fields( $option ) as $field ) {
-				$key   = (string) $group_slug . '.' . (string) $selected . '.' . (string) $field['key'];
-				$value = $selections[ $key ] ?? '';
-				if ( ! empty( $field['required'] ) && ( '' === (string) $value || '---' === (string) $value ) ) {
-					return new WP_Error(
-						'wcs_required_customer_field',
-						sprintf(
-							/* translators: %s: customer field label */
-							__( 'Required field missing for %s.', 'woo-spiegelloft-configurator' ),
-							(string) $field['label']
-						)
-					);
-				}
+			$valid = $this->validate_customer_field_rows( $this->normalize_customer_fields( $option ), (string) $group_slug . '.' . (string) $selected, $selections );
+			if ( is_wp_error( $valid ) ) {
+				return $valid;
+			}
+		}
 
-				if ( 'dropdown' === (string) $field['type'] && '' !== (string) $value && ! $this->find_customer_field_option( $field, (string) $value ) ) {
-					return new WP_Error(
-						'wcs_invalid_customer_field',
-						sprintf(
-							/* translators: %s: customer field label */
-							__( 'Invalid value selected for %s.', 'woo-spiegelloft-configurator' ),
-							(string) $field['label']
-						)
-					);
+		return true;
+	}
+
+	/**
+	 * Validate customer field rows recursively.
+	 *
+	 * @param array<int, array<string, mixed>> $fields     Field rows.
+	 * @param string                           $base_path  Submitted key prefix.
+	 * @param array<string, mixed>             $selections Sanitized selections.
+	 * @return true|WP_Error
+	 */
+	private function validate_customer_field_rows( array $fields, string $base_path, array $selections ) {
+		foreach ( $fields as $field ) {
+			$key   = $base_path . '.' . (string) $field['key'];
+			$value = $selections[ $key ] ?? '';
+			if ( ! empty( $field['required'] ) && ( '' === (string) $value || '---' === (string) $value ) ) {
+				return new WP_Error(
+					'wcs_required_customer_field',
+					sprintf(
+						/* translators: %s: customer field label */
+						__( 'Required field missing for %s.', 'woo-spiegelloft-configurator' ),
+						(string) $field['label']
+					)
+				);
+			}
+
+			if ( 'dropdown' !== (string) $field['type'] || '' === (string) $value ) {
+				continue;
+			}
+
+			$field_option = $this->find_customer_field_option( $field, (string) $value );
+			if ( ! $field_option ) {
+				return new WP_Error(
+					'wcs_invalid_customer_field',
+					sprintf(
+						/* translators: %s: customer field label */
+						__( 'Invalid value selected for %s.', 'woo-spiegelloft-configurator' ),
+						(string) $field['label']
+					)
+				);
+			}
+
+			if ( ! empty( $field_option['customer_fields'] ) && is_array( $field_option['customer_fields'] ) ) {
+				$valid = $this->validate_customer_field_rows( (array) $field_option['customer_fields'], $key . '.' . (string) $value, $selections );
+				if ( is_wp_error( $valid ) ) {
+					return $valid;
 				}
 			}
 		}
@@ -564,26 +615,40 @@ class WCS_Config_Builder {
 	 */
 	private function calculate_customer_field_prices( string $group_slug, string $selected, array $option, array $selections ): float {
 		$total = 0.0;
-		foreach ( $this->normalize_customer_fields( $option ) as $field ) {
-			if ( 'dropdown' !== (string) $field['type'] || empty( $field['price_enabled'] ) ) {
+		return $this->calculate_customer_field_row_prices( $this->normalize_customer_fields( $option ), $group_slug . '.' . $selected, $selections );
+	}
+
+	/**
+	 * Add trusted dropdown-row prices for customer field rows recursively.
+	 *
+	 * @param array<int, array<string, mixed>> $fields     Field rows.
+	 * @param string                           $base_path  Submitted key prefix.
+	 * @param array<string, mixed>             $selections Sanitized selections.
+	 */
+	private function calculate_customer_field_row_prices( array $fields, string $base_path, array $selections ): float {
+		$total = 0.0;
+		foreach ( $fields as $field ) {
+			$key = $base_path . '.' . (string) $field['key'];
+			if ( 'dropdown' !== (string) $field['type'] ) {
+				if ( ! empty( $field['price_enabled'] ) && '' !== (string) ( $selections[ $key ] ?? '' ) ) {
+					$total += (float) ( $field['price'] ?? 0 );
+				}
 				continue;
 			}
 
-			$key   = $group_slug . '.' . $selected . '.' . (string) $field['key'];
-			$value = (string) ( $selections[ $key ] ?? '' );
-			if ( '' === $value ) {
-				continue;
-			}
-
-			$field_option = $this->find_customer_field_option( $field, $value );
-			if ( $field_option ) {
+			$value        = (string) ( $selections[ $key ] ?? '' );
+			$field_option = '' === $value ? null : $this->find_customer_field_option( $field, $value );
+			if ( $field_option && ! empty( $field['price_enabled'] ) ) {
 				$total += (float) ( $field_option['price'] ?? 0 );
+			}
+
+			if ( $field_option && ! empty( $field_option['customer_fields'] ) && is_array( $field_option['customer_fields'] ) ) {
+				$total += $this->calculate_customer_field_row_prices( (array) $field_option['customer_fields'], $key . '.' . $value, $selections );
 			}
 		}
 
 		return $total;
 	}
-
 	/**
 	 * Find an option's saved data by group and selected slug.
 	 *
@@ -620,4 +685,5 @@ class WCS_Config_Builder {
 
 		return null;
 	}
+
 }

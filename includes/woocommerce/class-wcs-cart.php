@@ -305,20 +305,32 @@ class WCS_Cart {
 	 * @return array<int, array<string, mixed>>
 	 */
 	private function build_customer_field_items( string $group_slug, string $selected, array $option, array $selections ): array {
+		return $this->build_customer_field_row_items( (array) ( $option['customer_fields'] ?? array() ), $group_slug . '.' . $selected, $selections );
+	}
+
+	/**
+	 * Build readable rows for customer fields recursively.
+	 *
+	 * @param array<int, array<string, mixed>> $fields     Customer fields.
+	 * @param string                           $base_path  Submitted key prefix.
+	 * @param array<string, mixed>             $selections Sanitized selections.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function build_customer_field_row_items( array $fields, string $base_path, array $selections ): array {
 		$items = array();
-		foreach ( (array) ( $option['customer_fields'] ?? array() ) as $field ) {
+		foreach ( $fields as $field ) {
 			if ( ! is_array( $field ) ) {
 				continue;
 			}
 
-			$key   = $group_slug . '.' . $selected . '.' . (string) ( $field['key'] ?? '' );
+			$key   = $base_path . '.' . (string) ( $field['key'] ?? '' );
 			$value = (string) ( $selections[ $key ] ?? '' );
 			if ( '' === $value ) {
 				continue;
 			}
 
 			$display_value = $value;
-			$price         = 0.0;
+			$price         = ! empty( $field['price_enabled'] ) && 'dropdown' !== (string) ( $field['type'] ?? '' ) ? (float) ( $field['price'] ?? 0 ) : 0.0;
 			if ( 'dropdown' === (string) ( $field['type'] ?? '' ) ) {
 				$field_option = $this->find_customer_field_option( (array) ( $field['options'] ?? array() ), $value );
 				if ( $field_option ) {
@@ -332,6 +344,10 @@ class WCS_Cart {
 				'value' => $display_value,
 				'price' => $price,
 			);
+
+			if ( ! empty( $field_option['customer_fields'] ) && is_array( $field_option['customer_fields'] ) ) {
+				$items = array_merge( $items, $this->build_customer_field_row_items( (array) $field_option['customer_fields'], $key . '.' . $value, $selections ) );
+			}
 		}
 
 		return $items;
@@ -353,6 +369,7 @@ class WCS_Cart {
 
 		return null;
 	}
+
 }
 
 /**
