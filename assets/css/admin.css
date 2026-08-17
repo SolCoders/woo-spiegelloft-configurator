@@ -277,7 +277,7 @@
 /* Choice editor */
 .wcs-choice-details .wcs-field,
 .wcs-choice-nested .wcs-field {
-	margin-bottom: 16px;
+	margin: 0 0 12px;
 }
 
 .wcs-choice-details label,
@@ -287,8 +287,8 @@
 }
 
 .wcs-advanced {
-	margin-top: 16px;
-	padding: 12px;
+	margin-top: 10px;
+	padding: 10px;
 	background: #f6f7f7;
 	border: 1px solid #dcdcde;
 	border-radius: 4px;
@@ -297,6 +297,22 @@
 .wcs-advanced summary {
 	cursor: pointer;
 	font-weight: 600;
+}
+
+#side-sortables .wcs-choice-details .wcs-field:last-child,
+#side-sortables .wcs-choice-details .wcs-advanced .wcs-field:last-child {
+	margin-bottom: 0;
+}
+
+#side-sortables .wcs-choice-details input {
+	min-height: 32px;
+}
+
+#side-sortables .wcs-choice-details .description {
+	display: block;
+	margin-top: 4px;
+	font-size: 12px;
+	line-height: 1.35;
 }
 
 .wcs-image-picker {
@@ -497,8 +513,8 @@
 	align-items: center;
 	justify-content: space-between;
 	gap: 16px;
-	margin: 0 0 14px;
-	padding: 14px 16px;
+	margin: 0 0 10px;
+	padding: 10px 12px;
 	border: 1px solid #dbeafe;
 	border-radius: 6px;
 	background: #f8fbff;
@@ -516,14 +532,14 @@
 
 .wcs-customer-field-list {
 	display: grid;
-	gap: 18px;
+	gap: 12px;
 	padding: 0;
 }
 
 .wcs-customer-field-row {
 	display: grid;
-	gap: 12px;
-	padding: 14px;
+	gap: 10px;
+	padding: 10px;
 	border: 1px solid #edf0f3;
 	border-radius: 6px;
 	background: #fff;
@@ -541,7 +557,7 @@
 .wcs-customer-field-grid .wcs-customer-field-price,
 .wcs-customer-field-grid select,
 .wcs-customer-field-option input[type="text"] {
-	min-height: 38px;
+	min-height: 32px;
 	min-width: 0;
 	width: 100%;
 	border-color: #d7dce3;
@@ -565,7 +581,7 @@
 
 .wcs-customer-field-add,
 .wcs-customer-field-remove {
-	min-height: 34px;
+	min-height: 32px;
 	min-width: 0;
 	align-self: center;
 	justify-self: stretch;
@@ -587,7 +603,7 @@
 
 .wcs-customer-field-options {
 	display: grid;
-	gap: 6px;
+	gap: 4px;
 }
 
 .wcs-customer-field-option-head {
@@ -607,15 +623,15 @@
 	grid-template-columns: 64px minmax(170px, 0.75fr) minmax(170px, 0.75fr) 54px 68px 58px 78px;
 	gap: 8px;
 	align-items: center;
-	padding: 8px 10px;
+	padding: 6px 8px;
 	min-width: 0;
 	border: 1px solid transparent;
 	border-radius: 4px;
 	background: #f8fafc;
 }
 
-.wcs-customer-field-option .button {
-	min-height: 34px;
+.wcs-customer-field-row .button {
+	min-height: 32px;
 	width: 100%;
 	padding: 0;
 	border-radius: 4px;
@@ -664,10 +680,32 @@
 	min-height: 42px;
 	padding: 0;
 	overflow: hidden;
-	border-radius: 4px;
-	color: #3858e9;
-	font-size: 18px;
+	border: 1px solid #c3c4c7;
+	border-radius: 2px;
+	background: #f6f7f7;
+	color: #787c82;
+	font-size: 0;
 	line-height: 1;
+	box-shadow: none;
+	margin-left: 0;
+}
+
+.wcs-customer-field-option-image .wcs-image-square::before {
+	content: "\f128";
+	font-family: dashicons;
+	font-size: 24px;
+	line-height: 1;
+}
+
+.wcs-customer-field-option-image .wcs-image-square:hover,
+.wcs-customer-field-option-image .wcs-image-square:focus {
+	border-color: #8c8f94;
+	background: #fff;
+	color: #50575e;
+}
+
+.wcs-customer-field-option-image .wcs-image-square.has-image::before {
+	content: "";
 }
 
 .wcs-customer-field-option-image .wcs-image-square img {
@@ -1314,10 +1352,6 @@
 .wcs-order-configuration dd {
 	margin-left: 0;
 	margin-bottom: 4px;
-}
-
-.wcs-image-field .wcs-upload-image {
-	margin-left: 8px;
 }
 
 .wcs-product-configurator-intro .form-field {

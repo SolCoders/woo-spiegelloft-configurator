@@ -57,9 +57,11 @@ class WCS_Choice_Meta {
 			__( 'Choice details', 'woo-spiegelloft-configurator' ),
 			array( $this, 'render_details_meta_box' ),
 			'wcs_extra_option',
-			'normal',
+			'side',
 			'high'
 		);
+
+		remove_meta_box( 'tagsdiv-wcs_extra_group', 'wcs_extra_option', 'side' );
 
 		add_meta_box(
 			'wcs_choice_nested',
@@ -131,16 +133,9 @@ class WCS_Choice_Meta {
 		wp_nonce_field( 'wcs_save_choice', 'wcs_choice_nonce' );
 
 		$option_data = $this->get_option_data( (int) $post->ID );
-		$terms       = wp_get_object_terms( $post->ID, 'wcs_extra_group', array( 'fields' => 'slugs' ) );
-		$group       = ( ! is_wp_error( $terms ) && ! empty( $terms ) ) ? (string) $terms[0] : '';
-		if ( '' === $group && isset( $_GET['wcs_extra_group'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$group = sanitize_title( wp_unslash( (string) $_GET['wcs_extra_group'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		}
-		$groups      = $this->registry->get_groups();
 		$legacy_id   = (int) get_post_meta( $post->ID, '_wcs_legacy_id', true );
 		$slug        = (string) get_post_meta( $post->ID, '_wcs_option_slug', true );
 		$price       = (string) ( $option_data['price'] ?? get_post_meta( $post->ID, '_wcs_price', true ) );
-		$image       = (string) ( $option_data['image'] ?? get_post_meta( $post->ID, '_wcs_image', true ) );
 		$value       = (string) ( $option_data['value'] ?? $slug );
 
 		include WCS_PLUGIN_DIR . 'templates/admin/choice-details-meta.php';
@@ -191,22 +186,13 @@ class WCS_Choice_Meta {
 			return;
 		}
 
-		$group_slug = isset( $_POST['wcs_extra_group'] ) ? sanitize_title( wp_unslash( (string) $_POST['wcs_extra_group'] ) ) : '';
-		if ( $group_slug ) {
-			wp_set_object_terms( $post_id, $group_slug, 'wcs_extra_group' );
-		}
-
-		$name  = isset( $_POST['wcs_option_name'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['wcs_option_name'] ) ) : get_the_title( $post_id );
+		$title = get_the_title( $post_id );
+		$name  = $title ? sanitize_text_field( $title ) : __( 'Auto Draft', 'woo-spiegelloft-configurator' );
 		$value = isset( $_POST['wcs_option_value'] ) ? sanitize_title( wp_unslash( (string) $_POST['wcs_option_value'] ) ) : '';
 		$price = isset( $_POST['wcs_price'] ) ? wc_format_decimal( wp_unslash( (string) $_POST['wcs_price'] ) ) : '0';
 
-		if ( $name && $name !== get_the_title( $post_id ) ) {
-			wp_update_post(
-				array(
-					'ID'         => $post_id,
-					'post_title' => $name,
-				)
-			);
+		if ( '' === $value ) {
+			$value = sanitize_title( $name );
 		}
 
 		$legacy_id = isset( $_POST['wcs_legacy_id'] ) ? absint( $_POST['wcs_legacy_id'] ) : 0;
@@ -223,7 +209,9 @@ class WCS_Choice_Meta {
 			$option_data['customer_fields'] = $customer_fields;
 		}
 
-		$group_def = $group_slug ? $this->registry->get_group( $group_slug ) : null;
+		$terms      = wp_get_object_terms( $post_id, 'wcs_extra_group', array( 'fields' => 'slugs' ) );
+		$group_slug = ( ! is_wp_error( $terms ) && ! empty( $terms ) ) ? (string) $terms[0] : '';
+		$group_def  = $group_slug ? $this->registry->get_group( $group_slug ) : null;
 		if ( $group_def && ! empty( $group_def['optional_fields'] ) && isset( $_POST['wcs_nested'] ) && is_array( $_POST['wcs_nested'] ) ) {
 			$raw_nested = wp_unslash( $_POST['wcs_nested'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 			foreach ( (array) $group_def['optional_fields'] as $field_key => $field_def ) {

@@ -36,7 +36,6 @@ if ( ! function_exists( 'wcs_render_customer_field_rows' ) ) {
 						<option value="dropdown" <?php selected( $field_type, 'dropdown' ); ?>><?php esc_html_e( 'Dropdown', 'woo-spiegelloft-configurator' ); ?></option>
 						<option value="text" <?php selected( $field_type, 'text' ); ?>><?php esc_html_e( 'Text / number input', 'woo-spiegelloft-configurator' ); ?></option>
 					</select>
-					<input type="hidden" class="wcs-customer-field-key" name="<?php echo esc_attr( $field_name ); ?>[key]" value="<?php echo esc_attr( (string) ( $field['key'] ?? '' ) ); ?>">
 					<input type="text" class="wcs-customer-field-placeholder" name="<?php echo esc_attr( $field_name ); ?>[placeholder]" value="<?php echo esc_attr( (string) ( $field['placeholder'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'Placeholder', 'woo-spiegelloft-configurator' ); ?>">
 					<input type="text" class="wcs-customer-field-price" name="<?php echo esc_attr( $field_name ); ?>[price]" value="<?php echo esc_attr( (string) ( $field['price'] ?? '' ) ); ?>" placeholder="0.00">
 					<label><input type="checkbox" name="<?php echo esc_attr( $field_name ); ?>[required]" value="1" <?php checked( ! empty( $field['required'] ) ); ?>> <?php esc_html_e( 'Required', 'woo-spiegelloft-configurator' ); ?></label>
@@ -112,10 +111,6 @@ $field_rows = ! empty( $customer_fields ) ? $customer_fields : array(
 );
 ?>
 <div class="wcs-customer-fields">
-	<div class="wcs-customer-fields__head">
-		<p><?php esc_html_e( 'Show extra fields on the storefront only when this choice is selected.', 'woo-spiegelloft-configurator' ); ?></p>
-		<button type="button" class="button wcs-customer-field-add"><?php esc_html_e( 'Add field', 'woo-spiegelloft-configurator' ); ?></button>
-	</div>
 	<div class="wcs-customer-field-list">
 		<?php wcs_render_customer_field_rows( $field_rows, 'wcs_customer_fields' ); ?>
 	</div>

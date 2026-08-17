@@ -46,7 +46,6 @@ class WCS_Extras_Admin {
 		add_action( 'admin_menu', array( $this, 'register_submenu' ), 20 );
 		add_action( 'admin_init', array( $this, 'redirect_legacy_choices_page' ) );
 		add_action( 'init', array( $this, 'register_post_type_labels' ), 15 );
-		add_action( 'admin_head-edit.php', array( $this, 'hide_add_new_choice_button' ) );
 		add_filter( 'manage_wcs_extra_option_posts_columns', array( $this, 'list_columns' ) );
 		add_action( 'manage_wcs_extra_option_posts_custom_column', array( $this, 'render_list_column' ), 10, 2 );
 		add_action( 'restrict_manage_posts', array( $this, 'taxonomy_filter_dropdown' ) );
@@ -92,18 +91,6 @@ class WCS_Extras_Admin {
 			'manage_woocommerce',
 			'edit.php?post_type=wcs_extra_option'
 		);
-	}
-
-	/**
-	 * Hide the native Add New button on the choices list.
-	 */
-	public function hide_add_new_choice_button(): void {
-		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
-		if ( ! $screen || 'wcs_extra_option' !== ( $screen->post_type ?? '' ) ) {
-			return;
-		}
-
-		echo '<style>.post-type-wcs_extra_option .page-title-action{display:none!important;}</style>';
 	}
 
 	/**

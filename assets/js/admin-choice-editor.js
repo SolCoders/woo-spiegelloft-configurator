@@ -69,7 +69,7 @@
 	}
 
 	function getGroupSlug() {
-		return $('#wcs_extra_group').val() || '';
+		return $('#wcs_extra_group').val() || $('.wcs-choice-nested').attr('data-group') || '';
 	}
 
 	function toggleNestedSections() {
@@ -226,12 +226,6 @@
 
 	function bindCategoryChange() {
 		$('#wcs_extra_group').on('change', toggleNestedSections);
-		$('#wcs_option_name').on('blur', function () {
-			var $value = $('#wcs_option_value');
-			if (!$value.val()) {
-				$value.val(slugify($(this).val()));
-			}
-		});
 	}
 
 	function refreshCustomerFieldRow($row) {
@@ -257,6 +251,10 @@
 		$list.children('.wcs-customer-field-row').each(function (fieldIndex) {
 			var fieldName = baseName + '[' + fieldIndex + ']';
 			var $field = $(this).attr('data-field-index', fieldIndex);
+
+			$field.children('.wcs-customer-field-key').each(function () {
+				replaceCustomerFieldName($(this), fieldName, 'field');
+			});
 
 			$field.children('.wcs-customer-field-grid').find('[name]').each(function () {
 				replaceCustomerFieldName($(this), fieldName, 'field');
