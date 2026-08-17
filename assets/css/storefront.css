@@ -553,6 +553,23 @@
 	line-height: 1.45;
 }
 
+.wcs-review-card p {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+}
+
+.wcs-review-card p > span {
+	min-width: 0;
+}
+
+.wcs-review-line-price {
+	flex: 0 0 auto;
+	margin-left: auto;
+	white-space: nowrap;
+}
+
 .wcs-review-card p + p {
 	margin-top: -4px;
 }

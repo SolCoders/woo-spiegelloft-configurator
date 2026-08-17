@@ -72,7 +72,7 @@
 	function reviewRow(title, lines) {
 		var html = '<article class="wcs-review-card"><h4>' + escapeHtml(title) + '</h4>';
 		lines.forEach(function (line) {
-			html += '<p>' + escapeHtml(line.label) + (line.value ? ': <strong>' + escapeHtml(line.value) + '</strong>' : '') + (line.price ? ' <strong>' + escapeHtml(line.price) + '</strong>' : '') + '</p>';
+			html += '<p><span>' + escapeHtml(line.label) + (line.value ? ': <strong>' + escapeHtml(line.value) + '</strong>' : '') + '</span>' + (line.price ? '<strong class="wcs-review-line-price">' + escapeHtml(line.price) + '</strong>' : '') + '</p>';
 		});
 		return html + '</article>';
 	}
