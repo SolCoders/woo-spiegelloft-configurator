@@ -7,15 +7,23 @@
  * @var int    $legacy_id Legacy Shopify ID.
  * @var string $slug      Internal value slug.
  * @var string $price     Price string.
+ * @var bool   $required  Whether this choice requires customer input.
  * @var string $value     Option value slug.
  */
 
 defined( 'ABSPATH' ) || exit;
 ?>
 <div class="wcs-choice-details">
-	<p class="wcs-field">
-		<label for="wcs_price"><strong><?php esc_html_e( 'Price', 'woo-spiegelloft-configurator' ); ?></strong></label>
-		<input type="text" class="widefat" name="wcs_price" id="wcs_price" value="<?php echo esc_attr( $price ); ?>" placeholder="0.00">
+	<div class="wcs-choice-price-row">
+		<label for="wcs_price"><?php esc_html_e( 'Price', 'woo-spiegelloft-configurator' ); ?></label>
+		<input type="text" name="wcs_price" id="wcs_price" value="<?php echo esc_attr( $price ); ?>" placeholder="0.00">
+	</div>
+
+	<p class="wcs-choice-required-row">
+		<label class="wcs-choice-required">
+			<input type="checkbox" name="wcs_required" value="1" <?php checked( $required ); ?>>
+			<span><?php esc_html_e( 'Required choice', 'woo-spiegelloft-configurator' ); ?></span>
+		</label>
 	</p>
 
 	<details class="wcs-advanced">

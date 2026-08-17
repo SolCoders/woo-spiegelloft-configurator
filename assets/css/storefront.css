@@ -169,6 +169,19 @@
 	margin: 0;
 }
 
+.wcs-customer-nested-target {
+	display: grid;
+	gap: 12px;
+	margin-top: 10px;
+}
+
+.wcs-customer-nested-box {
+	display: grid;
+	gap: 12px;
+	padding: 14px 0 0 16px;
+	border-left: 2px solid #d7dce3;
+}
+
 .wcs-customer-field__label {
 	color: #020617;
 	font-size: 13px;

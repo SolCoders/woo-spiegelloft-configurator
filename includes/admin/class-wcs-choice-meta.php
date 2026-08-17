@@ -136,6 +136,7 @@ class WCS_Choice_Meta {
 		$legacy_id   = (int) get_post_meta( $post->ID, '_wcs_legacy_id', true );
 		$slug        = (string) get_post_meta( $post->ID, '_wcs_option_slug', true );
 		$price       = (string) ( $option_data['price'] ?? get_post_meta( $post->ID, '_wcs_price', true ) );
+		$required    = ! empty( $option_data['required'] );
 		$value       = (string) ( $option_data['value'] ?? $slug );
 
 		include WCS_PLUGIN_DIR . 'templates/admin/choice-details-meta.php';
@@ -190,6 +191,7 @@ class WCS_Choice_Meta {
 		$name  = $title ? sanitize_text_field( $title ) : __( 'Auto Draft', 'woo-spiegelloft-configurator' );
 		$value = isset( $_POST['wcs_option_value'] ) ? sanitize_title( wp_unslash( (string) $_POST['wcs_option_value'] ) ) : '';
 		$price = isset( $_POST['wcs_price'] ) ? wc_format_decimal( wp_unslash( (string) $_POST['wcs_price'] ) ) : '0';
+		$required = ! empty( $_POST['wcs_required'] );
 
 		if ( '' === $value ) {
 			$value = sanitize_title( $name );
@@ -198,9 +200,10 @@ class WCS_Choice_Meta {
 		$legacy_id = isset( $_POST['wcs_legacy_id'] ) ? absint( $_POST['wcs_legacy_id'] ) : 0;
 
 		$option_data = array(
-			'name'  => $name,
-			'value' => $value,
-			'price' => (float) $price,
+			'name'     => $name,
+			'value'    => $value,
+			'price'    => (float) $price,
+			'required' => $required,
 		);
 
 		$customer_fields_raw = isset( $_POST['wcs_customer_fields'] ) ? wp_unslash( $_POST['wcs_customer_fields'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
@@ -252,7 +255,7 @@ class WCS_Choice_Meta {
 				'key'         => 'position',
 				'type'        => 'dropdown',
 				'required'    => false,
-				'price_enabled' => false,
+				'price_enabled' => true,
 				'placeholder' => '',
 				'options'     => array_values( $option_data['position_options'] ),
 			),
@@ -287,17 +290,17 @@ class WCS_Choice_Meta {
 				'label'       => $label ?: ucwords( str_replace( '-', ' ', $key ) ),
 				'key'         => $key,
 				'type'        => $type,
-				'required'    => ! empty( $field['required'] ),
+				'required'    => false,
 				'placeholder' => sanitize_text_field( (string) ( $field['placeholder'] ?? '' ) ),
-				'price_enabled' => ! empty( $field['price_enabled'] ),
+				'price_enabled' => true,
 			);
 
 			if ( 'dropdown' === $type ) {
-				$row['options']       = $this->sanitize_customer_field_options( $field['options'] ?? array(), ! empty( $row['price_enabled'] ) );
+				$row['options']       = $this->sanitize_customer_field_options( $field['options'] ?? array(), true );
 				if ( empty( $row['options'] ) ) {
 					continue;
 				}
-			} elseif ( ! empty( $row['price_enabled'] ) ) {
+			} else {
 				$row['price'] = (float) wc_format_decimal( (string) ( $field['price'] ?? '0' ) );
 			}
 
@@ -326,7 +329,7 @@ class WCS_Choice_Meta {
 			}
 
 			$label = sanitize_text_field( (string) ( $option['label'] ?? '' ) );
-			$value = sanitize_title( (string) ( $option['value'] ?? $label ) );
+			$value = sanitize_title( $label );
 			if ( '' === $label && '' === $value ) {
 				continue;
 			}
@@ -382,8 +385,8 @@ class WCS_Choice_Meta {
 				'type'          => 'dropdown',
 				'required'      => true,
 				'placeholder'   => '',
-				'price_enabled' => false,
-				'options'       => $this->sanitize_customer_field_options( $option['position_options'] ?? array(), false ),
+				'price_enabled' => true,
+				'options'       => $this->sanitize_customer_field_options( $option['position_options'] ?? array(), true ),
 			),
 		);
 	}

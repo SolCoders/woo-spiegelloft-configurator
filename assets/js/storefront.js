@@ -150,6 +150,10 @@
 		}
 	}
 
+	function clearNestedCustomerFields($field) {
+		$field.closest('.wcs-customer-field').find('.wcs-customer-nested-target').prop('hidden', true).empty();
+	}
+
 	function refreshPositionSelect($select) {
 		var group = $select.data('group');
 		var $target = $select.closest('.wcs-step-option-group').find('.wcs-position-select');
@@ -241,18 +245,20 @@
 
 	function refreshNestedCustomerFields($field) {
 		var $target = $field.closest('.wcs-customer-field').children('.wcs-customer-nested-target');
-		var fields = parseCustomerFields($field);
+		var selected = $field.val() || '';
+		var fields = selected ? parseCustomerFields($field) : [];
 
 		if (!$target.length) {
 			return;
 		}
 
+		clearNestedCustomerFields($field);
+
 		if (!fields.length) {
-			$target.prop('hidden', true).empty();
 			return;
 		}
 
-		var html = renderCustomerFields(fields, String($field.data('key') || '') + '.' + ($field.val() || ''), true);
+		var html = renderCustomerFields(fields, String($field.data('key') || '') + '.' + selected, true);
 		$target.html(html).prop('hidden', !html);
 		buildCustomSelect($target.find('select'));
 		$target.find('.wcs-customer-field-select').each(function () {

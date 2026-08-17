@@ -229,15 +229,15 @@
 	}
 
 	function refreshCustomerFieldRow($row) {
-		var $grid = $row.children('.wcs-customer-field-grid');
-		var $options = $row.children('.wcs-customer-field-options');
+		var $box = $row.children('.wcs-customer-field-box');
+		var $grid = $box.children('.wcs-customer-field-grid');
+		var $options = $box.children('.wcs-customer-field-options');
 		var isDropdown = $grid.find('.wcs-customer-field-type').first().val() !== 'text';
-		var prices = $grid.find('.wcs-customer-field-price-toggle input').first().is(':checked');
 		$row.toggleClass('is-dropdown', isDropdown);
-		$row.toggleClass('has-prices', prices);
+		$row.addClass('has-prices');
 		$options.toggle(isDropdown);
-		$grid.find('.wcs-customer-field-price').toggle(!isDropdown && prices);
-		$options.children('.wcs-customer-field-option').children('.wcs-customer-field-option-price').toggle(isDropdown && prices);
+		$grid.find('.wcs-customer-field-price').toggle(!isDropdown);
+		$options.children('.wcs-customer-field-option').children('.wcs-customer-field-option-price').toggle(isDropdown);
 		$options.children('.wcs-customer-field-option').children('.wcs-customer-option-position').each(function () {
 			$(this).toggleClass('is-enabled', $(this).children('.wcs-customer-option-position-switch').find('.wcs-customer-option-position-toggle').is(':checked'));
 		});
@@ -256,14 +256,17 @@
 				replaceCustomerFieldName($(this), fieldName, 'field');
 			});
 
-			$field.children('.wcs-customer-field-grid').find('[name]').each(function () {
+			$field.children('.wcs-customer-field-box').children('.wcs-customer-field-grid').find('[name]').each(function () {
 				replaceCustomerFieldName($(this), fieldName, 'field');
 			});
 
-			$field.children('.wcs-customer-field-options').children('.wcs-customer-field-option').each(function (optionIndex) {
+			$field.children('.wcs-customer-field-box').children('.wcs-customer-field-options').children('.wcs-customer-field-option').each(function (optionIndex) {
 				var optionName = fieldName + '[options][' + optionIndex + ']';
 				var $option = $(this);
 				$option.children('[name]').each(function () {
+					replaceCustomerFieldName($(this), optionName, 'option');
+				});
+				$option.children('.wcs-customer-field-option-image').find('[name]').each(function () {
 					replaceCustomerFieldName($(this), optionName, 'option');
 				});
 				$option.children('.wcs-customer-option-position').find('.wcs-customer-option-position-toggle').each(function () {
@@ -283,11 +286,8 @@
 			else if ($input.hasClass('wcs-customer-field-key')) suffix = '[key]';
 			else if ($input.hasClass('wcs-customer-field-placeholder')) suffix = '[placeholder]';
 			else if ($input.hasClass('wcs-customer-field-price')) suffix = '[price]';
-			else if ($input.closest('.wcs-customer-field-price-toggle').length) suffix = '[price_enabled]';
-			else suffix = '[required]';
 		} else {
 			if ($input.hasClass('wcs-customer-field-option-label')) suffix = '[label]';
-			else if ($input.hasClass('wcs-customer-field-option-value')) suffix = '[value]';
 			else if ($input.hasClass('wcs-image-url')) suffix = '[image]';
 			else if ($input.hasClass('wcs-customer-field-option-price')) suffix = '[price]';
 			else suffix = '[nested_enabled]';
@@ -302,7 +302,7 @@
 		var $template = $source.clone();
 		$template.find('input[type="text"]').val('');
 		$template.find('input[type="checkbox"]').prop('checked', false);
-		$template.children('.wcs-customer-field-options').children('.wcs-customer-field-option').not(':first').remove();
+		$template.children('.wcs-customer-field-box').children('.wcs-customer-field-options').children('.wcs-customer-field-option').not(':first').remove();
 		$template.find('.wcs-customer-field-option').removeClass('has-nested-fields');
 		$template.find('.wcs-customer-option-position').removeClass('is-enabled');
 		$template.find('.wcs-customer-option-position-fields > .wcs-customer-field-list').empty();
@@ -311,7 +311,7 @@
 	}
 
 	function buildCustomerOptionRow($field) {
-		var $template = $field.children('.wcs-customer-field-options').children('.wcs-customer-field-option').first().clone();
+		var $template = $field.children('.wcs-customer-field-box').children('.wcs-customer-field-options').children('.wcs-customer-field-option').first().clone();
 		$template.find('input[type="text"]').val('');
 		$template.find('input[type="checkbox"]').prop('checked', false);
 		$template.find('.wcs-image-url').val('').trigger('change');
@@ -347,21 +347,21 @@
 			reindexCustomerFields();
 		});
 
-		$(document).on('change', '.wcs-customer-field-type, .wcs-customer-field-price-toggle input', function () {
+		$(document).on('change', '.wcs-customer-field-type', function () {
 			refreshCustomerFieldRow($(this).closest('.wcs-customer-field-row'));
 		});
 
 		$(document).on('click', '.wcs-customer-option-add', function (e) {
 			e.preventDefault();
 			var $field = $(this).closest('.wcs-customer-field-row');
-			$field.children('.wcs-customer-field-options').append(buildCustomerOptionRow($field));
+			$field.children('.wcs-customer-field-box').children('.wcs-customer-field-options').append(buildCustomerOptionRow($field));
 			reindexCustomerFields();
 		});
 
 		$(document).on('click', '.wcs-customer-option-remove', function (e) {
 			e.preventDefault();
 			var $field = $(this).closest('.wcs-customer-field-row');
-			var $options = $field.children('.wcs-customer-field-options').children('.wcs-customer-field-option');
+			var $options = $field.children('.wcs-customer-field-box').children('.wcs-customer-field-options').children('.wcs-customer-field-option');
 			if ($options.length <= 1) {
 				$(this).closest('.wcs-customer-field-option').find('input').val('');
 				return;
@@ -388,14 +388,6 @@
 			var $key = $row.find('.wcs-customer-field-key');
 			if (!$key.val()) {
 				$key.val(slugify($(this).val()));
-			}
-		});
-
-		$(document).on('blur', '.wcs-customer-field-option-label', function () {
-			var $row = $(this).closest('.wcs-customer-field-option');
-			var $value = $row.find('.wcs-customer-field-option-value');
-			if (!$value.val()) {
-				$value.val(slugify($(this).val()));
 			}
 		});
 
