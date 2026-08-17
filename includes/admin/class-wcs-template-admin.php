@@ -140,8 +140,46 @@ class WCS_Template_Admin {
 			$all_groups = $ordered_groups + $all_groups;
 		}
 
+		$flat_group_slug = '';
+		$flat_group      = array();
+		foreach ( $all_groups as $group_slug => $group ) {
+			if ( 'static' === ( $group['type'] ?? 'selectable' ) ) {
+				continue;
+			}
+			$flat_group_slug = (string) $group_slug;
+			$flat_group      = (array) $group;
+			break;
+		}
+
+		$flat_options      = $this->catalog->get_all_options();
+		$flat_selected_ids = array();
+		foreach ( $option_map as $selected_ids ) {
+			foreach ( (array) $selected_ids as $selected_id ) {
+				$selected_id = absint( $selected_id );
+				if ( $selected_id ) {
+					$flat_selected_ids[] = $selected_id;
+				}
+			}
+		}
+		$flat_selected_ids = array_values( array_unique( $flat_selected_ids ) );
+		$flat_step         = max( 1, absint( $step_map[ $flat_group_slug ] ?? 2 ) );
+
+		$uncategorized_options = $this->catalog->get_uncategorized_options();
 		foreach ( array_keys( $all_groups ) as $group_slug ) {
-			$group_options[ $group_slug ] = $this->catalog->get_options_by_group( $group_slug );
+			$options = $this->catalog->get_options_by_group( $group_slug );
+			if ( ! empty( $uncategorized_options ) ) {
+				$seen = array();
+				foreach ( $options as $option ) {
+					$seen[ (int) ( $option['id'] ?? 0 ) ] = true;
+				}
+				foreach ( $uncategorized_options as $option ) {
+					$option_id = (int) ( $option['id'] ?? 0 );
+					if ( $option_id && ! isset( $seen[ $option_id ] ) ) {
+						$options[] = $option;
+					}
+				}
+			}
+			$group_options[ $group_slug ] = $options;
 		}
 
 		include WCS_PLUGIN_DIR . 'templates/admin/template-choices-meta.php';

@@ -72,7 +72,7 @@
 	function reviewRow(title, lines) {
 		var html = '<article class="wcs-review-card"><h4>' + escapeHtml(title) + '</h4>';
 		lines.forEach(function (line) {
-			html += '<p>' + escapeHtml(line.label) + (line.value ? ': <strong>' + escapeHtml(line.value) + '</strong>' : '') + '</p>';
+			html += '<p>' + escapeHtml(line.label) + (line.value ? ': <strong>' + escapeHtml(line.value) + '</strong>' : '') + (line.price ? ' <strong>' + escapeHtml(line.price) + '</strong>' : '') + '</p>';
 		});
 		return html + '</article>';
 	}
@@ -99,10 +99,7 @@
 			var optionText = cleanOptionText($select.find(':selected').text());
 			var price = parseFloat($select.find(':selected').data('price')) || 0;
 			var group = $select.data('group');
-			var lines = [{ label: optionText, value: '' }];
-			if (price) {
-				lines.push({ label: 'Price', value: '+' + money(price) });
-			}
+			var lines = [{ label: optionText, value: '', price: price ? '+' + money(price) : '' }];
 			var $position = $select.closest('.wcs-step-option-group').find('.wcs-position-choice');
 			if ($position.length && $position.val()) {
 				lines.push({ label: $select.closest('.wcs-step-option-group').find('.wcs-position-select h3').text() || 'Position', value: cleanOptionText($position.find(':selected').text()) });
@@ -116,10 +113,7 @@
 				var fieldLabel = $field.closest('.wcs-customer-field').find('.wcs-customer-field__label').first().text();
 				var displayValue = $field.is('select') ? cleanOptionText($field.find(':selected').text()) : fieldValue;
 				var fieldPrice = $field.is('select') ? (parseFloat($field.find(':selected').data('price')) || 0) : (parseFloat($field.data('price')) || 0);
-				lines.push({ label: fieldLabel || group, value: displayValue });
-				if (fieldPrice) {
-					lines.push({ label: fieldLabel + ' price', value: '+' + money(fieldPrice) });
-				}
+				lines.push({ label: fieldLabel || group, value: displayValue, price: fieldPrice ? '+' + money(fieldPrice) : '' });
 			});
 			rows.push(reviewRow(title, lines));
 		});
@@ -194,7 +188,7 @@
 			return;
 		}
 
-		var html = renderCustomerFields(fields, group + '.' + selected, false);
+		var html = renderCustomerFields(fields, group + '.' + selected, false, $target.data('skip-first-label') === 1 || $target.data('skip-first-label') === '1');
 
 		$target.html(html).prop('hidden', !html);
 		buildCustomSelect($target.find('select'));
@@ -203,20 +197,29 @@
 		});
 	}
 
-	function renderCustomerFields(fields, baseKey, nested) {
-		var html = nested ? '<div class="wcs-customer-nested-box">' : '';
-		fields.forEach(function (field) {
+	function renderCustomerFields(fields, baseKey, nested, skipFirstLabel) {
+		var visibleFields = (fields || []).filter(function (field) {
+			return field && field.key && (field.label || field.key);
+		});
+		var textOnly = visibleFields.length > 1 && visibleFields.every(function (field) {
+			return field.type === 'text';
+		});
+		var html = nested ? '<div class="wcs-customer-nested-box' + (textOnly ? ' wcs-customer-nested-box--inline' : '') + '">' : '';
+		fields.forEach(function (field, index) {
 			var key = baseKey + '.' + (field.key || '');
 			var label = field.label || field.key || '';
 			var placeholder = field.placeholder ? ' placeholder="' + escapeHtml(field.placeholder) + '"' : '';
 			if (!field.key || !label) {
 				return;
 			}
-			html += '<label class="wcs-customer-field"><span class="wcs-customer-field__label">' + escapeHtml(label) + '</span>';
+			html += '<div class="wcs-customer-field' + (field.type === 'text' ? ' wcs-customer-field--text' : ' wcs-customer-field--choices') + '">';
+			if (!(skipFirstLabel && index === 0)) {
+				html += '<label class="wcs-customer-field__label" for="wcs-field-' + escapeHtml(key) + '">' + escapeHtml(label) + '</label>';
+			}
 			if (field.type === 'text') {
-				html += '<input type="text" class="wcs-customer-field-input" data-key="' + escapeHtml(key) + '" data-price="' + escapeHtml(field.price_enabled ? (parseFloat(field.price) || 0) : 0) + '"' + placeholder + '>';
+				html += '<input id="wcs-field-' + escapeHtml(key) + '" type="text" class="wcs-customer-field-input" data-key="' + escapeHtml(key) + '" data-price="' + escapeHtml(field.price_enabled ? (parseFloat(field.price) || 0) : 0) + '"' + placeholder + '>';
 			} else {
-				html += '<select class="wcs-customer-field-input wcs-customer-field-select" data-key="' + escapeHtml(key) + '">';
+				html += '<select id="wcs-field-' + escapeHtml(key) + '" class="wcs-customer-field-input wcs-customer-field-select" data-key="' + escapeHtml(key) + '">';
 				html += '<option value="">' + escapeHtml(field.placeholder || 'Please select') + '</option>';
 				(field.options || []).forEach(function (option) {
 					var price = parseFloat(option.price) || 0;
@@ -237,7 +240,7 @@
 				html += '</select>';
 			}
 			html += '<div class="wcs-customer-nested-target" hidden></div>';
-			html += '</label>';
+			html += '</div>';
 		});
 		html += nested ? '</div>' : '';
 		return html;
@@ -258,7 +261,7 @@
 			return;
 		}
 
-		var html = renderCustomerFields(fields, String($field.data('key') || '') + '.' + selected, true);
+		var html = renderCustomerFields(fields, String($field.data('key') || '') + '.' + selected, true, false);
 		$target.html(html).prop('hidden', !html);
 		buildCustomSelect($target.find('select'));
 		$target.find('.wcs-customer-field-select').each(function () {

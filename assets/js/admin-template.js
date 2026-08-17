@@ -197,7 +197,7 @@
 					}
 
 					var $row = $button.closest('tr');
-					var $panel = $button.closest('.wcs-template-group-panel');
+					var $panel = $button.closest('.wcs-template-group-panel, .wcs-template-flat-panel');
 					var $tbody = $row.closest('tbody');
 
 					$row.fadeOut(150, function () {
@@ -209,7 +209,7 @@
 
 						if (!count) {
 							$panel.find('.wcs-option-table-wrap').hide();
-							$panel.find('.wcs-empty-options-message').prop('hidden', false).show();
+							$panel.find('.wcs-empty-options-message, .wcs-template-flat-empty').prop('hidden', false).show();
 						}
 					});
 				})

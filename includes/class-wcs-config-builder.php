@@ -127,8 +127,8 @@ class WCS_Config_Builder {
 				continue;
 			}
 
-			$all_options    = $this->extras_catalog->get_options_by_group( $group_slug );
 			$allowed_ids    = (array) ( $option_map[ $group_slug ] ?? array() );
+			$all_options    = $this->extras_catalog->get_options_for_template_group( $group_slug, $allowed_ids );
 			$filtered       = array();
 			$allowed_lookup = array_flip( array_map( 'intval', $allowed_ids ) );
 
@@ -285,7 +285,10 @@ class WCS_Config_Builder {
 				continue;
 			}
 
-			$options = $this->extras_catalog->get_options_by_group( (string) $group_slug );
+			$options = array_merge(
+				$this->extras_catalog->get_options_by_group( (string) $group_slug ),
+				$this->extras_catalog->get_uncategorized_options()
+			);
 			$slugs   = $this->selection_to_slugs( $selected );
 
 			foreach ( $slugs as $slug ) {
@@ -392,7 +395,7 @@ class WCS_Config_Builder {
 			}
 
 			$allowed_ids = (array) ( $option_map[ $group_slug ] ?? array() );
-			foreach ( $this->extras_catalog->get_options_by_group( $group_slug ) as $option ) {
+			foreach ( $this->extras_catalog->get_options_for_template_group( $group_slug, $allowed_ids ) as $option ) {
 				$option_id = (int) ( $option['id'] ?? 0 );
 				if ( ! empty( $allowed_ids ) && ! in_array( $option_id, $allowed_ids, true ) ) {
 					continue;
@@ -658,7 +661,12 @@ class WCS_Config_Builder {
 	 * @return array<string, mixed>
 	 */
 	private function find_catalog_option_data( string $group_slug, string $selected ): array {
-		foreach ( $this->extras_catalog->get_options_by_group( $group_slug ) as $option ) {
+		$options = array_merge(
+			$this->extras_catalog->get_options_by_group( $group_slug ),
+			$this->extras_catalog->get_uncategorized_options()
+		);
+
+		foreach ( $options as $option ) {
 			$meta        = (array) ( $option['meta'] ?? array() );
 			$option_data = (array) ( $meta['_wcs_option_data'] ?? array() );
 			$slug        = (string) ( $option_data['value'] ?? $option['slug'] ?? '' );

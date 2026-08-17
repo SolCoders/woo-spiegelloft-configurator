@@ -567,9 +567,21 @@
 }
 
 .wcs-customer-fields {
-	border: 0;
-	background: transparent;
+	--wcs-builder-bg: #f6f8fc;
+	--wcs-builder-card: #ffffff;
+	--wcs-builder-muted: #6b7280;
+	--wcs-builder-text: #1f2937;
+	--wcs-builder-line: #e5e7eb;
+	--wcs-builder-line-soft: #eef2f7;
+	--wcs-builder-primary: #4f6ef7;
+	--wcs-builder-primary-soft: #eef3ff;
+	--wcs-builder-danger: #ef4444;
+	--wcs-builder-danger-soft: #fff1f2;
+	border: 1px solid var(--wcs-builder-line);
+	border-radius: 14px;
+	background: var(--wcs-builder-card);
 	overflow: visible;
+	padding: 18px;
 }
 
 .wcs-customer-fields__head {
@@ -596,7 +608,7 @@
 
 .wcs-customer-field-list {
 	display: grid;
-	gap: 12px;
+	gap: 18px;
 	padding: 0;
 }
 
@@ -605,27 +617,35 @@
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) 40px;
 	align-items: center;
-	gap: 10px;
+	gap: 14px;
 	padding: 0;
 	background: transparent;
 }
 
 .wcs-customer-field-box {
 	display: grid;
-	gap: 10px;
+	gap: 14px;
 	min-width: 0;
-	padding: 14px 16px;
-	border: 1px solid #dfe3e8;
-	border-radius: 6px;
-	background: #fff;
+	padding: 18px;
+	border: 1px solid var(--wcs-builder-line-soft);
+	border-radius: 14px;
+	background: #fbfcfe;
 }
 
 .wcs-customer-field-grid {
 	display: grid;
-	grid-template-columns: minmax(190px, 1fr) minmax(120px, 150px) minmax(170px, 0.8fr) minmax(86px, 110px);
-	gap: 8px;
+	grid-template-columns: 2fr 0.9fr 1.7fr 0.7fr;
+	gap: 18px;
 	align-items: center;
 	min-width: 0;
+}
+
+.wcs-customer-field-grid .field-group label {
+	display: block;
+	margin: 0 0 8px;
+	color: #475569;
+	font-size: 13px;
+	font-weight: 600;
 }
 
 .wcs-customer-field-options {
@@ -636,13 +656,25 @@
 .wcs-customer-field-grid .wcs-customer-field-price,
 .wcs-customer-field-grid select,
 .wcs-customer-field-option input[type="text"] {
-	height: 40px;
-	min-height: 40px;
+	height: 48px;
+	min-height: 48px;
 	min-width: 0;
 	width: 100%;
-	border-color: #d7dce3;
-	border-radius: 4px;
+	padding: 0 14px;
+	border: 1px solid #d7dce5;
+	border-radius: 10px;
+	background: #fff;
 	box-shadow: none;
+	color: var(--wcs-builder-text);
+	font-size: 16px;
+	outline: none;
+}
+
+.wcs-customer-field-grid input[type="text"]:focus,
+.wcs-customer-field-grid select:focus,
+.wcs-customer-field-option input[type="text"]:focus {
+	border-color: var(--wcs-builder-primary);
+	box-shadow: 0 0 0 3px rgba(79, 110, 247, 0.1);
 }
 
 .wcs-customer-field-meta {
@@ -679,8 +711,8 @@
 .wcs-customer-option-actions {
 	display: inline-flex;
 	align-items: center;
-	justify-content: flex-end;
-	gap: 4px;
+	justify-content: flex-start;
+	gap: 8px;
 	min-width: 0;
 }
 
@@ -696,12 +728,21 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 40px;
-	min-width: 40px;
-	height: 40px;
-	min-height: 40px;
+	width: 42px;
+	min-width: 42px;
+	height: 42px;
+	min-height: 42px;
 	padding: 0;
-	color: #3858e9;
+	border: 1px solid #cad5ff;
+	border-radius: 10px;
+	background: #fff;
+	color: var(--wcs-builder-primary);
+	cursor: pointer;
+}
+
+.wcs-customer-field-actions .wcs-icon-button:hover,
+.wcs-customer-option-actions .wcs-icon-button:hover {
+	background: var(--wcs-builder-primary-soft);
 }
 
 .wcs-customer-field-actions .wcs-icon-button .dashicons,
@@ -714,7 +755,13 @@
 
 .wcs-customer-field-actions .wcs-customer-field-remove,
 .wcs-customer-option-actions .wcs-customer-option-remove {
-	color: #b32d2e;
+	border-color: #fecdd3;
+	color: var(--wcs-builder-danger);
+}
+
+.wcs-customer-field-actions .wcs-customer-field-remove:hover,
+.wcs-customer-option-actions .wcs-customer-option-remove:hover {
+	background: var(--wcs-builder-danger-soft);
 }
 
 .wcs-customer-field-options {
@@ -724,26 +771,31 @@
 
 .wcs-customer-field-option-head {
 	display: grid;
-	grid-template-columns: 45px minmax(220px, 1fr) 45px 104px 85px;
-	gap: 8px;
+	grid-template-columns: 72px minmax(260px, 1fr) 70px 90px 120px;
+	gap: 14px;
 	align-items: center;
-	padding: 0 10px;
-	color: #646970;
-	font-size: 11px;
+	padding: 0 8px 10px;
+	color: #64748b;
+	font-size: 12px;
 	font-weight: 700;
 	text-transform: uppercase;
+	letter-spacing: 0.04em;
 }
 
 .wcs-customer-field-option {
 	display: grid;
-	grid-template-columns: 45px minmax(220px, 1fr) 45px 104px 85px;
-	gap: 8px;
+	grid-template-columns: 72px minmax(260px, 1fr) 70px 90px 120px;
+	gap: 14px;
 	align-items: center;
-	padding: 6px 8px;
+	padding: 8px;
 	min-width: 0;
 	border: 1px solid transparent;
-	border-radius: 4px;
-	background: #f8fafc;
+	border-radius: 12px;
+	background: transparent;
+}
+
+.wcs-customer-field-option + .wcs-customer-field-option {
+	margin-top: 8px;
 }
 
 .wcs-customer-field-row .button {
@@ -766,7 +818,7 @@
 	display: inline-flex;
 	align-items: center;
 	justify-self: center;
-	width: 40px;
+	width: 50px;
 	min-width: 0;
 }
 
@@ -774,14 +826,14 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 40px;
-	height: 40px;
-	min-height: 40px;
+	width: 50px;
+	height: 42px;
+	min-height: 42px;
 	padding: 0;
 	overflow: hidden;
-	border: 1px solid #c3c4c7;
-	border-radius: 2px;
-	background: #f6f7f7;
+	border: 1px solid #d7dce5;
+	border-radius: 10px;
+	background: #fff;
 	color: #787c82;
 	font-size: 0;
 	line-height: 1;
@@ -841,32 +893,30 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	gap: 4px;
 	margin: 0;
-	min-height: 34px;
-	width: 42px;
+	min-height: 42px;
+	width: 50px;
 	padding: 0;
-	border: 1px solid #d7dce3;
-	border-radius: 4px;
+	border: 1px solid #d7dce5;
+	border-radius: 10px;
 	background: #fff;
 	color: #1d2327;
-	font-size: 12px;
-	font-weight: 600;
-	white-space: nowrap;
 	cursor: pointer;
 	overflow: hidden;
 }
 
 .wcs-customer-option-position-switch input {
-	width: auto;
+	width: 22px;
+	height: 22px;
 	min-height: 0;
 	margin: 0;
+	accent-color: var(--wcs-builder-primary);
 }
 
 .wcs-customer-option-position.is-enabled .wcs-customer-option-position-switch {
-	border-color: #2271b1;
-	background: #eef6ff;
-	color: #0a4b78;
+	border-color: var(--wcs-builder-primary);
+	background: var(--wcs-builder-primary-soft);
+	color: var(--wcs-builder-primary);
 }
 
 .wcs-customer-option-position-fields {
@@ -874,14 +924,25 @@
 	display: none;
 	gap: 12px;
 	min-width: 0;
-	margin-top: 8px;
-	padding: 12px 0 0 12px;
+	margin: 12px 0 0 46px;
+	padding: 14px;
 	overflow: hidden;
-	border: 0;
-	border-left: 3px solid #72aee6;
-	border-radius: 0;
-	background: transparent;
+	border: 1px solid var(--wcs-builder-line-soft);
+	border-radius: 14px;
+	background: #fbfcfe;
 	box-shadow: none;
+	position: relative;
+}
+
+.wcs-customer-option-position-fields::before {
+	content: "";
+	position: absolute;
+	left: -18px;
+	top: 12px;
+	bottom: 12px;
+	width: 3px;
+	border-radius: 99px;
+	background: var(--wcs-builder-primary);
 }
 
 .wcs-customer-field-option.has-nested-fields > .wcs-customer-option-position-fields {
@@ -897,14 +958,14 @@
 }
 
 .wcs-customer-option-position-fields .wcs-customer-field-box {
-	padding: 0;
-	border: 0;
-	background: transparent;
+	padding: 14px;
+	border-color: var(--wcs-builder-line-soft);
+	background: #fff;
 }
 
 .wcs-customer-option-position-fields .wcs-customer-field-grid {
-	grid-template-columns: minmax(180px, 1fr) minmax(140px, 220px) minmax(160px, 0.8fr) minmax(86px, 110px);
-	gap: 8px;
+	grid-template-columns: 1.3fr 0.8fr 1.1fr 0.7fr;
+	gap: 18px;
 }
 
 .wcs-customer-option-position-fields .wcs-customer-field-option-head {
@@ -912,9 +973,11 @@
 }
 
 .wcs-customer-option-position-fields .wcs-customer-field-option {
-	grid-template-columns: 45px minmax(220px, 1fr) 45px 104px 85px;
-	gap: 8px;
-	padding: 10px;
+	grid-template-columns: 72px minmax(260px, 1fr) 70px 90px 120px;
+	gap: 14px;
+	padding: 8px;
+	border: 1px solid var(--wcs-builder-line-soft);
+	background: #fff;
 }
 
 .wcs-customer-option-position-fields .wcs-customer-option-position {
@@ -1038,6 +1101,636 @@
 		padding: 10px;
 		box-shadow: none;
 	}
+}
+
+@media (min-width: 768px) and (max-width: 1200px) {
+	.wcs-customer-field-grid,
+	.wcs-customer-option-position-fields .wcs-customer-field-grid {
+		grid-template-columns: 1fr 1fr;
+		gap: 12px;
+	}
+
+	.wcs-customer-field-grid .field-group:nth-child(3),
+	.wcs-customer-option-position-fields .wcs-customer-field-grid .field-group:nth-child(3) {
+		grid-column: 1 / -1;
+	}
+
+	.wcs-customer-field-option-head {
+		display: grid;
+		grid-template-columns: 48px minmax(0, 1fr) 48px 80px 96px;
+		gap: 8px;
+	}
+
+	.wcs-customer-field-option,
+	.wcs-customer-option-position-fields .wcs-customer-field-option {
+		grid-template-columns: 48px minmax(0, 1fr) 48px 80px 96px;
+		gap: 8px;
+		padding: 6px;
+	}
+
+	.wcs-customer-option-position-fields {
+		margin-left: 16px;
+		padding: 8px;
+		border-radius: 10px;
+	}
+
+	.wcs-customer-option-position-fields::before {
+		left: -9px;
+		width: 2px;
+	}
+}
+
+@media (max-width: 767px) {
+	.wcs-customer-fields {
+		padding: 12px;
+		border-radius: 12px;
+	}
+
+	.wcs-customer-field-grid,
+	.wcs-customer-option-position-fields .wcs-customer-field-grid {
+		grid-template-columns: 1fr 130px;
+		gap: 8px;
+	}
+
+	.wcs-customer-field-grid .field-group:nth-child(3),
+	.wcs-customer-option-position-fields .wcs-customer-field-grid .field-group:nth-child(3) {
+		grid-column: 1 / -1;
+	}
+
+	.wcs-customer-field-grid .field-group label {
+		margin-bottom: 4px;
+		font-size: 11px;
+	}
+
+	.wcs-customer-field-grid input[type="text"],
+	.wcs-customer-field-grid .wcs-customer-field-price,
+	.wcs-customer-field-grid select,
+	.wcs-customer-field-option input[type="text"] {
+		height: 40px;
+		min-height: 40px;
+		padding: 0 10px;
+		border-radius: 8px;
+		font-size: 13px;
+	}
+
+	.wcs-customer-field-option,
+	.wcs-customer-option-position-fields .wcs-customer-field-option {
+		grid-template-columns: 34px minmax(0, 1fr) 42px 68px auto;
+		gap: 6px;
+		padding: 6px;
+	}
+
+	.wcs-customer-option-position-switch {
+		width: 40px;
+		min-height: 40px;
+		border-radius: 8px;
+	}
+
+	.wcs-customer-option-position-switch input {
+		width: 18px;
+		height: 18px;
+	}
+
+	.wcs-customer-field-option-image .wcs-image-square {
+		width: 40px;
+		min-width: 40px;
+		height: 40px;
+		min-height: 40px;
+		border-radius: 8px;
+	}
+
+	.wcs-customer-field-actions .wcs-icon-button,
+	.wcs-customer-option-actions .wcs-icon-button {
+		width: 38px;
+		min-width: 38px;
+		height: 38px;
+		min-height: 38px;
+		border-radius: 8px;
+	}
+
+	.wcs-customer-option-position-fields {
+		margin-left: 16px;
+		padding: 8px;
+		border-radius: 10px;
+	}
+
+	.wcs-customer-option-position-fields::before {
+		left: -9px;
+		width: 2px;
+	}
+}
+
+@media (max-width: 480px) {
+	.wcs-customer-fields {
+		padding: 9px;
+	}
+
+	.wcs-customer-field-grid,
+	.wcs-customer-option-position-fields .wcs-customer-field-grid {
+		grid-template-columns: minmax(0, 1fr) 110px;
+	}
+
+	.wcs-customer-field-option,
+	.wcs-customer-option-position-fields .wcs-customer-field-option {
+		grid-template-columns: 28px minmax(0, 1fr) 40px 62px auto;
+		gap: 5px;
+		padding: 5px 2px;
+	}
+
+	.wcs-customer-field-option .input,
+	.wcs-customer-field-option input[type="text"] {
+		padding-left: 8px;
+		padding-right: 8px;
+	}
+
+	.wcs-customer-field-option-image .wcs-image-square {
+		width: 36px;
+		min-width: 36px;
+		height: 36px;
+		min-height: 36px;
+	}
+
+	.wcs-customer-field-actions .wcs-icon-button,
+	.wcs-customer-option-actions .wcs-icon-button {
+		width: 34px;
+		min-width: 34px;
+		height: 36px;
+		min-height: 36px;
+	}
+
+	.wcs-customer-option-position-fields {
+		margin-left: 10px;
+		padding: 6px;
+	}
+}
+
+/* Customer fields builder: mockup-aligned responsive layout. */
+.wcs-customer-fields.wcs-choice-field-builder {
+	padding: 0px;
+	border: none;
+	border-radius: 0px;
+	background: transparent;
+	box-shadow: none;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-list {
+	gap: 20px;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-row {
+	grid-template-columns: minmax(0, 1fr) 48px;
+	align-items: center;
+	gap: 16px;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-box {
+	gap: 14px;
+	padding: 18px;
+	border: 1px solid var(--wcs-builder-line-soft);
+	border-radius: 14px;
+	background: #f8fafc;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-grid {
+	grid-template-columns: 2fr 0.9fr 1.7fr 0.75fr;
+	gap: 18px;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-grid .field-group label {
+	margin: 0 0 8px;
+	color: #475569;
+	font-size: clamp(11px, 0.9vw, 13px);
+	font-weight: 600;
+	line-height: 1.25;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-grid input[type="text"],
+.wcs-choice-field-builder .wcs-customer-field-grid .wcs-customer-field-price,
+.wcs-choice-field-builder .wcs-customer-field-grid select,
+.wcs-choice-field-builder .wcs-customer-field-option input[type="text"] {
+	height: 48px;
+	min-height: 48px;
+	padding: 0 14px;
+	border: 1px solid #d7dce5;
+	border-radius: 10px;
+	font-size: clamp(13px, 1.15vw, 16px);
+	line-height: 1.2;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-options {
+	display: grid;
+	gap: 8px;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-option-head,
+.wcs-choice-field-builder .wcs-customer-field-option,
+.wcs-choice-field-builder .wcs-customer-option-position-fields .wcs-customer-field-option {
+	grid-template-columns: 72px minmax(260px, 1fr) 70px 90px 120px;
+	gap: 14px;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-option-head {
+	display: grid;
+	padding: 0 8px 2px;
+	color: #64748b;
+	font-size: clamp(10px, 0.85vw, 12px);
+	font-weight: 700;
+	line-height: 1.2;
+	letter-spacing: 0;
+	text-transform: uppercase;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-option {
+	padding: 8px;
+	border: 0;
+	border-radius: 12px;
+	background: transparent;
+}
+
+.wcs-choice-field-builder .wcs-customer-option-position {
+	display: contents;
+}
+
+.wcs-choice-field-builder .wcs-customer-option-position-switch {
+	width: 50px;
+	height: 42px;
+	min-height: 42px;
+	border-radius: 10px;
+}
+
+.wcs-choice-field-builder .wcs-customer-option-position-switch input {
+	width: 22px;
+	height: 22px;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-option-image {
+	justify-self: center;
+	width: 50px;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-option-image .wcs-image-square {
+	width: 50px;
+	height: 42px;
+	min-height: 42px;
+	border-radius: 10px;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-option-image .wcs-image-square span {
+	display: none;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-option-image .wcs-image-square::before {
+	content: "\f128";
+	font-family: dashicons;
+	font-size: 24px;
+	line-height: 1;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-option-image .wcs-image-square.has-image::before {
+	content: "";
+}
+
+.wcs-choice-field-builder .wcs-remove-image {
+	font-size: 0;
+}
+
+.wcs-choice-field-builder .wcs-remove-image::before {
+	content: "\f335";
+	font-family: dashicons;
+	font-size: 14px;
+	line-height: 1;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-actions,
+.wcs-choice-field-builder .wcs-customer-option-actions {
+	gap: 8px;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-actions {
+	flex-direction: column;
+	justify-self: center;
+	align-self: center;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-actions .wcs-icon-button,
+.wcs-choice-field-builder .wcs-customer-option-actions .wcs-icon-button {
+	width: 42px;
+	min-width: 42px;
+	height: 42px;
+	min-height: 42px;
+	border-radius: 10px;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-actions .dashicons,
+.wcs-choice-field-builder .wcs-customer-option-actions .dashicons {
+	width: 18px;
+	height: 18px;
+	font-size: 18px;
+}
+
+.wcs-choice-field-builder .wcs-customer-option-position-fields {
+	margin: 12px 0 0 46px;
+	padding: 14px;
+	border: 1px solid var(--wcs-builder-line-soft);
+	border-radius: 14px;
+	background: #fbfcfe;
+}
+
+.wcs-choice-field-builder .wcs-customer-option-position-fields::before {
+	left: -18px;
+	top: 12px;
+	bottom: 12px;
+	width: 3px;
+	border-radius: 99px;
+	background: var(--wcs-builder-primary);
+}
+
+.wcs-choice-field-builder .wcs-customer-option-position-fields .wcs-customer-field-row {
+	grid-template-columns: minmax(0, 1fr) 48px;
+}
+
+.wcs-choice-field-builder .wcs-customer-option-position-fields .wcs-customer-field-box {
+	padding: 14px;
+	border-color: var(--wcs-builder-line-soft);
+	border-radius: 12px;
+	background: #fff;
+}
+
+.wcs-choice-field-builder .wcs-customer-option-position-fields .wcs-customer-field-grid {
+	grid-template-columns: 1.3fr 0.8fr 1.1fr 0.7fr;
+}
+
+.wcs-choice-field-builder .wcs-customer-option-position-fields .wcs-customer-field-option-head {
+	display: none;
+}
+
+.wcs-choice-field-builder .wcs-customer-option-position-fields .wcs-customer-field-option {
+	border: 1px solid var(--wcs-builder-line-soft);
+	background: #fff;
+}
+
+@container (max-width: 980px) {
+	.wcs-choice-field-builder .wcs-customer-field-row,
+	.wcs-choice-field-builder .wcs-customer-option-position-fields .wcs-customer-field-row {
+		grid-template-columns: minmax(0, 1fr) 44px;
+		gap: 12px;
+	}
+
+	.wcs-choice-field-builder .wcs-customer-field-grid,
+	.wcs-choice-field-builder .wcs-customer-option-position-fields .wcs-customer-field-grid {
+		grid-template-columns: 1fr 150px;
+		gap: 10px;
+	}
+
+	.wcs-choice-field-builder .wcs-customer-field-grid .field-group:nth-child(3),
+	.wcs-choice-field-builder .wcs-customer-option-position-fields .wcs-customer-field-grid .field-group:nth-child(3) {
+		grid-column: 1 / -1;
+	}
+
+	.wcs-choice-field-builder .wcs-customer-field-option-head,
+	.wcs-choice-field-builder .wcs-customer-field-option,
+	.wcs-choice-field-builder .wcs-customer-option-position-fields .wcs-customer-field-option {
+		grid-template-columns: 52px minmax(170px, 1fr) 50px 80px 96px;
+		gap: 8px;
+	}
+
+	.wcs-choice-field-builder .wcs-customer-field-actions .wcs-icon-button,
+	.wcs-choice-field-builder .wcs-customer-option-actions .wcs-icon-button,
+	.wcs-choice-field-builder .wcs-customer-option-position-switch,
+	.wcs-choice-field-builder .wcs-customer-field-option-image .wcs-image-square {
+		width: 40px;
+		min-width: 40px;
+		height: 40px;
+		min-height: 40px;
+	}
+}
+
+@container (max-width: 720px) {
+	.wcs-customer-fields.wcs-choice-field-builder {
+		padding: 12px;
+		border-radius: 12px;
+	}
+
+	.wcs-choice-field-builder .wcs-customer-field-row,
+	.wcs-choice-field-builder .wcs-customer-option-position-fields .wcs-customer-field-row {
+		grid-template-columns: minmax(0, 1fr) 40px;
+		gap: 8px;
+	}
+
+	.wcs-choice-field-builder .wcs-customer-field-box {
+		padding: 10px;
+	}
+
+	.wcs-choice-field-builder .wcs-customer-field-grid,
+	.wcs-choice-field-builder .wcs-customer-option-position-fields .wcs-customer-field-grid {
+		grid-template-columns: minmax(0, 1fr) 130px;
+		gap: 8px;
+	}
+
+	.wcs-choice-field-builder .wcs-customer-field-grid input[type="text"],
+	.wcs-choice-field-builder .wcs-customer-field-grid .wcs-customer-field-price,
+	.wcs-choice-field-builder .wcs-customer-field-grid select,
+	.wcs-choice-field-builder .wcs-customer-field-option input[type="text"] {
+		height: 40px;
+		min-height: 40px;
+		padding: 0 10px;
+		border-radius: 8px;
+		font-size: 13px;
+	}
+
+	.wcs-choice-field-builder .wcs-customer-field-option-head {
+		display: none;
+	}
+
+	.wcs-choice-field-builder .wcs-customer-field-option,
+	.wcs-choice-field-builder .wcs-customer-option-position-fields .wcs-customer-field-option {
+		grid-template-columns: 34px minmax(0, 1fr) 42px 68px auto;
+		gap: 6px;
+		padding: 6px;
+	}
+
+	.wcs-choice-field-builder .wcs-customer-option-position-fields {
+		margin-left: 16px;
+		padding: 8px;
+		border-radius: 10px;
+	}
+
+	.wcs-choice-field-builder .wcs-customer-option-position-fields::before {
+		left: -9px;
+		width: 2px;
+	}
+
+	.wcs-choice-field-builder .wcs-customer-field-actions .wcs-icon-button,
+	.wcs-choice-field-builder .wcs-customer-option-actions .wcs-icon-button {
+		width: 38px;
+		min-width: 38px;
+		height: 38px;
+		min-height: 38px;
+		border-radius: 8px;
+	}
+}
+
+@container (max-width: 480px) {
+	.wcs-customer-fields.wcs-choice-field-builder {
+		padding: 9px;
+	}
+
+	.wcs-choice-field-builder .wcs-customer-field-grid,
+	.wcs-choice-field-builder .wcs-customer-option-position-fields .wcs-customer-field-grid {
+		grid-template-columns: minmax(0, 1fr) 110px;
+	}
+
+	.wcs-choice-field-builder .wcs-customer-field-option,
+	.wcs-choice-field-builder .wcs-customer-option-position-fields .wcs-customer-field-option {
+		grid-template-columns: 28px minmax(0, 1fr) 36px 58px auto;
+		gap: 4px;
+		padding: 5px 2px;
+	}
+
+	.wcs-choice-field-builder .wcs-customer-field-actions .wcs-icon-button,
+	.wcs-choice-field-builder .wcs-customer-option-actions .wcs-icon-button {
+		width: 32px;
+		min-width: 32px;
+		height: 36px;
+		min-height: 36px;
+	}
+
+	.wcs-choice-field-builder .wcs-customer-field-option-image .wcs-image-square {
+		width: 34px;
+		min-width: 34px;
+		height: 36px;
+		min-height: 36px;
+	}
+
+	.wcs-choice-field-builder .wcs-customer-option-position-fields {
+		margin-left: 10px;
+		padding: 6px;
+	}
+}
+
+/* Compact density for the choice field builder. */
+.wcs-customer-fields.wcs-choice-field-builder {
+	padding: 14px;
+	border-radius: 14px;
+	box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+}
+
+.wcs-choice-field-builder .wcs-customer-field-list {
+	gap: 12px;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-row,
+.wcs-choice-field-builder .wcs-customer-option-position-fields .wcs-customer-field-row {
+	grid-template-columns: minmax(0, 1fr) 38px;
+	gap: 10px;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-box {
+	gap: 10px;
+	padding: 12px;
+	border-radius: 10px;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-grid,
+.wcs-choice-field-builder .wcs-customer-option-position-fields .wcs-customer-field-grid {
+	gap: 12px;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-grid .field-group label {
+	margin-bottom: 5px;
+	font-size: clamp(10px, 0.8vw, 12px);
+}
+
+.wcs-choice-field-builder .wcs-customer-field-grid input[type="text"],
+.wcs-choice-field-builder .wcs-customer-field-grid .wcs-customer-field-price,
+.wcs-choice-field-builder .wcs-customer-field-grid select,
+.wcs-choice-field-builder .wcs-customer-field-option input[type="text"] {
+	height: 40px;
+	min-height: 40px;
+	padding: 0 12px;
+	border-radius: 8px;
+	font-size: clamp(12px, 1vw, 14px);
+}
+
+.wcs-choice-field-builder .wcs-customer-field-option-head,
+.wcs-choice-field-builder .wcs-customer-field-option,
+.wcs-choice-field-builder .wcs-customer-option-position-fields .wcs-customer-field-option {
+	grid-template-columns: 60px minmax(220px, 1fr) 56px 76px 94px;
+	gap: 10px;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-option-head {
+	padding: 0 6px;
+	font-size: clamp(9px, 0.75vw, 11px);
+}
+
+.wcs-choice-field-builder .wcs-customer-field-option {
+	padding: 6px;
+	border-radius: 9px;
+}
+
+.wcs-choice-field-builder .wcs-customer-option-position-switch,
+.wcs-choice-field-builder .wcs-customer-field-option-image .wcs-image-square,
+.wcs-choice-field-builder .wcs-customer-field-actions .wcs-icon-button,
+.wcs-choice-field-builder .wcs-customer-option-actions .wcs-icon-button {
+	width: 36px;
+	min-width: 36px;
+	height: 36px;
+	min-height: 36px;
+	border-radius: 8px;
+}
+
+.wcs-choice-field-builder .wcs-customer-option-position-switch input {
+	width: 18px;
+	height: 18px;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-option-image {
+	width: 36px;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-option-image .wcs-image-square::before {
+	font-size: 20px;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-actions,
+.wcs-choice-field-builder .wcs-customer-option-actions {
+	gap: 6px;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-actions .dashicons,
+.wcs-choice-field-builder .wcs-customer-option-actions .dashicons {
+	width: 15px;
+	height: 15px;
+	font-size: 15px;
+}
+
+.wcs-choice-field-builder .wcs-customer-option-position-fields {
+	margin: 8px 0 0 34px;
+	padding: 10px;
+	border: 0;
+	border-radius: 12px;
+	background: #f6f8fc;
+}
+
+.wcs-choice-field-builder .wcs-customer-option-position-fields::before {
+	left: -12px;
+	top: 10px;
+	bottom: 10px;
+	width: 2px;
+}
+
+.wcs-choice-field-builder .wcs-customer-option-position-fields .wcs-customer-field-box {
+	padding: 10px;
+	border: 0;
+	border-radius: 10px;
+	background: #ffffff;
+	box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+}
+
+.wcs-choice-field-builder .wcs-customer-option-position-fields .wcs-customer-field-option {
+	border: 0;
+	background: #f8fafc;
 }
 
 .wcs-image-preview img {
@@ -1295,6 +1988,43 @@
 .wcs-template-choices > .description {
 	margin: 0 0 14px;
 	color: #50575e;
+}
+
+.wcs-template-flat-panel {
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	overflow: hidden;
+	background: #fff;
+}
+
+.wcs-template-flat-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 14px 16px;
+	background: #edf5ff;
+	border-bottom: 1px solid #dcdcde;
+}
+
+.wcs-template-flat-header > div {
+	display: grid;
+	gap: 3px;
+}
+
+.wcs-template-flat-header strong {
+	color: #1d2327;
+	font-size: 14px;
+	line-height: 1.3;
+}
+
+.wcs-template-flat-header .wcs-choice-count {
+	color: #646970;
+	font-size: 12px;
+}
+
+.wcs-template-flat-empty {
+	margin: 14px 16px;
 }
 
 .wcs-template-accordion {

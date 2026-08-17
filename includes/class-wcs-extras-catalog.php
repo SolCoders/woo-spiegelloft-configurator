@@ -98,6 +98,37 @@ class WCS_Extras_Catalog {
 	}
 
 	/**
+	 * Get all published options regardless of group assignment.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function get_all_options(): array {
+		$cache_key = 'extras_all';
+		$cached    = $this->cache->get( $cache_key );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+
+		$posts = get_posts(
+			array(
+				'post_type'      => 'wcs_extra_option',
+				'post_status'    => 'publish',
+				'posts_per_page' => -1,
+				'orderby'        => 'menu_order title',
+				'order'          => 'ASC',
+			)
+		);
+
+		$options = array();
+		foreach ( $posts as $post ) {
+			$options[] = $this->format_option( $post );
+		}
+
+		$this->cache->set( $cache_key, $options );
+		return $options;
+	}
+
+	/**
 	 * Get all options for a group slug.
 	 *
 	 * @param string $group_slug Group slug.
@@ -138,6 +169,76 @@ class WCS_Extras_Catalog {
 		}
 
 		$this->cache->set( $cache_key, $options );
+		return $options;
+	}
+
+	/**
+	 * Get published options that are not assigned to any group.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function get_uncategorized_options(): array {
+		$cache_key = 'extras_uncategorized';
+		$cached    = $this->cache->get( $cache_key );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+
+		$posts = get_posts(
+			array(
+				'post_type'      => 'wcs_extra_option',
+				'post_status'    => 'publish',
+				'posts_per_page' => -1,
+				'tax_query'      => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+					array(
+						'taxonomy' => 'wcs_extra_group',
+						'operator' => 'NOT EXISTS',
+					),
+				),
+				'orderby'        => 'menu_order title',
+				'order'          => 'ASC',
+			)
+		);
+
+		$options = array();
+		foreach ( $posts as $post ) {
+			$options[] = $this->format_option( $post );
+		}
+
+		$this->cache->set( $cache_key, $options );
+		return $options;
+	}
+
+	/**
+	 * Get group options plus selected options that may not belong to the group.
+	 *
+	 * @param string $group_slug Group slug.
+	 * @param int[]  $option_ids Selected option IDs.
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function get_options_for_template_group( string $group_slug, array $option_ids = array() ): array {
+		$options = $this->get_options_by_group( $group_slug );
+		if ( empty( $option_ids ) ) {
+			return $options;
+		}
+
+		$seen = array();
+		foreach ( $options as $option ) {
+			$seen[ (int) ( $option['id'] ?? 0 ) ] = true;
+		}
+
+		foreach ( array_map( 'absint', $option_ids ) as $option_id ) {
+			if ( ! $option_id || isset( $seen[ $option_id ] ) ) {
+				continue;
+			}
+
+			$option = $this->get_option( $option_id );
+			if ( $option ) {
+				$options[]            = $option;
+				$seen[ $option_id ] = true;
+			}
+		}
+
 		return $options;
 	}
 

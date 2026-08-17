@@ -4,103 +4,68 @@
  *
  * @package WooSpiegelloftConfigurator
  *
- * @var string[]                             $enabled_groups Enabled group slugs.
- * @var array<string, int[]>                 $option_map     Group => option post IDs.
- * @var array<string, array<string,mixed>>   $all_groups     Group definitions.
- * @var array<string, array<int,mixed>>      $group_options  Options per group.
+ * @var string                              $flat_group_slug Internal group slug used for saving choices.
+ * @var array<string,mixed>                 $flat_group      Internal group definition.
+ * @var array<int, array<string,mixed>>     $flat_options    All published choices.
+ * @var int[]                               $flat_selected_ids Selected choice IDs.
+ * @var int                                 $flat_step       Internal step used for saving choices.
  */
 
 defined( 'ABSPATH' ) || exit;
+
+$add_url = add_query_arg(
+	array(
+		'post_type' => 'wcs_extra_option',
+	),
+	admin_url( 'post-new.php' )
+);
 ?>
 <div class="wcs-template-choices">
-	<p class="description"><?php esc_html_e( 'Enable the option groups shown on this template, then choose the values available to shoppers.', 'woo-spiegelloft-configurator' ); ?></p>
+	<p class="description"><?php esc_html_e( 'Choose the customization choices available to shoppers. Categories are no longer used for this template list.', 'woo-spiegelloft-configurator' ); ?></p>
 
-	<div class="wcs-template-accordion">
-		<?php foreach ( $all_groups as $slug => $group ) : ?>
-			<?php
-			$is_static = 'static' === ( $group['type'] ?? 'selectable' );
-			if ( $is_static ) {
-				continue;
-			}
-			$is_enabled   = in_array( $slug, $enabled_groups, true );
-			$options      = $group_options[ $slug ] ?? array();
-			$selected_ids = (array) ( $option_map[ $slug ] ?? array() );
-			$group_step   = max( 1, absint( $step_map[ $slug ] ?? 2 ) );
-			$add_url      = add_query_arg(
-				array(
-					'post_type'       => 'wcs_extra_option',
-					'wcs_extra_group' => $slug,
-				),
-				admin_url( 'post-new.php' )
-			);
-			?>
-			<div class="wcs-accordion-panel wcs-template-group-panel <?php echo $is_enabled ? 'is-enabled' : ''; ?>">
-				<div class="wcs-template-group-header">
-					<span class="dashicons dashicons-menu wcs-group-sort-handle" title="<?php esc_attr_e( 'Drag to reorder category', 'woo-spiegelloft-configurator' ); ?>"></span>
-					<input type="hidden" class="wcs-group-order-input" name="wcs_group_order[]" value="<?php echo esc_attr( $slug ); ?>">
-					<label class="wcs-template-group-toggle">
-						<input type="checkbox" class="wcs-group-toggle" name="wcs_enabled_groups[]" value="<?php echo esc_attr( $slug ); ?>" <?php checked( $is_enabled ); ?>>
-						<span>
-							<strong><?php echo esc_html( (string) ( $group['label'] ?? $slug ) ); ?></strong>
-							<small class="wcs-choice-count" data-count="<?php echo esc_attr( (string) count( $options ) ); ?>">
-								<?php
-								printf(
-									/* translators: %d: choice count */
-									esc_html__( '%d choices', 'woo-spiegelloft-configurator' ),
-									count( $options )
-								);
-								?>
-							</small>
-						</span>
-					</label>
-					<label class="wcs-group-step-field">
-						<span><?php esc_html_e( 'Step', 'woo-spiegelloft-configurator' ); ?></span>
-						<select name="wcs_group_steps[<?php echo esc_attr( $slug ); ?>]">
-							<?php for ( $step_index = 1; $step_index <= 8; $step_index++ ) : ?>
-								<option value="<?php echo esc_attr( (string) $step_index ); ?>" <?php selected( $group_step, $step_index ); ?>>
-									<?php
-									printf(
-										/* translators: %d: step number */
-										esc_html__( 'Step %d', 'woo-spiegelloft-configurator' ),
-										$step_index
-									);
-									?>
-								</option>
-							<?php endfor; ?>
-						</select>
-					</label>
-					<button type="button" class="wcs-accordion-toggle" aria-expanded="false">
-						<span class="wcs-accordion-icon" aria-hidden="true"></span>
-					</button>
+	<?php if ( '' === $flat_group_slug ) : ?>
+		<p class="description"><?php esc_html_e( 'No selectable option group is available for saving choices.', 'woo-spiegelloft-configurator' ); ?></p>
+	<?php else : ?>
+		<input type="hidden" name="wcs_enabled_groups[]" value="<?php echo esc_attr( $flat_group_slug ); ?>">
+		<input type="hidden" name="wcs_group_order[]" value="<?php echo esc_attr( $flat_group_slug ); ?>">
+		<input type="hidden" name="wcs_group_steps[<?php echo esc_attr( $flat_group_slug ); ?>]" value="<?php echo esc_attr( (string) $flat_step ); ?>">
+
+		<div class="wcs-template-flat-panel">
+			<div class="wcs-template-flat-header">
+				<div>
+					<strong><?php esc_html_e( 'Customization choices', 'woo-spiegelloft-configurator' ); ?></strong>
+					<span class="wcs-choice-count">
+						<?php
+						printf(
+							/* translators: %d: choice count */
+							esc_html__( '%d choices', 'woo-spiegelloft-configurator' ),
+							count( $flat_options )
+						);
+						?>
+					</span>
 				</div>
-				<div class="wcs-accordion-body">
-					<?php if ( empty( $options ) ) : ?>
-						<div class="wcs-template-group-actions">
-							<a class="button button-secondary" href="<?php echo esc_url( $add_url ); ?>">
-								<?php esc_html_e( 'Add choice', 'woo-spiegelloft-configurator' ); ?>
-							</a>
-						</div>
-						<p class="description"><?php esc_html_e( 'No choices in this category yet.', 'woo-spiegelloft-configurator' ); ?></p>
-					<?php else : ?>
-						<div class="wcs-template-group-actions">
-							<a class="button button-secondary" href="<?php echo esc_url( $add_url ); ?>">
-								<?php esc_html_e( 'Add choice', 'woo-spiegelloft-configurator' ); ?>
-							</a>
-						</div>
-						<div class="wcs-option-table-wrap">
-							<table class="widefat striped wcs-option-table">
-								<thead>
-									<tr>
-										<th scope="col" class="wcs-option-table-sort"><?php esc_html_e( 'Sort', 'woo-spiegelloft-configurator' ); ?></th>
-										<th scope="col" class="wcs-option-table-check"><?php esc_html_e( 'Show', 'woo-spiegelloft-configurator' ); ?></th>
-										<th scope="col"><?php esc_html_e( 'Choice', 'woo-spiegelloft-configurator' ); ?></th>
-										<th scope="col"><?php esc_html_e( 'Value', 'woo-spiegelloft-configurator' ); ?></th>
-										<th scope="col"><?php esc_html_e( 'Price', 'woo-spiegelloft-configurator' ); ?></th>
-										<th scope="col" class="wcs-option-table-action"><?php esc_html_e( 'Action', 'woo-spiegelloft-configurator' ); ?></th>
-									</tr>
-								</thead>
-								<tbody>
-							<?php foreach ( $options as $option ) : ?>
+				<a class="button button-secondary" href="<?php echo esc_url( $add_url ); ?>">
+					<?php esc_html_e( 'Add choice', 'woo-spiegelloft-configurator' ); ?>
+				</a>
+			</div>
+
+			<?php if ( empty( $flat_options ) ) : ?>
+				<p class="description wcs-template-flat-empty"><?php esc_html_e( 'No customization choices have been created yet.', 'woo-spiegelloft-configurator' ); ?></p>
+			<?php else : ?>
+				<div class="wcs-option-table-wrap">
+					<table class="widefat striped wcs-option-table">
+						<thead>
+							<tr>
+								<th scope="col" class="wcs-option-table-sort"><?php esc_html_e( 'Sort', 'woo-spiegelloft-configurator' ); ?></th>
+								<th scope="col" class="wcs-option-table-check"><?php esc_html_e( 'Show', 'woo-spiegelloft-configurator' ); ?></th>
+								<th scope="col"><?php esc_html_e( 'Choice', 'woo-spiegelloft-configurator' ); ?></th>
+								<th scope="col"><?php esc_html_e( 'Value', 'woo-spiegelloft-configurator' ); ?></th>
+								<th scope="col"><?php esc_html_e( 'Price', 'woo-spiegelloft-configurator' ); ?></th>
+								<th scope="col" class="wcs-option-table-action"><?php esc_html_e( 'Action', 'woo-spiegelloft-configurator' ); ?></th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php foreach ( $flat_options as $option ) : ?>
 								<?php
 								$option_id    = (int) ( $option['id'] ?? 0 );
 								$option_title = (string) ( $option['title'] ?? '' );
@@ -108,49 +73,47 @@ defined( 'ABSPATH' ) || exit;
 								$option_image = (string) ( $option['meta']['_wcs_image'] ?? '' );
 								$option_price = (float) ( $option['meta']['_wcs_price'] ?? 0 );
 								?>
-									<tr>
-										<td class="wcs-option-table-sort">
-											<span class="dashicons dashicons-menu wcs-choice-sort-handle" title="<?php esc_attr_e( 'Drag to reorder', 'woo-spiegelloft-configurator' ); ?>"></span>
-										</td>
-										<td class="wcs-option-table-check">
-											<input type="checkbox" name="wcs_extra_option_map[<?php echo esc_attr( $slug ); ?>][]" value="<?php echo esc_attr( (string) $option_id ); ?>" <?php checked( in_array( $option_id, $selected_ids, true ) || empty( $selected_ids ) ); ?>>
-										</td>
-										<td>
-											<div class="wcs-option-choice">
-												<span class="wcs-option-thumb">
-													<?php if ( $option_image ) : ?>
-														<img src="<?php echo esc_url( $option_image ); ?>" alt="">
-													<?php else : ?>
-														<span aria-hidden="true"></span>
-													<?php endif; ?>
-												</span>
-												<strong><?php echo esc_html( $option_title ); ?></strong>
-											</div>
-										</td>
-										<td><code><?php echo esc_html( $option_slug ); ?></code></td>
-										<td><?php echo wp_kses_post( wc_price( $option_price ) ); ?></td>
-										<td class="wcs-option-table-action">
-											<a class="button button-small" href="<?php echo esc_url( get_edit_post_link( $option_id, '' ) ); ?>">
-												<?php esc_html_e( 'Edit', 'woo-spiegelloft-configurator' ); ?>
-											</a>
-											<a
-												class="button button-small wcs-delete-choice"
-												href="<?php echo esc_url( get_delete_post_link( $option_id, '', true ) ); ?>"
-												data-choice-id="<?php echo esc_attr( (string) $option_id ); ?>"
-												data-nonce="<?php echo esc_attr( wp_create_nonce( 'wcs_delete_choice_' . $option_id ) ); ?>"
-											>
-												<?php esc_html_e( 'Delete', 'woo-spiegelloft-configurator' ); ?>
-											</a>
-										</td>
-									</tr>
+								<tr>
+									<td class="wcs-option-table-sort">
+										<span class="dashicons dashicons-menu wcs-choice-sort-handle" title="<?php esc_attr_e( 'Drag to reorder', 'woo-spiegelloft-configurator' ); ?>"></span>
+									</td>
+									<td class="wcs-option-table-check">
+										<input type="checkbox" name="wcs_extra_option_map[<?php echo esc_attr( $flat_group_slug ); ?>][]" value="<?php echo esc_attr( (string) $option_id ); ?>" <?php checked( in_array( $option_id, $flat_selected_ids, true ) || empty( $flat_selected_ids ) ); ?>>
+									</td>
+									<td>
+										<div class="wcs-option-choice">
+											<span class="wcs-option-thumb">
+												<?php if ( $option_image ) : ?>
+													<img src="<?php echo esc_url( $option_image ); ?>" alt="">
+												<?php else : ?>
+													<span aria-hidden="true"></span>
+												<?php endif; ?>
+											</span>
+											<strong><?php echo esc_html( $option_title ); ?></strong>
+										</div>
+									</td>
+									<td><code><?php echo esc_html( $option_slug ); ?></code></td>
+									<td><?php echo wp_kses_post( wc_price( $option_price ) ); ?></td>
+									<td class="wcs-option-table-action">
+										<a class="button button-small" href="<?php echo esc_url( get_edit_post_link( $option_id, '' ) ); ?>">
+											<?php esc_html_e( 'Edit', 'woo-spiegelloft-configurator' ); ?>
+										</a>
+										<a
+											class="button button-small wcs-delete-choice"
+											href="<?php echo esc_url( get_delete_post_link( $option_id, '', true ) ); ?>"
+											data-choice-id="<?php echo esc_attr( (string) $option_id ); ?>"
+											data-nonce="<?php echo esc_attr( wp_create_nonce( 'wcs_delete_choice_' . $option_id ) ); ?>"
+										>
+											<?php esc_html_e( 'Delete', 'woo-spiegelloft-configurator' ); ?>
+										</a>
+									</td>
+								</tr>
 							<?php endforeach; ?>
-								</tbody>
-							</table>
-						</div>
-						<p class="description wcs-empty-options-message" hidden><?php esc_html_e( 'No choices in this category yet.', 'woo-spiegelloft-configurator' ); ?></p>
-					<?php endif; ?>
+						</tbody>
+					</table>
 				</div>
-			</div>
-		<?php endforeach; ?>
-	</div>
+				<p class="description wcs-template-flat-empty" hidden><?php esc_html_e( 'No customization choices have been created yet.', 'woo-spiegelloft-configurator' ); ?></p>
+			<?php endif; ?>
+		</div>
+	<?php endif; ?>
 </div>

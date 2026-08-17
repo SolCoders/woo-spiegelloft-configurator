@@ -74,17 +74,26 @@ foreach ( $steps as $step ) {
 					continue;
 				}
 				$options = (array) $group['value'];
+				$single_option = ! empty( $options ) ? (array) reset( $options ) : array();
+				$hide_parent_select = ! empty( $single_option ) && ! empty( $single_option['customer_fields'] );
+				$customer_fields = (array) ( $single_option['customer_fields'] ?? array() );
+				$first_customer_field = ! empty( $customer_fields ) ? (array) reset( $customer_fields ) : array();
+				$heading = $hide_parent_select
+					? (string) ( $first_customer_field['label'] ?? $single_option['name'] ?? $single_option['value'] ?? $group['title'] ?? $group_slug )
+					: (string) ( $group['title'] ?? $group_slug );
 				?>
 				<div class="wcs-step-option-group">
 					<div class="wcs-option-heading">
-						<h3><?php echo esc_html( (string) ( $group['title'] ?? $group_slug ) ); ?></h3>
+						<h3><?php echo esc_html( $heading ); ?></h3>
 						<span class="wcs-option-info" aria-hidden="true">i</span>
 					</div>
-					<label class="wcs-option-select">
+					<label class="wcs-option-select <?php echo $hide_parent_select ? 'wcs-option-select--hidden-parent' : ''; ?>">
 						<select class="wcs-choice-select" data-group="<?php echo esc_attr( $group_slug ); ?>">
-							<option value=""><?php esc_html_e( 'Please select', 'woo-spiegelloft-configurator' ); ?></option>
+							<?php if ( ! $hide_parent_select ) : ?>
+								<option value=""><?php esc_html_e( 'Please select', 'woo-spiegelloft-configurator' ); ?></option>
+							<?php endif; ?>
 							<?php foreach ( $options as $option ) : ?>
-								<option value="<?php echo esc_attr( (string) ( $option['value'] ?? '' ) ); ?>" data-price="<?php echo esc_attr( (string) ( $option['price'] ?? 0 ) ); ?>" data-customer-fields="<?php echo esc_attr( wp_json_encode( (array) ( $option['customer_fields'] ?? array() ) ) ); ?>">
+								<option value="<?php echo esc_attr( (string) ( $option['value'] ?? '' ) ); ?>" data-price="<?php echo esc_attr( (string) ( $option['price'] ?? 0 ) ); ?>" data-customer-fields="<?php echo esc_attr( wp_json_encode( (array) ( $option['customer_fields'] ?? array() ) ) ); ?>" <?php selected( $hide_parent_select ); ?>>
 									<?php echo esc_html( (string) ( $option['name'] ?? $option['value'] ?? '' ) ); ?>
 									<?php if ( ! empty( $option['price'] ) ) : ?>
 										<?php echo esc_html( ' +' . wp_strip_all_tags( wc_price( (float) $option['price'] ) ) ); ?>
@@ -101,7 +110,7 @@ foreach ( $steps as $step ) {
 						data-position-options="<?php echo esc_attr( wp_json_encode( (array) ( $group['position_config']['options'] ?? array() ) ) ); ?>"
 						hidden
 					></div>
-					<div class="wcs-customer-field-target" hidden></div>
+					<div class="wcs-customer-field-target" data-skip-first-label="<?php echo esc_attr( $hide_parent_select ? '1' : '0' ); ?>" hidden></div>
 				</div>
 			<?php endforeach; ?>
 			</section>
@@ -125,17 +134,26 @@ foreach ( $steps as $step ) {
 						continue;
 					}
 					$options = (array) $group['value'];
+					$single_option = ! empty( $options ) ? (array) reset( $options ) : array();
+					$hide_parent_select = ! empty( $single_option ) && ! empty( $single_option['customer_fields'] );
+					$customer_fields = (array) ( $single_option['customer_fields'] ?? array() );
+					$first_customer_field = ! empty( $customer_fields ) ? (array) reset( $customer_fields ) : array();
+					$heading = $hide_parent_select
+						? (string) ( $first_customer_field['label'] ?? $single_option['name'] ?? $single_option['value'] ?? $group['title'] ?? $group_slug )
+						: (string) ( $group['title'] ?? $group_slug );
 					?>
 					<div class="wcs-step-option-group">
 						<div class="wcs-option-heading">
-							<h3><?php echo esc_html( (string) ( $group['title'] ?? $group_slug ) ); ?></h3>
+							<h3><?php echo esc_html( $heading ); ?></h3>
 							<span class="wcs-option-info" aria-hidden="true">i</span>
 						</div>
-						<label class="wcs-option-select">
+						<label class="wcs-option-select <?php echo $hide_parent_select ? 'wcs-option-select--hidden-parent' : ''; ?>">
 							<select class="wcs-choice-select" data-group="<?php echo esc_attr( $group_slug ); ?>">
-								<option value=""><?php esc_html_e( 'Please select', 'woo-spiegelloft-configurator' ); ?></option>
+								<?php if ( ! $hide_parent_select ) : ?>
+									<option value=""><?php esc_html_e( 'Please select', 'woo-spiegelloft-configurator' ); ?></option>
+								<?php endif; ?>
 								<?php foreach ( $options as $option ) : ?>
-									<option value="<?php echo esc_attr( (string) ( $option['value'] ?? '' ) ); ?>" data-price="<?php echo esc_attr( (string) ( $option['price'] ?? 0 ) ); ?>" data-customer-fields="<?php echo esc_attr( wp_json_encode( (array) ( $option['customer_fields'] ?? array() ) ) ); ?>">
+									<option value="<?php echo esc_attr( (string) ( $option['value'] ?? '' ) ); ?>" data-price="<?php echo esc_attr( (string) ( $option['price'] ?? 0 ) ); ?>" data-customer-fields="<?php echo esc_attr( wp_json_encode( (array) ( $option['customer_fields'] ?? array() ) ) ); ?>" <?php selected( $hide_parent_select ); ?>>
 										<?php echo esc_html( (string) ( $option['name'] ?? $option['value'] ?? '' ) ); ?>
 										<?php if ( ! empty( $option['price'] ) ) : ?>
 											<?php echo esc_html( ' +' . wp_strip_all_tags( wc_price( (float) $option['price'] ) ) ); ?>
@@ -152,7 +170,7 @@ foreach ( $steps as $step ) {
 							data-position-options="<?php echo esc_attr( wp_json_encode( (array) ( $group['position_config']['options'] ?? array() ) ) ); ?>"
 							hidden
 						></div>
-						<div class="wcs-customer-field-target" hidden></div>
+						<div class="wcs-customer-field-target" data-skip-first-label="<?php echo esc_attr( $hide_parent_select ? '1' : '0' ); ?>" hidden></div>
 					</div>
 				<?php endforeach; ?>
 				</section>
