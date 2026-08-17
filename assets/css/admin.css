@@ -315,9 +315,9 @@
 
 .wcs-choice-required-row {
 	margin: 0;
-	padding: 10px 12px;
+	padding: 9px 10px;
 	border: 1px solid #dfe3e8;
-	border-radius: 4px;
+	border-radius: 6px;
 	background: #f8fafc;
 }
 
@@ -359,17 +359,31 @@
 }
 
 .wcs-choice-required {
-	display: inline-flex;
+	display: flex;
 	align-items: center;
-	gap: 6px;
+	gap: 8px;
 	margin: 0;
 	color: #1d2327;
 	font-size: 13px;
-	font-weight: 500;
+	font-weight: 600;
+	line-height: 1.2;
 }
 
 .wcs-choice-required input[type="checkbox"] {
+	flex: 0 0 18px;
+	width: 18px;
+	height: 18px;
+	min-width: 18px;
+	min-height: 18px !important;
 	margin: 0;
+	border-color: #cfd7df;
+	border-radius: 3px;
+	box-shadow: none;
+}
+
+.wcs-choice-required input[type="checkbox"]:checked {
+	border-color: #4f6ef7;
+	background-color: #4f6ef7;
 }
 
 #side-sortables .wcs-choice-details .description {
