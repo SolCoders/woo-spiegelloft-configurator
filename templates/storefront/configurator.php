@@ -25,7 +25,6 @@ foreach ( $steps as $step ) {
 <form class="cart wcs-configurator" method="post" enctype="multipart/form-data" data-base-price="<?php echo esc_attr( (string) $base_price ); ?>">
 	<input type="hidden" name="wcs_selections" class="wcs-selections-input" value="">
 	<input type="hidden" name="quantity" value="1">
-	<button type="submit" name="add-to-cart" value="<?php echo esc_attr( (string) $product->get_id() ); ?>" class="single_add_to_cart_button" hidden></button>
 
 	<div class="wcs-configurator__panel">
 		<header class="wcs-configurator__header">

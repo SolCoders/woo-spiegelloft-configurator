@@ -58,7 +58,6 @@ if ( ! function_exists( 'wcs_render_customer_field_rows' ) ) {
 						<span><?php esc_html_e( 'Label', 'woo-spiegelloft-configurator' ); ?></span>
 						<span><?php esc_html_e( 'Image', 'woo-spiegelloft-configurator' ); ?></span>
 						<span><?php esc_html_e( 'Price', 'woo-spiegelloft-configurator' ); ?></span>
-						<span><?php esc_html_e( 'Actions', 'woo-spiegelloft-configurator' ); ?></span>
 					</div>
 					<?php foreach ( $field_options as $option_index => $field_option ) : ?>
 						<?php
@@ -75,6 +74,7 @@ if ( ! function_exists( 'wcs_render_customer_field_rows' ) ) {
 									<span class="screen-reader-text"><?php esc_html_e( 'Nested fields', 'woo-spiegelloft-configurator' ); ?></span>
 								</label>
 							</div>
+							<span class="dashicons dashicons-menu wcs-customer-drag-handle" title="<?php esc_attr_e( 'Drag to move', 'woo-spiegelloft-configurator' ); ?>"></span>
 							<input type="text" class="wcs-customer-field-option-label" name="<?php echo esc_attr( $option_name ); ?>[label]" value="<?php echo esc_attr( (string) ( $field_option['label'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'Option label', 'woo-spiegelloft-configurator' ); ?>">
 							<div class="wcs-customer-field-option-image wcs-image-field">
 								<input type="hidden" class="wcs-image-url" name="<?php echo esc_attr( $option_name ); ?>[image]" value="<?php echo esc_attr( (string) ( $field_option['image'] ?? '' ) ); ?>">
@@ -88,9 +88,18 @@ if ( ! function_exists( 'wcs_render_customer_field_rows' ) ) {
 								<button type="button" class="button wcs-remove-image" aria-label="<?php esc_attr_e( 'Remove image', 'woo-spiegelloft-configurator' ); ?>" <?php echo empty( $field_option['image'] ) ? 'hidden' : ''; ?>>×</button>
 							</div>
 							<input type="text" class="price-input wcs-customer-field-option-price" name="<?php echo esc_attr( $option_name ); ?>[price]" value="<?php echo esc_attr( (string) ( $field_option['price'] ?? '' ) ); ?>" placeholder="0.00">
-							<div class="action-group wcs-customer-option-actions">
-								<button type="button" class="button icon-btn wcs-icon-button wcs-customer-option-add" aria-label="<?php esc_attr_e( 'Add option', 'woo-spiegelloft-configurator' ); ?>" title="<?php esc_attr_e( 'Add option', 'woo-spiegelloft-configurator' ); ?>">
+							<div class="wcs-row-action-rail" aria-label="<?php esc_attr_e( 'Option actions', 'woo-spiegelloft-configurator' ); ?>">
+								<button type="button" class="button icon-btn wcs-icon-button wcs-customer-option-add" aria-label="<?php esc_attr_e( 'Add nested field', 'woo-spiegelloft-configurator' ); ?>" title="<?php esc_attr_e( 'Add nested field', 'woo-spiegelloft-configurator' ); ?>">
 									<span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
+								</button>
+								<button type="button" class="button icon-btn wcs-icon-button wcs-customer-option-duplicate" aria-label="<?php esc_attr_e( 'Duplicate option', 'woo-spiegelloft-configurator' ); ?>" title="<?php esc_attr_e( 'Duplicate option', 'woo-spiegelloft-configurator' ); ?>">
+									<span class="dashicons dashicons-admin-page" aria-hidden="true"></span>
+								</button>
+								<button type="button" class="button icon-btn wcs-icon-button wcs-nested-save-template" aria-label="<?php esc_attr_e( 'Save nested fields', 'woo-spiegelloft-configurator' ); ?>" title="<?php esc_attr_e( 'Save nested fields', 'woo-spiegelloft-configurator' ); ?>">
+									<span class="dashicons dashicons-book" aria-hidden="true"></span>
+								</button>
+								<button type="button" class="button icon-btn wcs-icon-button wcs-nested-use-template" aria-label="<?php esc_attr_e( 'Use saved template', 'woo-spiegelloft-configurator' ); ?>" title="<?php esc_attr_e( 'Use saved template', 'woo-spiegelloft-configurator' ); ?>">
+									<span class="dashicons dashicons-open-folder" aria-hidden="true"></span>
 								</button>
 								<button type="button" class="button icon-btn danger wcs-icon-button wcs-customer-option-remove" aria-label="<?php esc_attr_e( 'Remove option', 'woo-spiegelloft-configurator' ); ?>" title="<?php esc_attr_e( 'Remove option', 'woo-spiegelloft-configurator' ); ?>">
 									<span class="dashicons dashicons-trash" aria-hidden="true"></span>
@@ -105,9 +114,18 @@ if ( ! function_exists( 'wcs_render_customer_field_rows' ) ) {
 					<?php endforeach; ?>
 				</div>
 				</div>
-				<div class="action-group wcs-customer-field-actions">
+				<div class="wcs-row-action-rail wcs-field-row-action-rail" aria-label="<?php esc_attr_e( 'Field actions', 'woo-spiegelloft-configurator' ); ?>">
 					<button type="button" class="button icon-btn wcs-icon-button wcs-customer-field-add" aria-label="<?php esc_attr_e( 'Add field', 'woo-spiegelloft-configurator' ); ?>" title="<?php esc_attr_e( 'Add field', 'woo-spiegelloft-configurator' ); ?>">
 						<span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
+					</button>
+					<button type="button" class="button icon-btn wcs-icon-button wcs-customer-field-duplicate" aria-label="<?php esc_attr_e( 'Duplicate field', 'woo-spiegelloft-configurator' ); ?>" title="<?php esc_attr_e( 'Duplicate field', 'woo-spiegelloft-configurator' ); ?>">
+						<span class="dashicons dashicons-admin-page" aria-hidden="true"></span>
+					</button>
+					<button type="button" class="button icon-btn wcs-icon-button wcs-field-template-save" aria-label="<?php esc_attr_e( 'Save template', 'woo-spiegelloft-configurator' ); ?>" title="<?php esc_attr_e( 'Save template', 'woo-spiegelloft-configurator' ); ?>">
+						<span class="dashicons dashicons-book" aria-hidden="true"></span>
+					</button>
+					<button type="button" class="button icon-btn wcs-icon-button wcs-field-template-library" aria-label="<?php esc_attr_e( 'Use saved template', 'woo-spiegelloft-configurator' ); ?>" title="<?php esc_attr_e( 'Use saved template', 'woo-spiegelloft-configurator' ); ?>">
+						<span class="dashicons dashicons-open-folder" aria-hidden="true"></span>
 					</button>
 					<button type="button" class="button icon-btn danger wcs-icon-button wcs-customer-field-remove" aria-label="<?php esc_attr_e( 'Remove field', 'woo-spiegelloft-configurator' ); ?>" title="<?php esc_attr_e( 'Remove field', 'woo-spiegelloft-configurator' ); ?>">
 						<span class="dashicons dashicons-trash" aria-hidden="true"></span>
@@ -132,7 +150,20 @@ $field_rows = ! empty( $customer_fields ) ? $customer_fields : array(
 );
 ?>
 <div class="wcs-customer-fields wcs-choice-field-builder">
+	<div class="wcs-customer-builder-toolbar">
+		<button type="button" class="button wcs-customer-import"><?php esc_html_e( 'Import all', 'woo-spiegelloft-configurator' ); ?></button>
+		<button type="button" class="button wcs-customer-export"><?php esc_html_e( 'Export all', 'woo-spiegelloft-configurator' ); ?></button>
+	</div>
 	<div class="wcs-customer-field-list">
 		<?php wcs_render_customer_field_rows( $field_rows, 'wcs_customer_fields' ); ?>
+	</div>
+	<div class="wcs-customer-template-modal" hidden>
+		<div class="wcs-customer-template-modal__panel" role="dialog" aria-modal="true">
+			<div class="wcs-customer-template-modal__head">
+				<strong class="wcs-customer-template-modal__title"></strong>
+				<button type="button" class="button-link wcs-customer-template-close"><?php esc_html_e( 'Close', 'woo-spiegelloft-configurator' ); ?></button>
+			</div>
+			<div class="wcs-customer-template-modal__body"></div>
+		</div>
 	</div>
 </div>

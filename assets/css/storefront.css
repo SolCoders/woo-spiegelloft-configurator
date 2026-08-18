@@ -47,6 +47,11 @@
 	box-sizing: border-box;
 }
 
+.wcs-configurator > .single_add_to_cart_button[hidden],
+.wcs-configurator > button[type="submit"][hidden] {
+	display: none !important;
+}
+
 .wcs-configurator__panel {
     display: flex;
     flex-direction: column;
