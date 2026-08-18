@@ -238,7 +238,7 @@
 		$row.toggleClass('is-dropdown', isDropdown);
 		$row.addClass('has-prices');
 		$options.toggle(isDropdown);
-		$grid.find('.wcs-customer-field-price').toggle(!isDropdown);
+		$grid.find('.wcs-customer-field-required').closest('.wcs-customer-field-meta').show();
 		$options.children('.wcs-customer-field-option').children('.wcs-customer-field-option-price').toggle(isDropdown);
 		$options.children('.wcs-customer-field-option').children('.wcs-customer-option-position').each(function () {
 			$(this).toggleClass('is-enabled', $(this).children('.wcs-customer-option-position-switch').find('.wcs-customer-option-position-toggle').is(':checked'));
@@ -287,7 +287,7 @@
 			else if ($input.hasClass('wcs-customer-field-type')) suffix = '[type]';
 			else if ($input.hasClass('wcs-customer-field-key')) suffix = '[key]';
 			else if ($input.hasClass('wcs-customer-field-placeholder')) suffix = '[placeholder]';
-			else if ($input.hasClass('wcs-customer-field-price')) suffix = '[price]';
+			else if ($input.hasClass('wcs-customer-field-required')) suffix = '[required]';
 		} else {
 			if ($input.hasClass('wcs-customer-field-option-label')) suffix = '[label]';
 			else if ($input.hasClass('wcs-image-url')) suffix = '[image]';
@@ -381,7 +381,7 @@
 			label: $field.find('> .wcs-customer-field-box > .wcs-customer-field-grid .wcs-customer-field-label').first().val() || '',
 			type: $field.find('> .wcs-customer-field-box > .wcs-customer-field-grid .wcs-customer-field-type').first().val() || 'dropdown',
 			placeholder: $field.find('> .wcs-customer-field-box > .wcs-customer-field-grid .wcs-customer-field-placeholder').first().val() || '',
-			price: $field.find('> .wcs-customer-field-box > .wcs-customer-field-grid .wcs-customer-field-price').first().val() || '',
+			required: $field.find('> .wcs-customer-field-box > .wcs-customer-field-grid .wcs-customer-field-required').first().is(':checked'),
 			options: []
 		};
 
@@ -419,7 +419,7 @@
 		$grid.find('.wcs-customer-field-label').first().val(data.label || '');
 		$grid.find('.wcs-customer-field-type').first().val(data.type === 'text' ? 'text' : 'dropdown');
 		$grid.find('.wcs-customer-field-placeholder').first().val(data.placeholder || '');
-		$grid.find('.wcs-customer-field-price').first().val(data.price || '');
+		$grid.find('.wcs-customer-field-required').first().prop('checked', !!data.required);
 
 		$options.children('.wcs-customer-field-option').not(':first').remove();
 		var options = Array.isArray(data.options) && data.options.length ? data.options : [{ label: '', image: '', price: '', nested_enabled: false, customer_fields: [] }];
@@ -667,6 +667,13 @@
 	}
 
 	function bindCustomerFieldSorting() {
+		function sizeSortPlaceholder(ui) {
+			ui.placeholder.css({
+				width: ui.item.outerWidth(),
+				height: ui.item.outerHeight()
+			});
+		}
+
 		$('.wcs-customer-field-list').each(function () {
 			var $list = $(this);
 			if ($list.data('customer-sortable')) {
@@ -682,6 +689,10 @@
 				tolerance: 'pointer',
 				start: function (event, ui) {
 					ui.item.data('wcs-was-dragged', true);
+					sizeSortPlaceholder(ui);
+				},
+				change: function (event, ui) {
+					sizeSortPlaceholder(ui);
 				},
 				stop: function (event, ui) {
 					window.setTimeout(function () {
@@ -696,6 +707,13 @@
 	}
 
 	function bindCustomerOptionSorting() {
+		function sizeSortPlaceholder(ui) {
+			ui.placeholder.css({
+				width: ui.item.outerWidth(),
+				height: ui.item.outerHeight()
+			});
+		}
+
 		$('.wcs-customer-field-options').each(function () {
 			var $list = $(this);
 			if ($list.data('customer-option-sortable')) {
@@ -711,6 +729,10 @@
 				tolerance: 'pointer',
 				start: function (event, ui) {
 					ui.item.data('wcs-was-dragged', true);
+					sizeSortPlaceholder(ui);
+				},
+				change: function (event, ui) {
+					sizeSortPlaceholder(ui);
 				},
 				stop: function (event, ui) {
 					window.setTimeout(function () {
@@ -845,7 +867,7 @@
 			});
 		}
 
-		$(document).on('mouseenter', '.wcs-customer-field-grid, .wcs-customer-field-option-label', function (e) {
+		$(document).on('mouseenter', '.wcs-customer-field-label, .wcs-customer-field-type, .wcs-customer-field-placeholder, .wcs-customer-field-option-label', function (e) {
 			e.stopPropagation();
 			var $row = $(this).closest('.wcs-customer-field-option, .wcs-customer-field-row');
 			$('.wcs-row-actions-active').removeClass('wcs-row-actions-active');

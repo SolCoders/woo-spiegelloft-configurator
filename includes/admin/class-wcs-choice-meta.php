@@ -290,7 +290,7 @@ class WCS_Choice_Meta {
 				'label'       => $label ?: ucwords( str_replace( '-', ' ', $key ) ),
 				'key'         => $key,
 				'type'        => $type,
-				'required'    => false,
+				'required'    => ! empty( $field['required'] ),
 				'placeholder' => sanitize_text_field( (string) ( $field['placeholder'] ?? '' ) ),
 				'price_enabled' => true,
 			);

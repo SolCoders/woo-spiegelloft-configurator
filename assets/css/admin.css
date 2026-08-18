@@ -1622,13 +1622,6 @@
 	}
 }
 
-/* Compact density for the choice field builder. */
-.wcs-customer-fields.wcs-choice-field-builder {
-	padding: 14px;
-	border-radius: 14px;
-	box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
-}
-
 .wcs-choice-field-builder .wcs-customer-field-list {
 	gap: 12px;
 }
@@ -1674,14 +1667,14 @@
 }
 
 .wcs-customer-field-sort-placeholder {
-	min-height: 82px;
+	box-sizing: border-box;
 	border: 1px dashed #9db2ff;
 	border-radius: 12px;
 	background: #eef3ff;
 }
 
 .wcs-customer-option-sort-placeholder {
-	min-height: 42px;
+	box-sizing: border-box;
 	border: 1px dashed #9db2ff;
 	border-radius: 9px;
 	background: #eef3ff;
@@ -2059,8 +2052,35 @@
 }
 
 .wcs-choice-field-builder .wcs-customer-field-meta {
+	display: grid;
+	justify-items: center;
+	align-content: start;
 	width: 72px;
 	min-width: 72px;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-meta label:first-child {
+	text-align: center;
+}
+
+.wcs-choice-field-builder .wcs-customer-required-switch {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 34px;
+	min-width: 34px;
+	height: 36px;
+	min-height: 36px;
+	margin: 0 auto;
+	border: 0;
+	border-radius: 8px;
+	background: transparent;
+}
+
+.wcs-choice-field-builder .wcs-customer-required-switch input {
+	width: 18px;
+	height: 18px;
+	margin: 0;
 }
 
 .wcs-choice-field-builder .wcs-customer-field-option.is-nested-collapsed > .wcs-customer-option-position-fields {

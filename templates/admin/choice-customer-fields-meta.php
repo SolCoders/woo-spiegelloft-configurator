@@ -48,8 +48,11 @@ if ( ! function_exists( 'wcs_render_customer_field_rows' ) ) {
 							<input type="text" class="input wcs-customer-field-placeholder" name="<?php echo esc_attr( $field_name ); ?>[placeholder]" value="<?php echo esc_attr( (string) ( $field['placeholder'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'Placeholder', 'woo-spiegelloft-configurator' ); ?>">
 						</div>
 						<div class="field-group wcs-customer-field-meta">
-							<label><?php esc_html_e( 'Price', 'woo-spiegelloft-configurator' ); ?></label>
-							<input type="text" class="price-input wcs-customer-field-price" name="<?php echo esc_attr( $field_name ); ?>[price]" value="<?php echo esc_attr( (string) ( $field['price'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'Price', 'woo-spiegelloft-configurator' ); ?>">
+							<label><?php esc_html_e( 'Required', 'woo-spiegelloft-configurator' ); ?></label>
+							<label class="wcs-customer-required-switch">
+								<input type="checkbox" class="wcs-customer-field-required" name="<?php echo esc_attr( $field_name ); ?>[required]" value="1" <?php checked( ! empty( $field['required'] ) ); ?>>
+								<span class="screen-reader-text"><?php esc_html_e( 'Required field', 'woo-spiegelloft-configurator' ); ?></span>
+							</label>
 						</div>
 				</div>
 				<div class="wcs-customer-field-options">
