@@ -297,8 +297,10 @@
 		$input.attr('name', baseName + suffix);
 	}
 
-	function buildCustomerFieldRow($list) {
-		var $source = $list && $list.children('.wcs-customer-field-row').length
+	function buildCustomerFieldRow($list, $prototype) {
+		var $source = $prototype && $prototype.length
+			? $prototype
+			: $list && $list.children('.wcs-customer-field-row').length
 			? $list.children('.wcs-customer-field-row').first()
 			: $('.wcs-customer-field-row').first();
 		var $template = $source.clone();
@@ -448,14 +450,15 @@
 	}
 
 	function replaceCustomerFieldList($list, rows) {
+		var $prototype = $list.children('.wcs-customer-field-row').first().clone();
 		$list.empty();
 		(rows || []).forEach(function (rowData) {
-			var $row = buildCustomerFieldRow($list);
+			var $row = buildCustomerFieldRow($list, $prototype);
 			$list.append($row);
 			applyDataToCustomerField($row, rowData);
 		});
 		if (!$list.children('.wcs-customer-field-row').length) {
-			$list.append(buildCustomerFieldRow($list));
+			$list.append(buildCustomerFieldRow($list, $prototype));
 		}
 		reindexCustomerFields();
 		bindCustomerFieldSorting();
