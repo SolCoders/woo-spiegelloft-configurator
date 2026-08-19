@@ -69,6 +69,11 @@
 		return String(text || '').replace(/\s+\+.*/, '').replace(/\s+/g, ' ').trim();
 	}
 
+	function optionDisplayPrice(price) {
+		var amount = parseFloat(price) || 0;
+		return amount ? '+ ' + money(amount) : '';
+	}
+
 	function reviewRow(title, lines) {
 		var html = '<article class="wcs-review-card"><h4>' + escapeHtml(title) + '</h4>';
 		lines.forEach(function (line) {
@@ -145,7 +150,40 @@
 	}
 
 	function clearNestedCustomerFields($field) {
-		$field.closest('.wcs-customer-field').find('.wcs-customer-nested-target').prop('hidden', true).empty();
+		getNestedTarget($field).prop('hidden', true).empty();
+	}
+
+	function getNestedTarget($field) {
+		var key = String($field.data('key') || '');
+		var $local = $field.closest('.wcs-customer-field').find('.wcs-customer-nested-target').first();
+
+		if ($local.length) {
+			return $local;
+		}
+
+		return $field.closest('.wcs-step-option-group').find('.wcs-customer-nested-target').filter(function () {
+			return String($(this).data('parent-key') || '') === key;
+		}).first();
+	}
+
+	function positionNestedTarget($field) {
+		var $target = getNestedTarget($field);
+		var $choices = $field.next('.wcs-image-choice-list');
+		var $selectedCard = $choices.find('.wcs-image-choice-card.is-selected').first();
+		var $currentBox = $field.closest('.wcs-customer-nested-box');
+
+		if (!$target.length) {
+			return;
+		}
+
+		if ($currentBox.length) {
+			$target.insertAfter($currentBox);
+			return;
+		}
+
+		if ($choices.length && $selectedCard.length) {
+			$target.insertAfter($selectedCard);
+		}
 	}
 
 	function refreshPositionSelect($select) {
@@ -195,6 +233,7 @@
 		$target.find('.wcs-customer-field-select').each(function () {
 			refreshNestedCustomerFields($(this));
 		});
+		validateCustomerFields($target);
 	}
 
 	function renderCustomerFields(fields, baseKey, nested, skipFirstLabel) {
@@ -209,17 +248,20 @@
 			var key = baseKey + '.' + (field.key || '');
 			var label = field.label || field.key || '';
 			var placeholder = field.placeholder ? ' placeholder="' + escapeHtml(field.placeholder) + '"' : '';
+			var required = !!field.required;
+			var requiredAttr = required ? ' aria-required="true" data-required="1"' : '';
+			var requiredClass = required ? ' is-required is-empty' : '';
 			if (!field.key || !label) {
 				return;
 			}
-			html += '<div class="wcs-customer-field' + (field.type === 'text' ? ' wcs-customer-field--text' : ' wcs-customer-field--choices') + '">';
+			html += '<div class="wcs-customer-field' + (nested ? ' wcs-customer-field--nested' : '') + (field.type === 'text' ? ' wcs-customer-field--text' : ' wcs-customer-field--choices') + requiredClass + '" data-required-label="' + escapeHtml(label) + '">';
 			if (!(skipFirstLabel && index === 0)) {
 				html += '<label class="wcs-customer-field__label" for="wcs-field-' + escapeHtml(key) + '">' + escapeHtml(label) + '</label>';
 			}
 			if (field.type === 'text') {
-				html += '<input id="wcs-field-' + escapeHtml(key) + '" type="text" class="wcs-customer-field-input" data-key="' + escapeHtml(key) + '" data-price="' + escapeHtml(field.price_enabled ? (parseFloat(field.price) || 0) : 0) + '"' + placeholder + '>';
+				html += '<input id="wcs-field-' + escapeHtml(key) + '" type="text" class="wcs-customer-field-input" data-key="' + escapeHtml(key) + '" data-price="' + escapeHtml(field.price_enabled ? (parseFloat(field.price) || 0) : 0) + '"' + placeholder + requiredAttr + '>';
 			} else {
-				html += '<select id="wcs-field-' + escapeHtml(key) + '" class="wcs-customer-field-input wcs-customer-field-select" data-key="' + escapeHtml(key) + '">';
+				html += '<select id="wcs-field-' + escapeHtml(key) + '" class="wcs-customer-field-input wcs-customer-field-select" data-key="' + escapeHtml(key) + '"' + requiredAttr + '>';
 				html += '<option value="">' + escapeHtml(field.placeholder || 'Please select') + '</option>';
 				(field.options || []).forEach(function (option) {
 					var price = parseFloat(option.price) || 0;
@@ -239,7 +281,10 @@
 				});
 				html += '</select>';
 			}
-			html += '<div class="wcs-customer-nested-target" hidden></div>';
+			if (required) {
+				html += '<p class="wcs-customer-field__error" hidden>' + escapeHtml(label) + ' darf nicht leer sein.</p>';
+			}
+			html += '<div class="wcs-customer-nested-target" data-parent-key="' + escapeHtml(key) + '" hidden></div>';
 			html += '</div>';
 		});
 		html += nested ? '</div>' : '';
@@ -247,7 +292,7 @@
 	}
 
 	function refreshNestedCustomerFields($field) {
-		var $target = $field.closest('.wcs-customer-field').children('.wcs-customer-nested-target');
+		var $target = getNestedTarget($field);
 		var selected = $field.val() || '';
 		var fields = selected ? parseCustomerFields($field) : [];
 
@@ -263,10 +308,12 @@
 
 		var html = renderCustomerFields(fields, String($field.data('key') || '') + '.' + selected, true, false);
 		$target.html(html).prop('hidden', !html);
+		positionNestedTarget($field);
 		buildCustomSelect($target.find('select'));
 		$target.find('.wcs-customer-field-select').each(function () {
 			refreshNestedCustomerFields($(this));
 		});
+		validateCustomerFields($target);
 	}
 
 	function syncCustomSelect($select) {
@@ -280,12 +327,70 @@
 		$custom.find('.wcs-custom-select__option[data-value="' + String($select.val()).replace(/"/g, '\\"') + '"]').addClass('is-selected');
 	}
 
+	function syncImageChoices($select) {
+		var $choices = $select.next('.wcs-image-choice-list');
+		if (!$choices.length) {
+			return;
+		}
+		var value = String($select.val() || '');
+		$choices.find('.wcs-image-choice-card').removeClass('is-selected').attr('aria-checked', 'false');
+		$choices.find('.wcs-image-choice-card[data-value="' + value.replace(/"/g, '\\"') + '"]').addClass('is-selected').attr('aria-checked', 'true');
+		positionNestedTarget($select);
+	}
+
+	function buildImageChoiceSelect($select) {
+		var isSubChoice = $select.closest('.wcs-customer-nested-box').length > 0;
+		var html = '<div class="wcs-image-choice-list ' + (isSubChoice ? 'wcs-image-choice-list--sub' : 'wcs-image-choice-list--main') + '" role="radiogroup">';
+		$select.find('option').each(function () {
+			var $option = $(this);
+			var value = String($option.val() || '');
+			var image = $option.data('image') || '';
+			var label = cleanOptionText($option.text()) || '---';
+			var price = optionDisplayPrice($option.data('price'));
+			var disabled = $option.is(':disabled') || $option.data('required-message');
+			if (!value) {
+				return;
+			}
+			html += '<button type="button" class="wcs-image-choice-card' + (disabled ? ' is-disabled' : '') + '" data-value="' + escapeHtml(value) + '" role="radio" aria-checked="false"' + (disabled ? ' disabled' : '') + '>';
+			html += '<span class="wcs-image-choice-card__media">' + (image ? '<img src="' + escapeHtml(image) + '" alt="">' : '') + '</span>';
+			html += '<span class="wcs-image-choice-card__body"><strong>' + escapeHtml(label) + '</strong>' + (price ? '<em>' + escapeHtml(price) + '</em>' : '') + '</span>';
+			html += '<span class="wcs-image-choice-card__radio" aria-hidden="true"></span>';
+			html += '</button>';
+		});
+		html += '</div>';
+		$select.addClass('wcs-native-select').after(html);
+		syncImageChoices($select);
+	}
+
+	function validateCustomerFields($scope) {
+		($scope || $('.wcs-configurator')).find('.wcs-customer-field.is-required').each(function () {
+			var $field = $(this);
+			var $input = $field.children('.wcs-customer-field-input').first();
+			var empty = !$input.val();
+			$field.toggleClass('is-empty', empty);
+			$field.find('> .wcs-customer-field__error').prop('hidden', !empty);
+		});
+		($scope || $('.wcs-configurator')).find('.wcs-customer-nested-box').each(function () {
+			$(this).toggleClass('has-required-empty', $(this).find('.wcs-customer-field.is-required.is-empty').length > 0);
+		});
+	}
+
 	function buildCustomSelect($selects) {
 		$selects.each(function () {
 			var $select = $(this);
 			var optionsHtml = '';
 			if ($select.next('.wcs-custom-select').length) {
 				$select.next('.wcs-custom-select').remove();
+			}
+			if ($select.next('.wcs-image-choice-list').length) {
+				$select.next('.wcs-image-choice-list').remove();
+			}
+			var hasImages = $select.find('option').filter(function () {
+				return !!($(this).data('image') || '');
+			}).length > 0;
+			if (hasImages && !$select.closest('.wcs-option-select--hidden-parent').length) {
+				buildImageChoiceSelect($select);
+				return;
 			}
 			$select.find('option').each(function () {
 				var $option = $(this);
@@ -360,6 +465,8 @@
 				refreshNestedCustomerFields($(this));
 			}
 			syncCustomSelect($(this));
+			syncImageChoices($(this));
+			validateCustomerFields($(this).closest('.wcs-configurator'));
 			collect($(this).closest('.wcs-configurator'));
 		});
 
@@ -379,6 +486,16 @@
 			var $select = $custom.prev('select');
 			$select.val($(this).data('value')).trigger('change');
 			$custom.removeClass('is-open');
+		});
+
+		$(document).on('click', '.wcs-image-choice-card', function (e) {
+			e.preventDefault();
+			if ($(this).hasClass('is-disabled')) {
+				return;
+			}
+			var $list = $(this).closest('.wcs-image-choice-list');
+			var $select = $list.prev('select');
+			$select.val($(this).data('value')).trigger('change');
 		});
 
 		$(document).on('click', function (e) {

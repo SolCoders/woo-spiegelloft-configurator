@@ -92,7 +92,7 @@ if ( ! function_exists( 'wcs_render_customer_field_rows' ) ) {
 							</div>
 							<input type="text" class="price-input wcs-customer-field-option-price" name="<?php echo esc_attr( $option_name ); ?>[price]" value="<?php echo esc_attr( (string) ( $field_option['price'] ?? '' ) ); ?>" placeholder="0.00">
 							<div class="wcs-row-action-rail" aria-label="<?php esc_attr_e( 'Option actions', 'woo-spiegelloft-configurator' ); ?>">
-								<button type="button" class="button icon-btn wcs-icon-button wcs-customer-option-add" aria-label="<?php esc_attr_e( 'Add nested field', 'woo-spiegelloft-configurator' ); ?>" title="<?php esc_attr_e( 'Add nested field', 'woo-spiegelloft-configurator' ); ?>">
+								<button type="button" class="button icon-btn wcs-icon-button wcs-customer-option-add" aria-label="<?php esc_attr_e( 'Add sibling option', 'woo-spiegelloft-configurator' ); ?>" title="<?php esc_attr_e( 'Add sibling option', 'woo-spiegelloft-configurator' ); ?>">
 									<span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
 								</button>
 								<button type="button" class="button icon-btn wcs-icon-button wcs-customer-option-duplicate" aria-label="<?php esc_attr_e( 'Duplicate option', 'woo-spiegelloft-configurator' ); ?>" title="<?php esc_attr_e( 'Duplicate option', 'woo-spiegelloft-configurator' ); ?>">

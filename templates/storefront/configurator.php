@@ -92,7 +92,7 @@ foreach ( $steps as $step ) {
 								<option value=""><?php esc_html_e( 'Please select', 'woo-spiegelloft-configurator' ); ?></option>
 							<?php endif; ?>
 							<?php foreach ( $options as $option ) : ?>
-								<option value="<?php echo esc_attr( (string) ( $option['value'] ?? '' ) ); ?>" data-price="<?php echo esc_attr( (string) ( $option['price'] ?? 0 ) ); ?>" data-customer-fields="<?php echo esc_attr( wp_json_encode( (array) ( $option['customer_fields'] ?? array() ) ) ); ?>" <?php selected( $hide_parent_select ); ?>>
+								<option value="<?php echo esc_attr( (string) ( $option['value'] ?? '' ) ); ?>" data-price="<?php echo esc_attr( (string) ( $option['price'] ?? 0 ) ); ?>" data-image="<?php echo esc_attr( (string) ( $option['image'] ?? '' ) ); ?>" data-customer-fields="<?php echo esc_attr( wp_json_encode( (array) ( $option['customer_fields'] ?? array() ) ) ); ?>" <?php selected( $hide_parent_select ); ?>>
 									<?php echo esc_html( (string) ( $option['name'] ?? $option['value'] ?? '' ) ); ?>
 									<?php if ( ! empty( $option['price'] ) ) : ?>
 										<?php echo esc_html( ' +' . wp_strip_all_tags( wc_price( (float) $option['price'] ) ) ); ?>
@@ -152,7 +152,7 @@ foreach ( $steps as $step ) {
 									<option value=""><?php esc_html_e( 'Please select', 'woo-spiegelloft-configurator' ); ?></option>
 								<?php endif; ?>
 								<?php foreach ( $options as $option ) : ?>
-									<option value="<?php echo esc_attr( (string) ( $option['value'] ?? '' ) ); ?>" data-price="<?php echo esc_attr( (string) ( $option['price'] ?? 0 ) ); ?>" data-customer-fields="<?php echo esc_attr( wp_json_encode( (array) ( $option['customer_fields'] ?? array() ) ) ); ?>" <?php selected( $hide_parent_select ); ?>>
+									<option value="<?php echo esc_attr( (string) ( $option['value'] ?? '' ) ); ?>" data-price="<?php echo esc_attr( (string) ( $option['price'] ?? 0 ) ); ?>" data-image="<?php echo esc_attr( (string) ( $option['image'] ?? '' ) ); ?>" data-customer-fields="<?php echo esc_attr( wp_json_encode( (array) ( $option['customer_fields'] ?? array() ) ) ); ?>" <?php selected( $hide_parent_select ); ?>>
 										<?php echo esc_html( (string) ( $option['name'] ?? $option['value'] ?? '' ) ); ?>
 										<?php if ( ! empty( $option['price'] ) ) : ?>
 											<?php echo esc_html( ' +' . wp_strip_all_tags( wc_price( (float) $option['price'] ) ) ); ?>
