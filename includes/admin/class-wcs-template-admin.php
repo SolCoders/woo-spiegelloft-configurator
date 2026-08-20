@@ -219,9 +219,11 @@ class WCS_Template_Admin {
 		$group_order_raw    = isset( $_POST['wcs_group_order'] ) ? (array) wp_unslash( $_POST['wcs_group_order'] ) : array();
 		$step_map_raw       = isset( $_POST['wcs_group_steps'] ) ? wp_unslash( $_POST['wcs_group_steps'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$choice_step_raw    = isset( $_POST['wcs_choice_steps'] ) ? wp_unslash( $_POST['wcs_choice_steps'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$choice_order_raw   = isset( $_POST['wcs_choice_order'] ) ? (array) wp_unslash( $_POST['wcs_choice_order'] ) : array();
 		$side_measurements_raw = isset( $_POST['wcs_side_measurements'] ) ? wp_unslash( $_POST['wcs_side_measurements'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$enabled_groups     = array_values( array_unique( array_map( 'sanitize_text_field', $enabled_groups_raw ) ) );
 		$group_order        = array_values( array_unique( array_map( 'sanitize_text_field', $group_order_raw ) ) );
+		$choice_order       = array_values( array_unique( array_filter( array_map( 'absint', $choice_order_raw ) ) ) );
 		$step_map           = array();
 		$choice_step_map    = array();
 		$side_measurements  = array();
@@ -278,7 +280,20 @@ class WCS_Template_Admin {
 		if ( is_array( $option_map_raw ) ) {
 			foreach ( $option_map_raw as $group => $ids ) {
 				$group = sanitize_text_field( (string) $group );
-				$option_map[ $group ] = array_map( 'absint', (array) $ids );
+				$selected_ids = array_values( array_unique( array_filter( array_map( 'absint', (array) $ids ) ) ) );
+				if ( ! empty( $choice_order ) && ! empty( $selected_ids ) ) {
+					$selected_lookup = array_flip( $selected_ids );
+					$ordered_ids     = array_values(
+						array_filter(
+							$choice_order,
+							static function ( int $choice_id ) use ( $selected_lookup ): bool {
+								return isset( $selected_lookup[ $choice_id ] );
+							}
+						)
+					);
+					$selected_ids    = array_values( array_unique( array_merge( $ordered_ids, $selected_ids ) ) );
+				}
+				$option_map[ $group ] = $selected_ids;
 			}
 		}
 
@@ -356,6 +371,7 @@ class WCS_Template_Admin {
 				),
 				'enabled_groups'    => $enabled_groups,
 				'group_order'       => $group_order,
+				'choice_order'      => $choice_order,
 				'step_map'          => $step_map,
 				'choice_step_map'   => $choice_step_map,
 				'extra_option_map'  => $option_map,

@@ -20,7 +20,31 @@ $add_url = add_query_arg(
 	admin_url( 'post-new.php' )
 );
 $choice_step_map = (array) ( $data['choice_step_map'] ?? array() );
+$choice_order    = array_map( 'absint', (array) ( $data['choice_order'] ?? array() ) );
 $per_page        = 8;
+
+if ( ! empty( $choice_order ) && ! empty( $flat_options ) ) {
+	$choice_order_lookup = array_flip( $choice_order );
+	$original_order      = array();
+	foreach ( $flat_options as $index => $option ) {
+		$original_order[ (int) ( $option['id'] ?? 0 ) ] = (int) $index;
+	}
+	usort(
+		$flat_options,
+		static function ( array $a, array $b ) use ( $choice_order_lookup, $original_order ): int {
+			$a_id = (int) ( $a['id'] ?? 0 );
+			$b_id = (int) ( $b['id'] ?? 0 );
+			$a_position = $choice_order_lookup[ $a_id ] ?? PHP_INT_MAX;
+			$b_position = $choice_order_lookup[ $b_id ] ?? PHP_INT_MAX;
+
+			if ( $a_position !== $b_position ) {
+				return $a_position <=> $b_position;
+			}
+
+			return ( $original_order[ $a_id ] ?? PHP_INT_MAX ) <=> ( $original_order[ $b_id ] ?? PHP_INT_MAX );
+		}
+	);
+}
 ?>
 <div class="wcs-template-choices">
 	<p class="description"><?php esc_html_e( 'Choose the customization choices available to shoppers. Categories are no longer used for this template list.', 'woo-spiegelloft-configurator' ); ?></p>
@@ -81,6 +105,7 @@ $per_page        = 8;
 								<tr data-choice-search="<?php echo esc_attr( strtolower( $option_title . ' ' . $option_slug ) ); ?>">
 									<td class="wcs-option-table-sort">
 										<span class="dashicons dashicons-menu wcs-choice-sort-handle" title="<?php esc_attr_e( 'Drag to reorder', 'woo-spiegelloft-configurator' ); ?>"></span>
+										<input type="hidden" name="wcs_choice_order[]" value="<?php echo esc_attr( (string) $option_id ); ?>">
 									</td>
 									<td class="wcs-option-table-check">
 										<input type="checkbox" name="wcs_extra_option_map[<?php echo esc_attr( $flat_group_slug ); ?>][]" value="<?php echo esc_attr( (string) $option_id ); ?>" <?php checked( in_array( $option_id, $flat_selected_ids, true ) || empty( $flat_selected_ids ) ); ?>>
