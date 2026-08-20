@@ -97,6 +97,7 @@ class WCS_Template {
 		}
 
 		$dimensions = (array) ( $data['dimensions'] ?? array() );
+		$side_measurements = $this->normalize_side_measurements( $dimensions );
 
 		$formatted = array(
 			'id'                => $template_id,
@@ -105,14 +106,25 @@ class WCS_Template {
 			'slug'              => (string) ( $data['slug'] ?? sanitize_title( $post->post_title ) ),
 			'type'              => (string) ( $data['type'] ?? '' ),
 			'dimensions'        => array(
-				'min_width'  => (int) ( $dimensions['min_width'] ?? 400 ),
-				'max_width'  => (int) ( $dimensions['max_width'] ?? 2500 ),
-				'min_height' => (int) ( $dimensions['min_height'] ?? 400 ),
-				'max_height' => (int) ( $dimensions['max_height'] ?? 2500 ),
+				'measurement_mode'  => (string) ( $dimensions['measurement_mode'] ?? 'standard' ),
+				'min_width'         => (int) ( $dimensions['min_width'] ?? 400 ),
+				'max_width'         => (int) ( $dimensions['max_width'] ?? 2500 ),
+				'min_height'        => (int) ( $dimensions['min_height'] ?? 400 ),
+				'max_height'        => (int) ( $dimensions['max_height'] ?? 2500 ),
+				'top_min_width'     => (int) ( $dimensions['top_min_width'] ?? $dimensions['min_width'] ?? 0 ),
+				'top_max_width'     => (int) ( $dimensions['top_max_width'] ?? $dimensions['max_width'] ?? 2000 ),
+				'bottom_min_width'  => (int) ( $dimensions['bottom_min_width'] ?? $dimensions['min_width'] ?? 0 ),
+				'bottom_max_width'  => (int) ( $dimensions['bottom_max_width'] ?? $dimensions['max_width'] ?? 2000 ),
+				'left_min_height'   => (int) ( $dimensions['left_min_height'] ?? $dimensions['min_height'] ?? 0 ),
+				'left_max_height'   => (int) ( $dimensions['left_max_height'] ?? $dimensions['max_height'] ?? 2000 ),
+				'right_min_height'  => (int) ( $dimensions['right_min_height'] ?? $dimensions['min_height'] ?? 0 ),
+				'right_max_height'  => (int) ( $dimensions['right_max_height'] ?? $dimensions['max_height'] ?? 2000 ),
+				'side_measurements' => $side_measurements,
 			),
 			'enabled_groups'    => (array) ( $data['enabled_groups'] ?? $data['groups'] ?? array() ),
 			'group_order'       => (array) ( $data['group_order'] ?? array() ),
 			'step_map'          => (array) ( $data['step_map'] ?? array() ),
+			'choice_step_map'   => (array) ( $data['choice_step_map'] ?? array() ),
 			'extra_option_map'  => (array) ( $data['extra_option_map'] ?? array() ),
 			'validation_rules'  => (array) ( $data['validation_rules'] ?? $data['rules'] ?? array() ),
 			'behavior_rules'    => (array) ( $data['behavior_rules'] ?? $data['validation_rules'] ?? $data['rules'] ?? array() ),
@@ -135,20 +147,32 @@ class WCS_Template {
 	 */
 	public function save_template_data( int $template_id, array $data ): bool {
 		$dimensions = (array) ( $data['dimensions'] ?? array() );
+		$side_measurements = $this->normalize_side_measurements( $dimensions );
 
 		$sanitized = array(
 			'panel_template'   => sanitize_text_field( (string) ( $data['panel_template'] ?? 'bathroomMirror' ) ),
 			'slug'             => sanitize_title( (string) ( $data['slug'] ?? '' ) ),
 			'type'             => sanitize_text_field( (string) ( $data['type'] ?? '' ) ),
 			'dimensions'       => array(
-				'min_width'  => absint( $dimensions['min_width'] ?? 400 ),
-				'max_width'  => absint( $dimensions['max_width'] ?? 2500 ),
-				'min_height' => absint( $dimensions['min_height'] ?? 400 ),
-				'max_height' => absint( $dimensions['max_height'] ?? 2500 ),
+				'measurement_mode'  => 'sidewise' === (string) ( $dimensions['measurement_mode'] ?? 'standard' ) ? 'sidewise' : 'standard',
+				'min_width'         => absint( $dimensions['min_width'] ?? 400 ),
+				'max_width'         => absint( $dimensions['max_width'] ?? 2500 ),
+				'min_height'        => absint( $dimensions['min_height'] ?? 400 ),
+				'max_height'        => absint( $dimensions['max_height'] ?? 2500 ),
+				'top_min_width'     => absint( $dimensions['top_min_width'] ?? $dimensions['min_width'] ?? 0 ),
+				'top_max_width'     => absint( $dimensions['top_max_width'] ?? $dimensions['max_width'] ?? 2000 ),
+				'bottom_min_width'  => absint( $dimensions['bottom_min_width'] ?? $dimensions['min_width'] ?? 0 ),
+				'bottom_max_width'  => absint( $dimensions['bottom_max_width'] ?? $dimensions['max_width'] ?? 2000 ),
+				'left_min_height'   => absint( $dimensions['left_min_height'] ?? $dimensions['min_height'] ?? 0 ),
+				'left_max_height'   => absint( $dimensions['left_max_height'] ?? $dimensions['max_height'] ?? 2000 ),
+				'right_min_height'  => absint( $dimensions['right_min_height'] ?? $dimensions['min_height'] ?? 0 ),
+				'right_max_height'  => absint( $dimensions['right_max_height'] ?? $dimensions['max_height'] ?? 2000 ),
+				'side_measurements' => $side_measurements,
 			),
 			'enabled_groups'   => array_values( array_map( 'sanitize_text_field', (array) ( $data['enabled_groups'] ?? array() ) ) ),
 			'group_order'      => array_values( array_map( 'sanitize_text_field', (array) ( $data['group_order'] ?? array() ) ) ),
 			'step_map'         => is_array( $data['step_map'] ?? null ) ? array_map( static fn( $step ): int => max( 1, absint( $step ) ), $data['step_map'] ) : array(),
+			'choice_step_map'  => is_array( $data['choice_step_map'] ?? null ) ? array_map( static fn( $step ): int => max( 1, absint( $step ) ), $data['choice_step_map'] ) : array(),
 			'extra_option_map' => is_array( $data['extra_option_map'] ?? null ) ? $data['extra_option_map'] : array(),
 			'validation_rules' => is_array( $data['validation_rules'] ?? null ) ? $data['validation_rules'] : array(),
 			'behavior_rules'   => is_array( $data['behavior_rules'] ?? null ) ? $data['behavior_rules'] : array(),
@@ -158,6 +182,53 @@ class WCS_Template {
 		update_post_meta( $template_id, '_wcs_template_data', $sanitized );
 		$this->cache->delete( 'template_' . $template_id );
 		return true;
+	}
+
+	/**
+	 * Normalize repeatable side measurements.
+	 *
+	 * @param array<string, mixed> $dimensions Dimension settings.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function normalize_side_measurements( array $dimensions ): array {
+		$sides = array();
+		if ( ! empty( $dimensions['side_measurements'] ) && is_array( $dimensions['side_measurements'] ) ) {
+			foreach ( $dimensions['side_measurements'] as $side ) {
+				if ( ! is_array( $side ) ) {
+					continue;
+				}
+				$label = sanitize_text_field( (string) ( $side['label'] ?? '' ) );
+				$key   = sanitize_title( (string) ( $side['key'] ?? $label ) );
+				if ( '' === $label || '' === $key ) {
+					continue;
+				}
+				$sides[] = array(
+					'label' => $label,
+					'key'   => $key,
+					'min'   => absint( $side['min'] ?? $side['min_width'] ?? $side['min_height'] ?? 400 ),
+					'max'   => absint( $side['max'] ?? $side['max_width'] ?? $side['max_height'] ?? 2500 ),
+				);
+			}
+		}
+
+		if ( ! empty( $sides ) ) {
+			return array_values( $sides );
+		}
+
+		return array(
+			array(
+				'label' => __( 'Width', 'woo-spiegelloft-configurator' ),
+				'key'   => 'width',
+				'min'   => absint( $dimensions['min_width'] ?? 400 ),
+				'max'   => absint( $dimensions['max_width'] ?? 2500 ),
+			),
+			array(
+				'label' => __( 'Height', 'woo-spiegelloft-configurator' ),
+				'key'   => 'height',
+				'min'   => absint( $dimensions['min_height'] ?? 400 ),
+				'max'   => absint( $dimensions['max_height'] ?? 2500 ),
+			),
+		);
 	}
 
 	/**

@@ -830,12 +830,6 @@
 			var $rows = $list.children('.wcs-customer-field-row');
 			var $row = $(this).closest('.wcs-customer-field-row');
 			var $parentOption = $list.closest('.wcs-customer-field-option');
-			if (!$parentOption.length && $rows.length <= 1) {
-				$row.find('input[type="text"]').val('');
-				$row.find('input[type="checkbox"]').prop('checked', false);
-				refreshCustomerFieldRow($row);
-				return;
-			}
 			$row.remove();
 			if ($parentOption.length && !$list.children('.wcs-customer-field-row').length) {
 				$parentOption.removeClass('has-nested-fields is-nested-collapsed');

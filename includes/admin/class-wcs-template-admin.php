@@ -218,9 +218,13 @@ class WCS_Template_Admin {
 		$enabled_groups_raw = isset( $_POST['wcs_enabled_groups'] ) ? (array) wp_unslash( $_POST['wcs_enabled_groups'] ) : array();
 		$group_order_raw    = isset( $_POST['wcs_group_order'] ) ? (array) wp_unslash( $_POST['wcs_group_order'] ) : array();
 		$step_map_raw       = isset( $_POST['wcs_group_steps'] ) ? wp_unslash( $_POST['wcs_group_steps'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$choice_step_raw    = isset( $_POST['wcs_choice_steps'] ) ? wp_unslash( $_POST['wcs_choice_steps'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$side_measurements_raw = isset( $_POST['wcs_side_measurements'] ) ? wp_unslash( $_POST['wcs_side_measurements'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$enabled_groups     = array_values( array_unique( array_map( 'sanitize_text_field', $enabled_groups_raw ) ) );
 		$group_order        = array_values( array_unique( array_map( 'sanitize_text_field', $group_order_raw ) ) );
 		$step_map           = array();
+		$choice_step_map    = array();
+		$side_measurements  = array();
 		if ( is_array( $step_map_raw ) ) {
 			foreach ( $step_map_raw as $group_slug => $step ) {
 				$group_slug = sanitize_text_field( (string) $group_slug );
@@ -230,6 +234,33 @@ class WCS_Template_Admin {
 				}
 			}
 		}
+		if ( is_array( $choice_step_raw ) ) {
+			foreach ( $choice_step_raw as $choice_id => $step ) {
+				$choice_id = absint( $choice_id );
+				if ( $choice_id ) {
+					$choice_step_map[ $choice_id ] = max( 1, absint( $step ) );
+				}
+			}
+		}
+		if ( is_array( $side_measurements_raw ) ) {
+			foreach ( $side_measurements_raw as $side ) {
+				if ( ! is_array( $side ) ) {
+					continue;
+				}
+				$label = sanitize_text_field( (string) ( $side['label'] ?? '' ) );
+				$key   = sanitize_title( (string) ( $side['key'] ?? $label ) );
+				if ( '' === $label || '' === $key ) {
+					continue;
+				}
+				$side_measurements[] = array(
+					'label' => $label,
+					'key'   => $key,
+					'min'   => absint( $side['min'] ?? $side['min_width'] ?? $side['min_height'] ?? 400 ),
+					'max'   => absint( $side['max'] ?? $side['max_width'] ?? $side['max_height'] ?? 2500 ),
+				);
+			}
+		}
+		$primary_side = $side_measurements[0] ?? array();
 		if ( ! empty( $group_order ) ) {
 			$enabled_lookup = array_flip( $enabled_groups );
 			$enabled_groups = array_values(
@@ -308,14 +339,25 @@ class WCS_Template_Admin {
 				'slug'              => $template_slug,
 				'type'              => sanitize_text_field( wp_unslash( (string) ( $_POST['wcs_template_type'] ?? '' ) ) ),
 				'dimensions'        => array(
-					'min_width'  => absint( $_POST['wcs_min_width'] ?? 400 ),
-					'max_width'  => absint( $_POST['wcs_max_width'] ?? 2500 ),
-					'min_height' => absint( $_POST['wcs_min_height'] ?? 400 ),
-					'max_height' => absint( $_POST['wcs_max_height'] ?? 2500 ),
+					'measurement_mode'  => 'sidewise',
+					'min_width'         => absint( $_POST['wcs_min_width'] ?? $primary_side['min'] ?? 400 ),
+					'max_width'         => absint( $_POST['wcs_max_width'] ?? $primary_side['max'] ?? 2500 ),
+					'min_height'        => absint( $_POST['wcs_min_height'] ?? $primary_side['min'] ?? 400 ),
+					'max_height'        => absint( $_POST['wcs_max_height'] ?? $primary_side['max'] ?? 2500 ),
+					'top_min_width'     => absint( $_POST['wcs_top_min_width'] ?? $primary_side['min'] ?? 400 ),
+					'top_max_width'     => absint( $_POST['wcs_top_max_width'] ?? $primary_side['max'] ?? 2500 ),
+					'bottom_min_width'  => absint( $_POST['wcs_bottom_min_width'] ?? $primary_side['min'] ?? 400 ),
+					'bottom_max_width'  => absint( $_POST['wcs_bottom_max_width'] ?? $primary_side['max'] ?? 2500 ),
+					'left_min_height'   => absint( $_POST['wcs_left_min_height'] ?? $primary_side['min'] ?? 400 ),
+					'left_max_height'   => absint( $_POST['wcs_left_max_height'] ?? $primary_side['max'] ?? 2500 ),
+					'right_min_height'  => absint( $_POST['wcs_right_min_height'] ?? $primary_side['min'] ?? 400 ),
+					'right_max_height'  => absint( $_POST['wcs_right_max_height'] ?? $primary_side['max'] ?? 2500 ),
+					'side_measurements' => $side_measurements,
 				),
 				'enabled_groups'    => $enabled_groups,
 				'group_order'       => $group_order,
 				'step_map'          => $step_map,
+				'choice_step_map'   => $choice_step_map,
 				'extra_option_map'  => $option_map,
 				'validation_rules'  => $rules,
 				'behavior_rules'    => $rules,

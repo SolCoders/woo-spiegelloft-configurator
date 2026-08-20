@@ -28,8 +28,9 @@ class WCS_Validation_Engine {
 		foreach ( $selections as $group_slug => $value ) {
 			$group_slug = $this->sanitize_selection_key( (string) $group_slug );
 			$root_slug  = strtok( $group_slug, '.' ) ?: $group_slug;
+			$enabled_root_slug = preg_replace( '/__choice_\d+$/', '', $root_slug );
 
-			if ( ! in_array( $root_slug, $enabled_groups, true ) && ! $this->is_dimension_key( $group_slug ) ) {
+			if ( ! in_array( $root_slug, $enabled_groups, true ) && ! in_array( $enabled_root_slug, $enabled_groups, true ) && ! $this->is_dimension_key( $group_slug ) ) {
 				return new WP_Error(
 					'wcs_invalid_group',
 					sprintf(
@@ -551,6 +552,9 @@ class WCS_Validation_Engine {
 	 * @param string $key Selection key.
 	 */
 	private function is_dimension_key( string $key ): bool {
+		if ( 0 === strpos( $key, 'side_' ) ) {
+			return true;
+		}
 		return in_array(
 			$key,
 			array(

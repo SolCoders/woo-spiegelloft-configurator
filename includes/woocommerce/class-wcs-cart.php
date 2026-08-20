@@ -231,6 +231,16 @@ class WCS_Cart {
 				);
 			}
 		}
+		foreach ( $selections as $dimension => $value ) {
+			$dimension = (string) $dimension;
+			if ( 0 === strpos( $dimension, 'side_' ) && '' !== (string) $value ) {
+				$items[] = array(
+					'label' => ucwords( str_replace( '_', ' ', substr( $dimension, 5 ) ) ),
+					'value' => (string) $value . ' mm',
+					'price' => 0,
+				);
+			}
+		}
 
 		$extras = (array) ( $config['extras'] ?? array() );
 		foreach ( $extras as $group_slug => $group ) {

@@ -86,12 +86,26 @@
 		var rows = [];
 		var width = $wrap.find('.wcs-dimension-input[data-key="width"]').val();
 		var height = $wrap.find('.wcs-dimension-input[data-key="height"]').val();
+		var sideLines = [];
+
+		$wrap.find('.wcs-dimension-input').each(function () {
+			var key = String($(this).data('key') || '');
+			var value = $(this).val();
+			if (key.indexOf('side_') === 0 && value !== '') {
+				sideLines.push({
+					label: $(this).data('label') || key.replace(/^side_/, '').replace(/_/g, ' '),
+					value: value + ' mm'
+				});
+			}
+		});
 
 		if (width || height) {
 			rows.push(reviewRow('Size selection', [
 				{ label: 'Width', value: width ? width + ' mm' : '' },
 				{ label: 'Height', value: height ? height + ' mm' : '' }
 			]));
+		} else if (sideLines.length) {
+			rows.push(reviewRow('Size selection', sideLines));
 		}
 
 		$wrap.find('.wcs-choice-select').each(function () {

@@ -102,6 +102,7 @@ class WCS_Config_Builder {
 		$edge_override  = (array) ( $template_data['edge_override'] ?? array() );
 		$extras_output  = array();
 		$step_map       = (array) ( $template_data['step_map'] ?? array() );
+		$choice_step_map = (array) ( $template_data['choice_step_map'] ?? array() );
 		$group_positions = get_option( 'wcs_group_position_settings', array() );
 		$group_positions = is_array( $group_positions ) ? $group_positions : array();
 		$steps_output   = array(
@@ -161,6 +162,31 @@ class WCS_Config_Builder {
 				);
 			}
 
+			if ( ! empty( $choice_step_map ) ) {
+				foreach ( $filtered as $option_id => $formatted_option ) {
+					$choice_step = max( 1, (int) ( $choice_step_map[ (int) $option_id ] ?? $step_map[ $group_slug ] ?? 2 ) );
+					$choice_group_slug = $group_slug . '__choice_' . (int) $option_id;
+					$extras_output[ $choice_group_slug ] = array(
+						'title' => (string) ( $formatted_option['name'] ?? $definition['category_title'] ?? $definition['label'] ?? $group_slug ),
+						'value' => array( $formatted_option ),
+					);
+					if ( ! isset( $steps_output[ $choice_step ] ) ) {
+						$steps_output[ $choice_step ] = array(
+							'number' => $choice_step,
+							'title'  => sprintf(
+								/* translators: %d: step number */
+								__( 'Step %d', 'woo-spiegelloft-configurator' ),
+								$choice_step
+							),
+							'groups' => array(),
+						);
+					}
+					$steps_output[ $choice_step ]['groups'][] = $choice_group_slug;
+				}
+				unset( $extras_output[ $group_slug ] );
+				continue;
+			}
+
 			$step_number = max( 1, (int) ( $step_map[ $group_slug ] ?? 2 ) );
 			if ( ! isset( $steps_output[ $step_number ] ) ) {
 				$steps_output[ $step_number ] = array(
@@ -208,6 +234,16 @@ class WCS_Config_Builder {
 			'max_width'        => (int) ( $dimensions['max_width'] ?? 2500 ),
 			'min_height'       => (int) ( $dimensions['min_height'] ?? 400 ),
 			'max_height'       => (int) ( $dimensions['max_height'] ?? 2500 ),
+			'measurement_mode' => (string) ( $dimensions['measurement_mode'] ?? 'standard' ),
+			'top_min_width'    => (int) ( $dimensions['top_min_width'] ?? $dimensions['min_width'] ?? 0 ),
+			'top_max_width'    => (int) ( $dimensions['top_max_width'] ?? $dimensions['max_width'] ?? 2000 ),
+			'bottom_min_width' => (int) ( $dimensions['bottom_min_width'] ?? $dimensions['min_width'] ?? 0 ),
+			'bottom_max_width' => (int) ( $dimensions['bottom_max_width'] ?? $dimensions['max_width'] ?? 2000 ),
+			'left_min_height'  => (int) ( $dimensions['left_min_height'] ?? $dimensions['min_height'] ?? 0 ),
+			'left_max_height'  => (int) ( $dimensions['left_max_height'] ?? $dimensions['max_height'] ?? 2000 ),
+			'right_min_height' => (int) ( $dimensions['right_min_height'] ?? $dimensions['min_height'] ?? 0 ),
+			'right_max_height' => (int) ( $dimensions['right_max_height'] ?? $dimensions['max_height'] ?? 2000 ),
+			'side_measurements' => array_values( (array) ( $dimensions['side_measurements'] ?? array() ) ),
 			'extras'           => $extras_output,
 			'steps'            => array_values( $steps_output ),
 			'step_map'         => $step_map,
@@ -386,6 +422,7 @@ class WCS_Config_Builder {
 		$lookup     = array();
 		$enabled    = (array) ( $template['enabled_groups'] ?? $template['groups'] ?? array() );
 		$option_map = (array) ( $template['extra_option_map'] ?? array() );
+		$choice_step_map = (array) ( $template['choice_step_map'] ?? array() );
 		$groups     = $this->extras_registry->get_groups();
 
 		foreach ( $enabled as $group_slug ) {
@@ -417,6 +454,9 @@ class WCS_Config_Builder {
 					'price' => (float) ( $option_data['price'] ?? $meta['_wcs_price'] ?? 0 ),
 					'data'  => $option_data,
 				);
+				if ( ! empty( $choice_step_map[ $option_id ] ) ) {
+					$lookup[ $group_slug . '__choice_' . $option_id ][ $slug ] = $lookup[ $group_slug ][ $slug ];
+				}
 			}
 		}
 

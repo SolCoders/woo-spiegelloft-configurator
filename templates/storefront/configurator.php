@@ -14,6 +14,8 @@ defined( 'ABSPATH' ) || exit;
 $base_price = (float) $product->get_price();
 $extras     = (array) ( $config['extras'] ?? array() );
 $steps      = (array) ( $config['steps'] ?? array() );
+$side_measurements = array_values( (array) ( $config['side_measurements'] ?? array() ) );
+$sidewise_measurements = ! empty( $side_measurements ) || 'sidewise' === (string) ( $config['measurement_mode'] ?? 'standard' );
 $step_one_groups = array();
 foreach ( $steps as $step ) {
 	if ( 1 === (int) ( $step['number'] ?? 0 ) ) {
@@ -46,25 +48,52 @@ foreach ( $steps as $step ) {
 				<span aria-hidden="true">?</span>
 				<?php esc_html_e( 'How do I find the right measurements?', 'woo-spiegelloft-configurator' ); ?>
 			</button>
-			<div class="wcs-size-box">
-				<label>
-					<span>
-						<?php esc_html_e( 'Width', 'woo-spiegelloft-configurator' ); ?>
-						<small><?php echo esc_html( (string) ( $config['min_width'] ?? 200 ) ); ?> - <?php echo esc_html( (string) ( $config['max_width'] ?? 2500 ) ); ?> mm</small>
-					</span>
-					<input type="number" class="wcs-dimension-input" data-key="width" min="<?php echo esc_attr( (string) ( $config['min_width'] ?? 200 ) ); ?>" max="<?php echo esc_attr( (string) ( $config['max_width'] ?? 2500 ) ); ?>" value="<?php echo esc_attr( (string) ( $config['min_width'] ?? 200 ) ); ?>">
-					<em><?php esc_html_e( 'mm', 'woo-spiegelloft-configurator' ); ?></em>
-				</label>
-				<span class="wcs-size-box__times">x</span>
-				<label>
-					<span>
-						<?php esc_html_e( 'Height', 'woo-spiegelloft-configurator' ); ?>
-						<small><?php echo esc_html( (string) ( $config['min_height'] ?? 200 ) ); ?> - <?php echo esc_html( (string) ( $config['max_height'] ?? 2500 ) ); ?> mm</small>
-					</span>
-					<input type="number" class="wcs-dimension-input" data-key="height" min="<?php echo esc_attr( (string) ( $config['min_height'] ?? 200 ) ); ?>" max="<?php echo esc_attr( (string) ( $config['max_height'] ?? 2500 ) ); ?>" value="<?php echo esc_attr( (string) ( $config['min_height'] ?? 200 ) ); ?>">
-					<em><?php esc_html_e( 'mm', 'woo-spiegelloft-configurator' ); ?></em>
-				</label>
-			</div>
+			<?php if ( $sidewise_measurements ) : ?>
+				<div class="wcs-size-sidewise">
+					<?php foreach ( $side_measurements as $side ) : ?>
+						<?php
+						$side_label = (string) ( $side['label'] ?? '' );
+						$side_key   = sanitize_title( (string) ( $side['key'] ?? $side_label ) );
+						$side_min   = (int) ( $side['min'] ?? $side['min_width'] ?? $side['min_height'] ?? 400 );
+						$side_max   = (int) ( $side['max'] ?? $side['max_width'] ?? $side['max_height'] ?? 2500 );
+						if ( '' === $side_label || '' === $side_key ) {
+							continue;
+						}
+						?>
+					<div class="wcs-size-side-row">
+						<span class="wcs-size-side-icon" aria-hidden="true"></span>
+						<label>
+							<span>
+								<?php echo esc_html( $side_label ); ?>
+								<small><?php echo esc_html( (string) $side_min ); ?> - <?php echo esc_html( (string) $side_max ); ?> mm</small>
+							</span>
+							<input type="number" class="wcs-dimension-input" data-key="<?php echo esc_attr( 'side_' . str_replace( '-', '_', $side_key ) ); ?>" data-label="<?php echo esc_attr( $side_label ); ?>" min="<?php echo esc_attr( (string) $side_min ); ?>" max="<?php echo esc_attr( (string) $side_max ); ?>" value="<?php echo esc_attr( (string) $side_min ); ?>">
+							<em><?php esc_html_e( 'mm', 'woo-spiegelloft-configurator' ); ?></em>
+						</label>
+					</div>
+					<?php endforeach; ?>
+				</div>
+			<?php else : ?>
+				<div class="wcs-size-box">
+					<label>
+						<span>
+							<?php esc_html_e( 'Width', 'woo-spiegelloft-configurator' ); ?>
+							<small><?php echo esc_html( (string) ( $config['min_width'] ?? 200 ) ); ?> - <?php echo esc_html( (string) ( $config['max_width'] ?? 2500 ) ); ?> mm</small>
+						</span>
+						<input type="number" class="wcs-dimension-input" data-key="width" min="<?php echo esc_attr( (string) ( $config['min_width'] ?? 200 ) ); ?>" max="<?php echo esc_attr( (string) ( $config['max_width'] ?? 2500 ) ); ?>" value="<?php echo esc_attr( (string) ( $config['min_width'] ?? 200 ) ); ?>">
+						<em><?php esc_html_e( 'mm', 'woo-spiegelloft-configurator' ); ?></em>
+					</label>
+					<span class="wcs-size-box__times">x</span>
+					<label>
+						<span>
+							<?php esc_html_e( 'Height', 'woo-spiegelloft-configurator' ); ?>
+							<small><?php echo esc_html( (string) ( $config['min_height'] ?? 200 ) ); ?> - <?php echo esc_html( (string) ( $config['max_height'] ?? 2500 ) ); ?> mm</small>
+						</span>
+						<input type="number" class="wcs-dimension-input" data-key="height" min="<?php echo esc_attr( (string) ( $config['min_height'] ?? 200 ) ); ?>" max="<?php echo esc_attr( (string) ( $config['max_height'] ?? 2500 ) ); ?>" value="<?php echo esc_attr( (string) ( $config['min_height'] ?? 200 ) ); ?>">
+						<em><?php esc_html_e( 'mm', 'woo-spiegelloft-configurator' ); ?></em>
+					</label>
+				</div>
+			<?php endif; ?>
 			<?php foreach ( $step_one_groups as $group_slug ) : ?>
 				<?php
 				$group_slug = (string) $group_slug;
