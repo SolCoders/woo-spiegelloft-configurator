@@ -102,7 +102,7 @@ if ( ! empty( $choice_order ) && ! empty( $flat_options ) ) {
 								$option_image = (string) ( $option['meta']['_wcs_image'] ?? '' );
 								$option_step  = max( 1, absint( $choice_step_map[ $option_id ] ?? $flat_step ) );
 								?>
-								<tr data-choice-search="<?php echo esc_attr( strtolower( $option_title . ' ' . $option_slug ) ); ?>">
+								<tr data-choice-id="<?php echo esc_attr( (string) $option_id ); ?>" data-choice-search="<?php echo esc_attr( strtolower( $option_title . ' ' . $option_slug ) ); ?>">
 									<td class="wcs-option-table-sort">
 										<span class="dashicons dashicons-menu wcs-choice-sort-handle" title="<?php esc_attr_e( 'Drag to reorder', 'woo-spiegelloft-configurator' ); ?>"></span>
 										<input type="hidden" name="wcs_choice_order[]" value="<?php echo esc_attr( (string) $option_id ); ?>">

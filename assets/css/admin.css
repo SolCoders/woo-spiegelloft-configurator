@@ -2571,6 +2571,24 @@
 	box-shadow: 0 8px 18px rgba(31, 41, 55, 0.14);
 }
 
+.wcs-option-table tbody tr.ui-sortable-helper td {
+	background: #fff !important;
+}
+
+.wcs-option-table tbody tr.wcs-choice-sort-placeholder {
+	height: 66px;
+	background: #eef5ff !important;
+	outline: 2px dashed #93c5fd;
+	outline-offset: -8px;
+	visibility: visible !important;
+}
+
+.wcs-option-table tbody tr.wcs-choice-sort-placeholder td {
+	padding: 0;
+	border: 0;
+	background: transparent !important;
+}
+
 .wcs-option-table-action {
 	width: 150px;
 	text-align: right;

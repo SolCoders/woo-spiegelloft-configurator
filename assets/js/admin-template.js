@@ -129,6 +129,14 @@
 		$panel.find('.wcs-template-flat-empty').prop('hidden', $matches.length > 0).toggle($matches.length === 0);
 	}
 
+	function refreshChoiceOrder($table) {
+		$table.find('tbody tr').each(function () {
+			var $row = $(this);
+			var choiceId = $row.data('choice-id') || $row.find('input[name^="wcs_extra_option_map"]').val();
+			$row.find('input[name="wcs_choice_order[]"]').val(choiceId || '');
+		});
+	}
+
 	function bindChoiceListTools() {
 		$('.wcs-option-table').each(function () {
 			refreshChoicePagination($(this));
@@ -333,22 +341,34 @@
 				axis: 'y',
 				handle: '.wcs-choice-sort-handle',
 				items: 'tr',
+				placeholder: 'wcs-choice-sort-placeholder',
+				forcePlaceholderSize: true,
 				start: function () {
-					$tbody.children('tr').show();
+					$tbody.closest('.wcs-option-table').addClass('is-sorting');
 				},
 				helper: function (e, row) {
 					var $originals = row.children();
 					var $helper = row.clone();
+					$helper.addClass('wcs-choice-sort-helper');
 					$helper.children().each(function (index) {
 						$(this).width($originals.eq(index).width());
 					});
 					return $helper;
 				},
 				stop: function () {
-					refreshChoicePagination($tbody.closest('.wcs-option-table'));
+					var $table = $tbody.closest('.wcs-option-table');
+					refreshChoiceOrder($table);
+					$table.removeClass('is-sorting');
+					refreshChoicePagination($table);
 				}
 			});
 			$tbody.data('sortable', true);
+		});
+
+		$(document).on('submit', 'form#post, form[name="post"]', function () {
+			$('.wcs-option-table').each(function () {
+				refreshChoiceOrder($(this));
+			});
 		});
 	}
 
