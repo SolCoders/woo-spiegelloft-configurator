@@ -22,20 +22,23 @@
 
 /* Wizard */
 .wcs-wizard {
-	max-width: 1120px;
+	box-sizing: border-box;
+	width: calc(100% - 20px);
+	max-width: none;
+	margin-right: 20px;
 }
 
 .wcs-wizard-hero {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) 260px;
-	gap: 24px;
+	grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+	gap: 32px;
 	align-items: end;
-	margin: 18px 0 24px;
-	padding: 30px;
-	background: linear-gradient(135deg, #f8fbff 0%, #fff 54%, #f6f7f7 100%);
-	border: 1px solid #dcdcde;
+	margin: 18px 0 22px;
+	padding: 32px;
+	background: linear-gradient(135deg, #ffffff 0%, #f8fbff 58%, #f3f6fb 100%);
+	border: 1px solid #d8e1ec;
 	border-radius: 8px;
-	box-shadow: 0 12px 28px rgba(31, 41, 55, 0.07);
+	box-shadow: 0 10px 24px rgba(31, 41, 55, 0.06);
 }
 
 .wcs-wizard-hero h1 {
@@ -69,11 +72,11 @@
 }
 
 .wcs-wizard-progress-card {
-	padding: 18px;
-	background: #1d2327;
+	padding: 20px;
+	background: #17212b;
 	border-radius: 8px;
 	color: #fff;
-	box-shadow: 0 10px 24px rgba(29, 35, 39, 0.16);
+	box-shadow: 0 14px 28px rgba(23, 33, 43, 0.18);
 }
 
 .wcs-wizard-progress-value,
@@ -105,15 +108,15 @@
 .wcs-wizard-progress-track span {
 	display: block;
 	height: 100%;
-	background: #72aee6;
+	background: #55a6f3;
 	border-radius: inherit;
 }
 
 .wcs-wizard-steps {
 	list-style: none;
 	display: grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: 16px;
+	grid-template-columns: repeat(3, minmax(260px, 1fr));
+	gap: 18px;
 	margin: 0 0 24px;
 	padding: 0;
 }
@@ -122,13 +125,13 @@
 	position: relative;
 	display: flex;
 	flex-direction: column;
-	min-height: 230px;
+	min-height: 250px;
 	background: #fff;
-	border: 1px solid #dcdcde;
+	border: 1px solid #d8e1ec;
 	border-radius: 8px;
 	margin: 0;
-	padding: 20px 24px;
-	box-shadow: 0 7px 18px rgba(31, 41, 55, 0.06);
+	padding: 22px 24px;
+	box-shadow: 0 8px 18px rgba(31, 41, 55, 0.05);
 	transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
@@ -139,11 +142,11 @@
 }
 
 .wcs-wizard-step--complete {
-	border-top: 4px solid #00a32a;
+	border-top: 4px solid #16a34a;
 }
 
 .wcs-wizard-step--pending {
-	border-top: 4px solid #dba617;
+	border-top: 4px solid #c58b00;
 }
 
 .wcs-wizard-step-header {
@@ -168,12 +171,12 @@
 }
 
 .wcs-wizard-step--complete .wcs-wizard-step-badge {
-	background: #00a32a;
+	background: #16a34a;
 }
 
 .wcs-wizard-step--pending .wcs-wizard-step-badge {
-	background: #dba617;
-	color: #1d2327;
+	background: #c58b00;
+	color: #fff;
 }
 
 .wcs-wizard-step h2 {
@@ -201,13 +204,13 @@
 }
 
 .wcs-wizard-status--complete {
-	background: #edfaef;
-	color: #00a32a;
+	background: #eaf8ef;
+	color: #087f2f;
 }
 
 .wcs-wizard-status--pending {
 	background: #fcf9e8;
-	color: #996800;
+	color: #8a6100;
 }
 
 .wcs-wizard-step-footer {
@@ -234,10 +237,10 @@
 
 .wcs-wizard-step .button.button-primary {
 	min-height: 38px;
-	padding: 4px 14px;
+	padding: 4px 16px;
 	border: 0;
 	border-radius: 6px;
-	background: #3858e9;
+	background: #3158e6;
 	font-weight: 700;
 	line-height: 28px;
 	box-shadow: none;

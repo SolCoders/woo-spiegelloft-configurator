@@ -68,7 +68,7 @@ class WCS_Admin {
 			)
 		);
 
-		$step_choices_done   = $choices_count >= 10;
+		$step_choices_done   = $choices_count >= 1;
 		$step_templates_done = $templates_count >= 1;
 		$step_products_done  = $products_count >= 1;
 
