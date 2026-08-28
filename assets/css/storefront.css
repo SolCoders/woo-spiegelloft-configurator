@@ -1448,3 +1448,103 @@
 	box-shadow: none !important;
 	outline-offset: 0 !important;
 }
+
+.wcs-configurator button.wcs-size-step,
+.wcs-configurator button.wcs-custom-select__button,
+.wcs-configurator button.wcs-custom-select__option,
+.wcs-configurator button.wcs-image-choice-card,
+.wcs-configurator button.wcs-configurator__help,
+.wcs-configurator button.wcs-step-back,
+.wcs-configurator button.wcs-step-next,
+.wcs-configurator button.wcs-add-to-cart,
+.wcs-configurator [type="button"].wcs-size-step,
+.wcs-configurator [type="button"].wcs-custom-select__button,
+.wcs-configurator [type="button"].wcs-custom-select__option,
+.wcs-configurator [type="button"].wcs-image-choice-card,
+.wcs-configurator [type="button"].wcs-configurator__help,
+.wcs-configurator [type="button"].wcs-step-back,
+.wcs-configurator [type="button"].wcs-step-next,
+.wcs-configurator [type="submit"].wcs-add-to-cart {
+	font-family: inherit !important;
+	text-align: inherit !important;
+	text-decoration: none !important;
+	text-transform: none !important;
+	letter-spacing: 0 !important;
+	white-space: normal !important;
+	user-select: none !important;
+	-webkit-user-select: none !important;
+	appearance: none !important;
+	-webkit-appearance: none !important;
+	box-shadow: none !important;
+	outline: 0 !important;
+	outline-offset: 0 !important;
+	transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease !important;
+}
+
+.wcs-configurator button.wcs-size-step--minus,
+.wcs-configurator [type="button"].wcs-size-step--minus {
+	background: #fcfbf7 !important;
+	border: 1px solid #f1efed !important;
+	color: #585858 !important;
+}
+
+.wcs-configurator button.wcs-size-step--plus,
+.wcs-configurator [type="button"].wcs-size-step--plus,
+.wcs-configurator button.wcs-step-next,
+.wcs-configurator button.wcs-add-to-cart,
+.wcs-configurator [type="button"].wcs-step-next,
+.wcs-configurator [type="submit"].wcs-add-to-cart {
+	background: #0a878c !important;
+	border-color: #0a878c !important;
+	color: #ffffff !important;
+}
+
+.wcs-configurator button.wcs-step-back,
+.wcs-configurator [type="button"].wcs-step-back {
+	background: #fcfbf7 !important;
+	border-color: #0a878c !important;
+	color: #585858 !important;
+}
+
+.wcs-configurator button.wcs-custom-select__button,
+.wcs-configurator [type="button"].wcs-custom-select__button {
+	display: flex !important;
+	background: #ffffff !important;
+	border: 1px solid #f1efed !important;
+	border-radius: 10px !important;
+	color: #161616 !important;
+	font-size: 14px !important;
+	font-weight: 400 !important;
+	line-height: 1 !important;
+	text-align: left !important;
+}
+
+.wcs-configurator button.wcs-custom-select__option,
+.wcs-configurator [type="button"].wcs-custom-select__option {
+	display: grid !important;
+	background: #ffffff !important;
+	border: 0 !important;
+	border-radius: 0 !important;
+	color: #374151 !important;
+	font-size: 14px !important;
+	font-weight: 400 !important;
+	line-height: 1.25 !important;
+	text-align: left !important;
+}
+
+.wcs-configurator button.wcs-image-choice-card,
+.wcs-configurator [type="button"].wcs-image-choice-card {
+	background: transparent !important;
+	border: 0 !important;
+	color: #161616 !important;
+	padding: 0 !important;
+	text-align: center !important;
+}
+
+.wcs-configurator button.wcs-configurator__help,
+.wcs-configurator [type="button"].wcs-configurator__help {
+	background: #ffffff !important;
+	border: 1px solid #f1efed !important;
+	color: #585858 !important;
+	text-align: left !important;
+}
