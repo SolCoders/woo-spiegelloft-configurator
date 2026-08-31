@@ -294,7 +294,8 @@ class WCS_Storefront {
 		}
 
 		$url = add_query_arg( 'view', 'configurator', get_permalink( get_queried_object_id() ) );
-		return '<div class="wcs-configure-entry"><a class="button wcs-configure-entry__button" href="' . esc_url( $url ) . '">' . esc_html__( 'Configure Now', 'woo-spiegelloft-configurator' ) . '</a></div>';
+		$icon = '<span class="wcs-configure-entry__icon" aria-hidden="true"><img src="' . esc_url( WCS_PLUGIN_URL . 'assets/icons/Frame.png' ) . '" alt="" loading="lazy" decoding="async" /></span>';
+		return '<div class="wcs-configure-entry"><a class="button wcs-configure-entry__button" href="' . esc_url( $url ) . '">' . $icon . '<span>' . esc_html__( 'Configure Now', 'woo-spiegelloft-configurator' ) . '</span></a></div>';
 	}
 
 	/**

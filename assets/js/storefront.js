@@ -438,8 +438,8 @@
 		$wrap.find('.wcs-configurator__step-label').text('SCHRITT ' + (active + 1) + ' VON ' + String(max + 1).padStart(2, '0'));
 		$wrap.find('.wcs-configurator__progress span').css('width', (((active + 1) / (max + 1)) * 100) + '%');
 		$wrap.find('.wcs-step-back').prop('disabled', active <= 0);
-		$wrap.find('.wcs-step-next').text('Weiter').toggle(active < max);
-		$wrap.find('.wcs-add-to-cart').toggle(active >= max);
+		$wrap.find('.wcs-step-next').text('Weiter').prop('hidden', active >= max);
+		$wrap.find('.wcs-add-to-cart').prop('hidden', active < max);
 		if (animate) {
 			scrollStepTop($wrap);
 		}

@@ -245,7 +245,7 @@ foreach ( $steps as $step ) {
 				<strong class="wcs-configurator__footer-price"><?php echo wp_kses_post( wc_price( $base_price ) ); ?></strong>
 			</div>
 			<button type="button" class="button alt wcs-step-next"><?php esc_html_e( 'Weiter', 'woo-spiegelloft-configurator' ); ?></button>
-			<button type="submit" name="add-to-cart" value="<?php echo esc_attr( (string) $product->get_id() ); ?>" class="button alt wcs-add-to-cart"><?php esc_html_e( 'In den Warenkorb', 'woo-spiegelloft-configurator' ); ?></button>
+			<button type="submit" name="add-to-cart" value="<?php echo esc_attr( (string) $product->get_id() ); ?>" class="button alt wcs-add-to-cart" hidden><?php esc_html_e( 'In den Warenkorb', 'woo-spiegelloft-configurator' ); ?></button>
 		</nav>
 	</div>
 </form>
