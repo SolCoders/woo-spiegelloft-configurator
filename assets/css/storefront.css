@@ -925,6 +925,27 @@
 	cursor: not-allowed;
 }
 
+.wcs-step-option-group.is-wcs-rule-disabled,
+.wcs-customer-field.is-wcs-rule-disabled {
+	opacity: 0.55;
+}
+
+.wcs-step-option-group.is-wcs-rule-disabled .wcs-custom-select__button,
+.wcs-step-option-group.is-wcs-rule-disabled .wcs-custom-select__option,
+.wcs-step-option-group.is-wcs-rule-disabled .wcs-image-choice-card,
+.wcs-customer-field.is-wcs-rule-disabled .wcs-custom-select__button,
+.wcs-customer-field.is-wcs-rule-disabled .wcs-custom-select__option,
+.wcs-customer-field.is-wcs-rule-disabled .wcs-image-choice-card {
+	display: grid !important;
+	cursor: not-allowed !important;
+	pointer-events: none;
+}
+
+.wcs-step-option-group.is-wcs-rule-disabled .wcs-custom-select__button,
+.wcs-customer-field.is-wcs-rule-disabled .wcs-custom-select__button {
+	display: flex !important;
+}
+
 .wcs-image-choice-list--sub {
 	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: 16px;

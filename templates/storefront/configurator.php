@@ -24,7 +24,7 @@ foreach ( $steps as $step ) {
 	}
 }
 ?>
-<form class="cart wcs-configurator" method="post" enctype="multipart/form-data" data-base-price="<?php echo esc_attr( (string) $base_price ); ?>">
+<form class="cart wcs-configurator" method="post" enctype="multipart/form-data" data-base-price="<?php echo esc_attr( (string) $base_price ); ?>" data-rules="<?php echo esc_attr( wp_json_encode( (array) ( $config['behavior_rules'] ?? $config['validation_rules'] ?? array() ) ) ); ?>">
 	<input type="hidden" name="wcs_selections" class="wcs-selections-input" value="">
 	<input type="hidden" name="quantity" value="1">
 

@@ -28,6 +28,9 @@
 		});
 
 		$wrap.find('.wcs-customer-field-input').each(function () {
+			if ($(this).closest('.is-wcs-rule-disabled').length) {
+				return;
+			}
 			var key = $(this).data('key');
 			var value = $(this).val();
 			if (key && value !== '') {
@@ -42,6 +45,9 @@
 
 		$wrap.find('.wcs-choice-select').each(function () {
 			var $select = $(this);
+			if ($select.closest('.is-wcs-rule-disabled').length) {
+				return;
+			}
 			var group = $select.data('group');
 			var value = $select.val();
 			var price = parseFloat($select.find(':selected').data('price')) || 0;
@@ -53,6 +59,9 @@
 		});
 
 		$wrap.find('.wcs-position-choice').each(function () {
+			if ($(this).closest('.is-wcs-rule-disabled').length) {
+				return;
+			}
 			var group = $(this).data('group');
 			var value = $(this).val();
 			if (group && value) {
@@ -111,6 +120,9 @@
 
 		$wrap.find('.wcs-choice-select').each(function () {
 			var $select = $(this);
+			if ($select.closest('.is-wcs-rule-disabled').length) {
+				return;
+			}
 			var value = $select.val();
 			if (!value) {
 				return;
@@ -478,6 +490,10 @@
 			$wrap.find('.wcs-choice-select').each(function () {
 				refreshCustomerFields($(this));
 			});
+			if (window.WCSRuleEngine) {
+				$wrap.data('wcsRuleEngine', new window.WCSRuleEngine($wrap));
+				$wrap.data('wcsRuleEngine').evaluate();
+			}
 			collect($wrap);
 		});
 
@@ -502,6 +518,10 @@
 			syncCustomSelect($(this));
 			syncImageChoices($(this));
 			validateCustomerFields($(this).closest('.wcs-configurator'));
+			var engine = $(this).closest('.wcs-configurator').data('wcsRuleEngine');
+			if (engine) {
+				engine.evaluate($(this).data('key') || $(this).data('group'));
+			}
 			collect($(this).closest('.wcs-configurator'));
 		});
 
@@ -539,7 +559,7 @@
 
 		$(document).on('click', '.wcs-custom-select__option', function (e) {
 			e.preventDefault();
-			if ($(this).hasClass('is-disabled')) {
+			if ($(this).hasClass('is-disabled') || $(this).closest('.wcs-step-option-group, .wcs-customer-field').hasClass('is-wcs-rule-disabled')) {
 				return;
 			}
 			var $custom = $(this).closest('.wcs-custom-select');
@@ -551,7 +571,7 @@
 
 		$(document).on('click', '.wcs-image-choice-card', function (e) {
 			e.preventDefault();
-			if ($(this).hasClass('is-disabled')) {
+			if ($(this).hasClass('is-disabled') || $(this).closest('.wcs-step-option-group, .wcs-customer-field').hasClass('is-wcs-rule-disabled')) {
 				return;
 			}
 			var $list = $(this).closest('.wcs-image-choice-list');

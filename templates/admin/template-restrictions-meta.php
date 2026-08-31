@@ -5,7 +5,10 @@
  * @package WooSpiegelloftConfigurator
  *
  * @var array<int, array<string,mixed>>     $rules  Validation rules.
- * @var array<string, array<string,mixed>>  $groups Group definitions.
+ * @var array<string, array<string,mixed>>  $groups         Group definitions.
+ * @var array<string, array<int,array<string,string>>> $option_choices         Template option choices.
+ * @var array<string, string>                          $template_field_choices    Template choice field keys.
+ * @var array<string, string>                          $measurement_field_choices Measurement field keys.
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -13,46 +16,126 @@ defined( 'ABSPATH' ) || exit;
 if ( empty( $rules ) ) {
 	$rules = array(
 		array(
-			'when'          => array(),
-			'when_source'   => 'category',
-			'when_path'     => '',
-			'when_field'    => 'value',
-			'when_operator' => 'equals',
-			'rule_type'     => 'required',
-			'then'          => 'require',
-			'target_type'   => 'category',
-			'target'        => '',
-			'target_value'  => '',
-			'min'           => '',
-			'max'           => '',
+			'rule_type'     => 'required_field',
+			'match'         => 'all',
+			'conditions'    => array(
+				array(
+					'source'   => 'category',
+					'path'     => '',
+					'field'    => 'value',
+					'type'     => 'selection',
+					'operator' => 'equals',
+					'value'    => '',
+				),
+			),
+			'actions'       => array(
+				array(
+					'action'       => 'require',
+					'target_type'  => 'category',
+					'target'       => '',
+					'target_value' => '',
+					'value'        => '',
+				),
+			),
 			'message'       => '',
 			'error_seconds' => 4,
 			'restore'       => false,
 		),
 	);
 }
+
+$field_types = array(
+	'selection' => __( 'Selection', 'woo-spiegelloft-configurator' ),
+	'number'    => __( 'Number', 'woo-spiegelloft-configurator' ),
+	'string'    => __( 'Text', 'woo-spiegelloft-configurator' ),
+	'boolean'   => __( 'Yes/no', 'woo-spiegelloft-configurator' ),
+);
+
+$condition_operators = array(
+	'equals'                => __( 'equals', 'woo-spiegelloft-configurator' ),
+	'not_equals'            => __( 'does not equal', 'woo-spiegelloft-configurator' ),
+	'contains'              => __( 'contains', 'woo-spiegelloft-configurator' ),
+	'not_contains'          => __( 'does not contain', 'woo-spiegelloft-configurator' ),
+	'is_empty'              => __( 'is empty', 'woo-spiegelloft-configurator' ),
+	'is_not_empty'          => __( 'is not empty', 'woo-spiegelloft-configurator' ),
+	'one_of'                => __( 'is one of', 'woo-spiegelloft-configurator' ),
+	'not_one_of'            => __( 'is not one of', 'woo-spiegelloft-configurator' ),
+	'greater_than'          => __( 'greater than', 'woo-spiegelloft-configurator' ),
+	'greater_than_or_equal' => __( 'greater than or equal', 'woo-spiegelloft-configurator' ),
+	'less_than'             => __( 'less than', 'woo-spiegelloft-configurator' ),
+	'less_than_or_equal'    => __( 'less than or equal', 'woo-spiegelloft-configurator' ),
+	'is_true'               => __( 'is true', 'woo-spiegelloft-configurator' ),
+	'is_false'              => __( 'is false', 'woo-spiegelloft-configurator' ),
+);
+
+$action_options = array(
+	'require'        => __( 'Require', 'woo-spiegelloft-configurator' ),
+	'disallow'       => __( 'Block', 'woo-spiegelloft-configurator' ),
+	'require_value'  => __( 'Require option', 'woo-spiegelloft-configurator' ),
+	'disallow_value' => __( 'Block option', 'woo-spiegelloft-configurator' ),
+	'show'           => __( 'Show', 'woo-spiegelloft-configurator' ),
+	'hide'           => __( 'Hide', 'woo-spiegelloft-configurator' ),
+	'enable'         => __( 'Enable', 'woo-spiegelloft-configurator' ),
+	'disable'        => __( 'Disable', 'woo-spiegelloft-configurator' ),
+	'clear'          => __( 'Clear', 'woo-spiegelloft-configurator' ),
+	'set_min'        => __( 'Set minimum', 'woo-spiegelloft-configurator' ),
+	'set_max'        => __( 'Set maximum', 'woo-spiegelloft-configurator' ),
+	'validate_range' => __( 'Validate range', 'woo-spiegelloft-configurator' ),
+);
+
+if ( ! function_exists( 'wcs_rule_condition_rows' ) ) {
+function wcs_rule_condition_rows( array $rule ): array {
+	$conditions = isset( $rule['conditions'] ) && is_array( $rule['conditions'] ) ? $rule['conditions'] : array();
+	if ( empty( $conditions ) ) {
+		$when = (array) ( $rule['when'] ?? array() );
+		$path = (string) ( $rule['when_path'] ?? array_key_first( $when ) ?: '' );
+		$conditions[] = array(
+			'source'   => (string) ( $rule['when_source'] ?? 'category' ),
+			'path'     => $path,
+			'field'    => (string) ( $rule['when_field'] ?? 'value' ),
+			'type'     => ( 'dimension' === (string) ( $rule['when_source'] ?? '' ) ) ? 'number' : 'selection',
+			'operator' => (string) ( $rule['when_operator'] ?? 'equals' ),
+			'value'    => (string) ( $when[ $path ] ?? $rule['when_value'] ?? '' ),
+		);
+	}
+	return array_values( $conditions );
+}
+}
+
+if ( ! function_exists( 'wcs_rule_action_rows' ) ) {
+function wcs_rule_action_rows( array $rule ): array {
+	$actions = isset( $rule['actions'] ) && is_array( $rule['actions'] ) ? $rule['actions'] : array();
+	if ( empty( $actions ) ) {
+		$actions[] = array(
+			'action'       => (string) ( $rule['then'] ?? 'require' ),
+			'target_type'  => (string) ( $rule['target_type'] ?? 'category' ),
+			'target'       => (string) ( $rule['target'] ?? '' ),
+			'target_value' => (string) ( $rule['target_value'] ?? '' ),
+			'value'        => (string) ( $rule['max'] ?? '' ),
+			'min'          => (string) ( $rule['min'] ?? '' ),
+			'max'          => (string) ( $rule['max'] ?? '' ),
+		);
+	}
+	return array_values( $actions );
+}
+}
 ?>
 <div class="wcs-rule-builder">
-	<p class="description"><?php esc_html_e( 'Create template-scoped validation and storefront behavior rules. Start with the rule type, then fill only the visible fields.', 'woo-spiegelloft-configurator' ); ?></p>
+	<p class="description"><?php esc_html_e( 'Create template rules with one clear trigger and one result. Add more rows only when needed.', 'woo-spiegelloft-configurator' ); ?></p>
 
 	<div id="wcs-rules-list">
 		<?php foreach ( $rules as $index => $rule ) : ?>
 			<?php
-			$when        = (array) ( $rule['when'] ?? array() );
-			$when_k      = (string) ( $rule['when_path'] ?? array_key_first( $when ) ?: '' );
-			$when_v      = (string) ( $when[ $when_k ] ?? '' );
-			$source      = (string) ( $rule['when_source'] ?? 'category' );
-			$field       = (string) ( $rule['when_field'] ?? 'value' );
-			$operator    = (string) ( $rule['when_operator'] ?? 'equals' );
-			$rule_type   = (string) ( $rule['rule_type'] ?? 'required' );
-			$target_type = (string) ( $rule['target_type'] ?? 'category' );
-			$then        = (string) ( $rule['then'] ?? 'require' );
+			$conditions = wcs_rule_condition_rows( (array) $rule );
+			$actions    = wcs_rule_action_rows( (array) $rule );
+			$rule_type  = (string) ( $rule['rule_type'] ?? 'required_field' );
+			$match      = (string) ( $rule['match'] ?? $rule['condition_match'] ?? 'all' );
 			?>
-			<div class="wcs-rule-row" data-rule-type="<?php echo esc_attr( $rule_type ); ?>" data-then="<?php echo esc_attr( $then ); ?>" data-source="<?php echo esc_attr( $source ); ?>">
+			<div class="wcs-rule-row" data-rule-type="<?php echo esc_attr( $rule_type ); ?>">
 				<div class="wcs-rule-row-header">
 					<div>
-						<strong><?php esc_html_e( 'Restriction rule', 'woo-spiegelloft-configurator' ); ?></strong>
-						<span><?php esc_html_e( 'Define when it applies and what should happen.', 'woo-spiegelloft-configurator' ); ?></span>
+						<strong><?php esc_html_e( 'Rule', 'woo-spiegelloft-configurator' ); ?></strong>
+						<span><?php esc_html_e( 'When this matches, apply the result below.', 'woo-spiegelloft-configurator' ); ?></span>
 					</div>
 					<button type="button" class="button-link wcs-remove-rule"><?php esc_html_e( 'Remove', 'woo-spiegelloft-configurator' ); ?></button>
 				</div>
@@ -61,124 +144,156 @@ if ( empty( $rules ) ) {
 					<label class="wcs-rule-field">
 						<span><?php esc_html_e( 'Rule type', 'woo-spiegelloft-configurator' ); ?></span>
 						<select name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][rule_type]" class="wcs-rule-type">
-							<option value="required" <?php selected( $rule_type, 'required' ); ?>><?php esc_html_e( 'Required field', 'woo-spiegelloft-configurator' ); ?></option>
-							<option value="block" <?php selected( $rule_type, 'block' ); ?>><?php esc_html_e( 'Block option/category', 'woo-spiegelloft-configurator' ); ?></option>
-							<option value="visibility" <?php selected( $rule_type, 'visibility' ); ?>><?php esc_html_e( 'Show/hide field', 'woo-spiegelloft-configurator' ); ?></option>
+							<option value="required_field" <?php selected( $rule_type, 'required_field' ); ?>><?php esc_html_e( 'Required field', 'woo-spiegelloft-configurator' ); ?></option>
+							<option value="constraint" <?php selected( $rule_type, 'constraint' ); ?>><?php esc_html_e( 'Computed constraint', 'woo-spiegelloft-configurator' ); ?></option>
+							<option value="availability" <?php selected( $rule_type, 'availability' ); ?>><?php esc_html_e( 'Enable/disable', 'woo-spiegelloft-configurator' ); ?></option>
+							<option value="visibility" <?php selected( $rule_type, 'visibility' ); ?>><?php esc_html_e( 'Show/hide', 'woo-spiegelloft-configurator' ); ?></option>
+							<option value="selection_rule" <?php selected( $rule_type, 'selection_rule' ); ?>><?php esc_html_e( 'Selection/text rule', 'woo-spiegelloft-configurator' ); ?></option>
+							<option value="block" <?php selected( $rule_type, 'block' ); ?>><?php esc_html_e( 'Block option', 'woo-spiegelloft-configurator' ); ?></option>
 							<option value="clear" <?php selected( $rule_type, 'clear' ); ?>><?php esc_html_e( 'Clear dependent value', 'woo-spiegelloft-configurator' ); ?></option>
 							<option value="range" <?php selected( $rule_type, 'range' ); ?>><?php esc_html_e( 'Numeric range', 'woo-spiegelloft-configurator' ); ?></option>
 							<option value="disable" <?php selected( $rule_type, 'disable' ); ?>><?php esc_html_e( 'Disable option', 'woo-spiegelloft-configurator' ); ?></option>
 						</select>
 					</label>
 					<p class="wcs-rule-summary"></p>
+					<label class="wcs-rule-field wcs-rule-match">
+						<span><?php esc_html_e( 'Match', 'woo-spiegelloft-configurator' ); ?></span>
+						<select name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][match]">
+							<option value="all" <?php selected( $match, 'all' ); ?>><?php esc_html_e( 'All rows (AND)', 'woo-spiegelloft-configurator' ); ?></option>
+							<option value="any" <?php selected( $match, 'any' ); ?>><?php esc_html_e( 'Any row (OR)', 'woo-spiegelloft-configurator' ); ?></option>
+						</select>
+					</label>
 				</div>
 
 				<div class="wcs-rule-section">
-					<h4><?php esc_html_e( 'When this is true', 'woo-spiegelloft-configurator' ); ?></h4>
-					<div class="wcs-rule-grid">
-						<label class="wcs-rule-field">
-							<span><?php esc_html_e( 'Source', 'woo-spiegelloft-configurator' ); ?></span>
-							<select name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][when_source]" class="wcs-rule-source">
-								<option value="category" <?php selected( $source, 'category' ); ?>><?php esc_html_e( 'Category', 'woo-spiegelloft-configurator' ); ?></option>
-								<option value="nested" <?php selected( $source, 'nested' ); ?>><?php esc_html_e( 'Nested field', 'woo-spiegelloft-configurator' ); ?></option>
-								<option value="dimension" <?php selected( $source, 'dimension' ); ?>><?php esc_html_e( 'Dimension field', 'woo-spiegelloft-configurator' ); ?></option>
-							</select>
-						</label>
-						<label class="wcs-rule-field wcs-rule-category-field" data-visible-for-source="category">
-							<span><?php esc_html_e( 'Category', 'woo-spiegelloft-configurator' ); ?></span>
-							<select name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][when_group]" class="wcs-rule-when-group">
-								<option value=""><?php esc_html_e( '-- Category --', 'woo-spiegelloft-configurator' ); ?></option>
-								<?php foreach ( $groups as $slug => $group ) : ?>
-									<option value="<?php echo esc_attr( $slug ); ?>" <?php selected( $when_k, $slug ); ?>>
-										<?php echo esc_html( (string) ( $group['label'] ?? $slug ) ); ?>
-									</option>
-								<?php endforeach; ?>
-							</select>
-						</label>
-						<label class="wcs-rule-field" data-visible-for-source="nested dimension">
-							<span><?php esc_html_e( 'Path', 'woo-spiegelloft-configurator' ); ?></span>
-							<input type="text" name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][when_path]" value="<?php echo esc_attr( $when_k ); ?>" placeholder="makeup_mirror.position or width">
-						</label>
-						<label class="wcs-rule-field" data-visible-for-operator="equals not_equals greater_than less_than">
-							<span><?php esc_html_e( 'Compare', 'woo-spiegelloft-configurator' ); ?></span>
-							<select name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][when_field]">
-								<option value="value" <?php selected( $field, 'value' ); ?>><?php esc_html_e( 'Value', 'woo-spiegelloft-configurator' ); ?></option>
-								<option value="price" <?php selected( $field, 'price' ); ?>><?php esc_html_e( 'Price', 'woo-spiegelloft-configurator' ); ?></option>
-								<option value="text" <?php selected( $field, 'text' ); ?>><?php esc_html_e( 'Text', 'woo-spiegelloft-configurator' ); ?></option>
-							</select>
-						</label>
-						<label class="wcs-rule-field">
-							<span><?php esc_html_e( 'Condition', 'woo-spiegelloft-configurator' ); ?></span>
-							<select name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][when_operator]" class="wcs-rule-operator">
-								<option value="equals" <?php selected( $operator, 'equals' ); ?>><?php esc_html_e( 'equals', 'woo-spiegelloft-configurator' ); ?></option>
-								<option value="not_equals" <?php selected( $operator, 'not_equals' ); ?>><?php esc_html_e( 'does not equal', 'woo-spiegelloft-configurator' ); ?></option>
-								<option value="greater_than" <?php selected( $operator, 'greater_than' ); ?>><?php esc_html_e( 'greater than', 'woo-spiegelloft-configurator' ); ?></option>
-								<option value="less_than" <?php selected( $operator, 'less_than' ); ?>><?php esc_html_e( 'less than', 'woo-spiegelloft-configurator' ); ?></option>
-								<option value="selected" <?php selected( $operator, 'selected' ); ?>><?php esc_html_e( 'is selected', 'woo-spiegelloft-configurator' ); ?></option>
-								<option value="empty" <?php selected( $operator, 'empty' ); ?>><?php esc_html_e( 'is empty', 'woo-spiegelloft-configurator' ); ?></option>
-							</select>
-						</label>
-						<label class="wcs-rule-field" data-visible-for-operator="equals not_equals greater_than less_than">
-							<span><?php esc_html_e( 'Value', 'woo-spiegelloft-configurator' ); ?></span>
-							<input type="text" name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][when_value]" value="<?php echo esc_attr( $when_v ); ?>" placeholder="option-value">
-						</label>
+					<div class="wcs-rule-section-heading">
+						<h4><?php esc_html_e( 'When', 'woo-spiegelloft-configurator' ); ?></h4>
+					</div>
+					<div class="wcs-rule-condition-list">
+						<?php foreach ( $conditions as $condition_index => $condition ) : ?>
+							<div class="wcs-rule-condition-row">
+								<input type="hidden" name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][conditions][<?php echo esc_attr( (string) $condition_index ); ?>][source]" class="wcs-rule-source" value="<?php echo esc_attr( (string) ( $condition['source'] ?? 'category' ) ); ?>">
+								<label class="wcs-rule-field wcs-rule-category-field">
+									<span><?php esc_html_e( 'Field', 'woo-spiegelloft-configurator' ); ?></span>
+									<select class="wcs-rule-when-group">
+										<option value=""><?php esc_html_e( 'Choose field', 'woo-spiegelloft-configurator' ); ?></option>
+										<optgroup label="<?php esc_attr_e( 'Measurements', 'woo-spiegelloft-configurator' ); ?>">
+											<?php foreach ( $measurement_field_choices as $field_key => $field_label ) : ?>
+												<option value="<?php echo esc_attr( $field_key ); ?>" data-source="dimension" data-type="number" <?php selected( (string) ( $condition['path'] ?? '' ), $field_key ); ?>>
+													<?php echo esc_html( $field_label ); ?>
+												</option>
+											<?php endforeach; ?>
+										</optgroup>
+										<?php if ( ! empty( $template_field_choices ) ) : ?>
+											<optgroup label="<?php esc_attr_e( 'Choices', 'woo-spiegelloft-configurator' ); ?>">
+												<?php foreach ( $template_field_choices as $field_key => $field_label ) : ?>
+													<option value="<?php echo esc_attr( $field_key ); ?>" data-source="category" data-type="selection" <?php selected( (string) ( $condition['path'] ?? '' ), $field_key ); ?>>
+														<?php echo esc_html( $field_label ); ?>
+													</option>
+												<?php endforeach; ?>
+											</optgroup>
+										<?php endif; ?>
+									</select>
+									<input type="hidden" name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][conditions][<?php echo esc_attr( (string) $condition_index ); ?>][path]" value="<?php echo esc_attr( (string) ( $condition['path'] ?? '' ) ); ?>">
+								</label>
+								<label class="wcs-rule-field">
+									<span><?php esc_html_e( 'Type', 'woo-spiegelloft-configurator' ); ?></span>
+									<select name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][conditions][<?php echo esc_attr( (string) $condition_index ); ?>][type]" class="wcs-rule-value-type">
+										<?php foreach ( $field_types as $type_key => $type_label ) : ?>
+											<option value="<?php echo esc_attr( $type_key ); ?>" <?php selected( (string) ( $condition['type'] ?? 'selection' ), $type_key ); ?>><?php echo esc_html( $type_label ); ?></option>
+										<?php endforeach; ?>
+									</select>
+								</label>
+								<label class="wcs-rule-field">
+									<span><?php esc_html_e( 'Condition', 'woo-spiegelloft-configurator' ); ?></span>
+									<select name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][conditions][<?php echo esc_attr( (string) $condition_index ); ?>][operator]" class="wcs-rule-operator">
+										<?php foreach ( $condition_operators as $operator_key => $operator_label ) : ?>
+											<option value="<?php echo esc_attr( $operator_key ); ?>" <?php selected( (string) ( $condition['operator'] ?? 'equals' ), $operator_key ); ?>><?php echo esc_html( $operator_label ); ?></option>
+										<?php endforeach; ?>
+									</select>
+								</label>
+								<label class="wcs-rule-field wcs-rule-value-field">
+									<span><?php esc_html_e( 'Value', 'woo-spiegelloft-configurator' ); ?></span>
+									<select class="wcs-rule-option-value">
+										<option value=""><?php esc_html_e( 'Choose option value', 'woo-spiegelloft-configurator' ); ?></option>
+										<?php foreach ( $option_choices as $choice_group => $choices ) : ?>
+											<optgroup label="<?php echo esc_attr( (string) ( $groups[ $choice_group ]['label'] ?? $choice_group ) ); ?>">
+												<?php foreach ( $choices as $choice ) : ?>
+													<option value="<?php echo esc_attr( (string) $choice['value'] ); ?>" <?php selected( (string) ( $condition['value'] ?? '' ), (string) $choice['value'] ); ?>>
+														<?php echo esc_html( (string) $choice['label'] ); ?>
+													</option>
+												<?php endforeach; ?>
+											</optgroup>
+										<?php endforeach; ?>
+									</select>
+									<input type="text" name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][conditions][<?php echo esc_attr( (string) $condition_index ); ?>][value]" value="<?php echo esc_attr( (string) ( $condition['value'] ?? '' ) ); ?>" placeholder="500 or value-1,value-2">
+								</label>
+								<input type="hidden" name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][conditions][<?php echo esc_attr( (string) $condition_index ); ?>][field]" value="<?php echo esc_attr( (string) ( $condition['field'] ?? 'value' ) ); ?>">
+								<div class="wcs-rule-row-actions">
+									<button type="button" class="button wcs-add-condition"><?php esc_html_e( 'Add', 'woo-spiegelloft-configurator' ); ?></button>
+									<button type="button" class="button wcs-remove-condition"><?php esc_html_e( 'Remove', 'woo-spiegelloft-configurator' ); ?></button>
+								</div>
+							</div>
+						<?php endforeach; ?>
 					</div>
 				</div>
 
 				<div class="wcs-rule-section">
-					<h4><?php esc_html_e( 'Do this', 'woo-spiegelloft-configurator' ); ?></h4>
-					<div class="wcs-rule-grid">
-						<label class="wcs-rule-field">
-							<span><?php esc_html_e( 'Action', 'woo-spiegelloft-configurator' ); ?></span>
-							<select name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][then]" class="wcs-rule-action">
-								<option value="require" <?php selected( $then, 'require' ); ?>><?php esc_html_e( 'Require', 'woo-spiegelloft-configurator' ); ?></option>
-								<option value="disallow" <?php selected( $then, 'disallow' ); ?>><?php esc_html_e( 'Block', 'woo-spiegelloft-configurator' ); ?></option>
-								<option value="require_value" <?php selected( $then, 'require_value' ); ?>><?php esc_html_e( 'Require option', 'woo-spiegelloft-configurator' ); ?></option>
-								<option value="disallow_value" <?php selected( $then, 'disallow_value' ); ?>><?php esc_html_e( 'Block option', 'woo-spiegelloft-configurator' ); ?></option>
-								<option value="show" <?php selected( $then, 'show' ); ?>><?php esc_html_e( 'Show', 'woo-spiegelloft-configurator' ); ?></option>
-								<option value="hide" <?php selected( $then, 'hide' ); ?>><?php esc_html_e( 'Hide', 'woo-spiegelloft-configurator' ); ?></option>
-								<option value="clear" <?php selected( $then, 'clear' ); ?>><?php esc_html_e( 'Clear', 'woo-spiegelloft-configurator' ); ?></option>
-								<option value="disable_option" <?php selected( $then, 'disable_option' ); ?>><?php esc_html_e( 'Disable option', 'woo-spiegelloft-configurator' ); ?></option>
-								<option value="validate_range" <?php selected( $then, 'validate_range' ); ?>><?php esc_html_e( 'Validate range', 'woo-spiegelloft-configurator' ); ?></option>
-							</select>
-						</label>
-						<label class="wcs-rule-field">
-							<span><?php esc_html_e( 'Target type', 'woo-spiegelloft-configurator' ); ?></span>
-							<select name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][target_type]">
-								<option value="category" <?php selected( $target_type, 'category' ); ?>><?php esc_html_e( 'Category', 'woo-spiegelloft-configurator' ); ?></option>
-								<option value="nested" <?php selected( $target_type, 'nested' ); ?>><?php esc_html_e( 'Nested field', 'woo-spiegelloft-configurator' ); ?></option>
-								<option value="dimension" <?php selected( $target_type, 'dimension' ); ?>><?php esc_html_e( 'Dimension field', 'woo-spiegelloft-configurator' ); ?></option>
-								<option value="option" <?php selected( $target_type, 'option' ); ?>><?php esc_html_e( 'Option', 'woo-spiegelloft-configurator' ); ?></option>
-							</select>
-						</label>
-						<label class="wcs-rule-field">
-							<span><?php esc_html_e( 'Target', 'woo-spiegelloft-configurator' ); ?></span>
-							<select name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][target]">
-								<option value=""><?php esc_html_e( '-- Category --', 'woo-spiegelloft-configurator' ); ?></option>
-								<?php foreach ( $groups as $slug => $group ) : ?>
-									<option value="<?php echo esc_attr( $slug ); ?>" <?php selected( (string) ( $rule['target'] ?? '' ), $slug ); ?>>
-										<?php echo esc_html( (string) ( $group['label'] ?? $slug ) ); ?>
-									</option>
-								<?php endforeach; ?>
-							</select>
-						</label>
-						<label class="wcs-rule-field" data-visible-for-action="require_value disallow_value show hide clear disable_option validate_range">
-							<span><?php esc_html_e( 'Target value/path', 'woo-spiegelloft-configurator' ); ?></span>
-							<input type="text" name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][target_value]" value="<?php echo esc_attr( (string) ( $rule['target_value'] ?? '' ) ); ?>" placeholder="option-value or group.field">
-						</label>
+					<h4><?php esc_html_e( 'Then', 'woo-spiegelloft-configurator' ); ?></h4>
+					<div class="wcs-rule-action-list">
+						<?php foreach ( $actions as $action_index => $action ) : ?>
+							<div class="wcs-rule-action-row">
+								<label class="wcs-rule-field">
+									<span><?php esc_html_e( 'Action', 'woo-spiegelloft-configurator' ); ?></span>
+									<select name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][actions][<?php echo esc_attr( (string) $action_index ); ?>][action]" class="wcs-rule-action">
+										<?php foreach ( $action_options as $action_key => $action_label ) : ?>
+											<option value="<?php echo esc_attr( $action_key ); ?>" <?php selected( (string) ( $action['action'] ?? 'require' ), $action_key ); ?>><?php echo esc_html( $action_label ); ?></option>
+										<?php endforeach; ?>
+									</select>
+								</label>
+								<input type="hidden" name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][actions][<?php echo esc_attr( (string) $action_index ); ?>][target_type]" value="<?php echo esc_attr( (string) ( $action['target_type'] ?? 'category' ) ); ?>">
+								<label class="wcs-rule-field">
+									<span><?php esc_html_e( 'Field', 'woo-spiegelloft-configurator' ); ?></span>
+									<select class="wcs-rule-target-group">
+										<option value=""><?php esc_html_e( 'Choose field', 'woo-spiegelloft-configurator' ); ?></option>
+										<optgroup label="<?php esc_attr_e( 'Measurements', 'woo-spiegelloft-configurator' ); ?>">
+											<?php foreach ( $measurement_field_choices as $field_key => $field_label ) : ?>
+												<option value="<?php echo esc_attr( $field_key ); ?>" data-target-type="dimension" <?php selected( (string) ( $action['target'] ?? '' ), $field_key ); ?>>
+													<?php echo esc_html( $field_label ); ?>
+												</option>
+											<?php endforeach; ?>
+										</optgroup>
+										<?php if ( ! empty( $template_field_choices ) ) : ?>
+											<optgroup label="<?php esc_attr_e( 'Choices', 'woo-spiegelloft-configurator' ); ?>">
+												<?php foreach ( $template_field_choices as $field_key => $field_label ) : ?>
+													<option value="<?php echo esc_attr( $field_key ); ?>" data-target-type="category" <?php selected( (string) ( $action['target'] ?? '' ), $field_key ); ?>>
+														<?php echo esc_html( $field_label ); ?>
+													</option>
+												<?php endforeach; ?>
+											</optgroup>
+										<?php endif; ?>
+									</select>
+									<input type="hidden" name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][actions][<?php echo esc_attr( (string) $action_index ); ?>][target]" value="<?php echo esc_attr( (string) ( $action['target'] ?? '' ) ); ?>">
+								</label>
+								<label class="wcs-rule-field wcs-rule-target-value-field">
+									<span><?php esc_html_e( 'Option value/path', 'woo-spiegelloft-configurator' ); ?></span>
+									<input type="text" name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][actions][<?php echo esc_attr( (string) $action_index ); ?>][target_value]" value="<?php echo esc_attr( (string) ( $action['target_value'] ?? '' ) ); ?>" placeholder="option-value or group.field">
+								</label>
+								<label class="wcs-rule-field wcs-rule-action-value">
+									<span><?php esc_html_e( 'Value/formula', 'woo-spiegelloft-configurator' ); ?></span>
+									<input type="text" name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][actions][<?php echo esc_attr( (string) $action_index ); ?>][value]" value="<?php echo esc_attr( (string) ( $action['value'] ?? $action['max'] ?? '' ) ); ?>" placeholder="{width} - 100">
+								</label>
+								<div class="wcs-rule-row-actions">
+									<button type="button" class="button wcs-add-action"><?php esc_html_e( 'Add', 'woo-spiegelloft-configurator' ); ?></button>
+									<button type="button" class="button wcs-remove-action"><?php esc_html_e( 'Remove', 'woo-spiegelloft-configurator' ); ?></button>
+								</div>
+							</div>
+						<?php endforeach; ?>
 					</div>
 				</div>
 
-				<div class="wcs-rule-section wcs-rule-section--range" data-visible-for-action="validate_range">
-					<h4><?php esc_html_e( 'Range and error behavior', 'woo-spiegelloft-configurator' ); ?></h4>
+				<div class="wcs-rule-section">
 					<div class="wcs-rule-grid">
-						<label class="wcs-rule-field">
-							<span><?php esc_html_e( 'Min formula', 'woo-spiegelloft-configurator' ); ?></span>
-							<input type="text" name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][min]" value="<?php echo esc_attr( (string) ( $rule['min'] ?? '' ) ); ?>" placeholder="100">
-						</label>
-						<label class="wcs-rule-field">
-							<span><?php esc_html_e( 'Max formula', 'woo-spiegelloft-configurator' ); ?></span>
-							<input type="text" name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][max]" value="<?php echo esc_attr( (string) ( $rule['max'] ?? '' ) ); ?>" placeholder="width - 100">
-						</label>
 						<label class="wcs-rule-field wcs-rule-field--wide">
 							<span><?php esc_html_e( 'Error message', 'woo-spiegelloft-configurator' ); ?></span>
 							<input type="text" name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][message]" value="<?php echo esc_attr( (string) ( $rule['message'] ?? '' ) ); ?>">

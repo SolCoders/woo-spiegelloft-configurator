@@ -231,9 +231,17 @@ class WCS_Storefront {
 		);
 
 		wp_enqueue_script(
+			'wcs-storefront-rules',
+			WCS_PLUGIN_URL . 'assets/js/storefront-rules.js',
+			array( 'jquery' ),
+			WCS_VERSION,
+			true
+		);
+
+		wp_enqueue_script(
 			'wcs-storefront',
 			WCS_PLUGIN_URL . 'assets/js/storefront.js',
-			array( 'jquery' ),
+			array( 'jquery', 'wcs-storefront-rules' ),
 			WCS_VERSION,
 			true
 		);

@@ -83,6 +83,7 @@
 			var $row = $(this).closest('.wcs-side-row');
 			$row.after(buildSideMeasurementRow($row));
 			reindexSideMeasurements();
+			refreshRuleMeasurementOptions();
 		});
 
 		$(document).on('click', '.wcs-side-remove', function (e) {
@@ -92,10 +93,12 @@
 				$(this).closest('.wcs-side-row').find('input[type="text"]').val('');
 				$(this).closest('.wcs-side-row').find('input[name$="[min]"]').val('400');
 				$(this).closest('.wcs-side-row').find('input[name$="[max]"]').val('2500');
+				refreshRuleMeasurementOptions();
 				return;
 			}
 			$(this).closest('.wcs-side-row').remove();
 			reindexSideMeasurements();
+			refreshRuleMeasurementOptions();
 		});
 
 		$(document).on('blur', '.wcs-side-label', function () {
@@ -103,6 +106,48 @@
 			var $key = $row.find('.wcs-side-key');
 			if (!$key.val()) {
 				$key.val(slugify($(this).val()));
+			}
+			refreshRuleMeasurementOptions();
+		});
+
+		$(document).on('input blur', '.wcs-side-label, .wcs-side-key', refreshRuleMeasurementOptions);
+	}
+
+	function getSideMeasurements() {
+		var rows = [];
+		$('.wcs-side-list .wcs-side-row').each(function () {
+			var label = String($(this).find('.wcs-side-label').val() || '').trim();
+			var key = String($(this).find('.wcs-side-key').val() || label).trim();
+			if (label && key) {
+				rows.push({ label: label, key: 'side_' + slugify(key).replace(/-/g, '_') });
+			}
+		});
+		return rows;
+	}
+
+	function refreshRuleMeasurementOptions() {
+		var measurements = getSideMeasurements();
+		$('.wcs-rule-when-group, .wcs-rule-target-group').each(function () {
+			var $select = $(this);
+			var current = $select.val();
+			var $group = $select.find('optgroup[label="Measurements"]');
+			if (!$group.length) {
+				return;
+			}
+			$group.empty();
+			measurements.forEach(function (measurement) {
+				$group.append($('<option>', {
+					value: measurement.key,
+					text: measurement.label
+				}).attr($select.hasClass('wcs-rule-when-group') ? {
+					'data-source': 'dimension',
+					'data-type': 'number'
+				} : {
+					'data-target-type': 'dimension'
+				}));
+			});
+			if (current) {
+				$select.val(current);
 			}
 		});
 	}
@@ -164,7 +209,18 @@
 				if (!name) {
 					return;
 				}
-				$(this).attr('name', name.replace(/wcs_validation_rules\[\d+\]/, 'wcs_validation_rules[' + index + ']'));
+				name = name.replace(/wcs_validation_rules\[\d+\]/, 'wcs_validation_rules[' + index + ']');
+				$(this).attr('name', name);
+			});
+			$(this).find('.wcs-rule-condition-row').each(function (conditionIndex) {
+				$(this).find('[name]').each(function () {
+					$(this).attr('name', $(this).attr('name').replace(/\[conditions\]\[\d+\]/, '[conditions][' + conditionIndex + ']'));
+				});
+			});
+			$(this).find('.wcs-rule-action-row').each(function (actionIndex) {
+				$(this).find('[name]').each(function () {
+					$(this).attr('name', $(this).attr('name').replace(/\[actions\]\[\d+\]/, '[actions][' + actionIndex + ']'));
+				});
 			});
 		});
 	}
@@ -174,23 +230,27 @@
 		var $action = $row.find('.wcs-rule-action');
 		var defaults = {
 			required: 'require',
+			required_field: 'require',
+			constraint: 'set_max',
+			availability: 'disable',
 			block: 'disallow_value',
 			visibility: 'show',
+			selection_rule: 'show',
 			clear: 'clear',
 			range: 'validate_range',
-			disable: 'disable_option'
+			disable: 'disable'
 		};
 
 		if (defaults[type]) {
-			$action.val(defaults[type]);
+			$action.first().val(defaults[type]);
 		}
 	}
 
 	function toggleRuleFields($row) {
 		var type = $row.find('.wcs-rule-type').val();
-		var source = $row.find('.wcs-rule-source').val();
-		var operator = $row.find('.wcs-rule-operator').val();
-		var action = $row.find('.wcs-rule-action').val();
+		var source = $row.find('.wcs-rule-source').first().val();
+		var operator = $row.find('.wcs-rule-operator').first().val();
+		var action = $row.find('.wcs-rule-action').first().val();
 
 		$row.attr({
 			'data-rule-type': type,
@@ -215,13 +275,34 @@
 
 		var summaries = {
 			required: 'Use this for "if X is chosen, Y must be filled".',
+			required_field: 'Use this for "if X is chosen, Y must be filled".',
+			constraint: 'Use formulas like {width} - 100 to set numeric min/max values.',
+			availability: 'Use this to enable or disable fields or options as values change.',
 			block: 'Use this to prevent a category or option from being selected.',
 			visibility: 'Use this for storefront show/hide behavior.',
+			selection_rule: 'Use this for text and selection conditions such as equals, contains, and one of.',
 			clear: 'Use this to reset child values when a parent changes.',
 			range: 'Use this for min/max numeric formulas.',
 			disable: 'Use this to disable an option while keeping it visible.'
 		};
 		$row.find('.wcs-rule-summary').text(summaries[type] || '');
+
+		$row.find('.wcs-rule-condition-row').each(function () {
+			var valueType = $(this).find('.wcs-rule-value-type').val();
+			var rowOperator = $(this).find('.wcs-rule-operator').val();
+			var needsValue = ['is_empty', 'is_not_empty', 'is_true', 'is_false', 'selected', 'empty'].indexOf(rowOperator) === -1;
+			$(this).find('.wcs-rule-value-field').toggle(needsValue);
+			$(this).find('.wcs-rule-option-value').toggle(needsValue && valueType === 'selection');
+			$(this).find('.wcs-rule-value-field input[type="text"]').toggle(valueType !== 'selection' || !needsValue);
+		});
+
+		$row.find('.wcs-rule-action-row').each(function () {
+			var rowAction = $(this).find('.wcs-rule-action').val();
+			var usesTargetValue = ['require_value', 'disallow_value'].indexOf(rowAction) !== -1;
+			var usesFormula = ['set_min', 'set_max', 'validate_range'].indexOf(rowAction) !== -1;
+			$(this).find('.wcs-rule-target-value-field').toggle(usesTargetValue);
+			$(this).find('.wcs-rule-action-value').toggle(usesFormula);
+		});
 	}
 
 	function refreshRuleBuilder() {
@@ -239,10 +320,86 @@
 			$row.find('select').each(function () {
 				this.selectedIndex = 0;
 			});
+			$row.find('.wcs-rule-condition-row').not(':first').remove();
+			$row.find('.wcs-rule-action-row').not(':first').remove();
 			$('#wcs-rules-list').append($row);
 			reindexRules();
 			setRuleDefaults($row);
 			toggleRuleFields($row);
+		});
+
+		$(document).on('change', '.wcs-rule-when-group', function () {
+			var value = $(this).val();
+			var $selected = $(this).find(':selected');
+			if (value) {
+				$(this).siblings('input[type="hidden"]').val(value);
+				$(this).closest('.wcs-rule-condition-row').find('.wcs-rule-source').val($selected.data('source') || 'category');
+				if ($selected.data('type')) {
+					$(this).closest('.wcs-rule-condition-row').find('.wcs-rule-value-type').val($selected.data('type'));
+				}
+			}
+			toggleRuleFields($(this).closest('.wcs-rule-row'));
+		});
+
+		$(document).on('change', '.wcs-rule-target-group', function () {
+			var value = $(this).val();
+			var $selected = $(this).find(':selected');
+			if (value) {
+				$(this).siblings('input[type="hidden"]').val(value);
+				$(this).closest('.wcs-rule-action-row').find('input[name$="[target_type]"]').val($selected.data('target-type') || 'category');
+			}
+		});
+
+		$(document).on('change', '.wcs-rule-option-value', function () {
+			$(this).siblings('input[type="text"]').val($(this).val());
+		});
+
+		$(document).on('click', '.wcs-add-condition', function (e) {
+			e.preventDefault();
+			var $row = $(this).closest('.wcs-rule-row');
+			var $condition = $row.find('.wcs-rule-condition-row').first().clone();
+			$condition.find('input[type="text"]').val('');
+			$condition.find('select').each(function () {
+				this.selectedIndex = 0;
+			});
+			$row.find('.wcs-rule-condition-list').append($condition);
+			reindexRules();
+			toggleRuleFields($row);
+		});
+
+		$(document).on('click', '.wcs-remove-condition', function (e) {
+			e.preventDefault();
+			var $list = $(this).closest('.wcs-rule-condition-list');
+			if ($list.find('.wcs-rule-condition-row').length <= 1) {
+				$(this).closest('.wcs-rule-condition-row').find('input[type="text"]').val('');
+				return;
+			}
+			$(this).closest('.wcs-rule-condition-row').remove();
+			reindexRules();
+		});
+
+		$(document).on('click', '.wcs-add-action', function (e) {
+			e.preventDefault();
+			var $row = $(this).closest('.wcs-rule-row');
+			var $action = $row.find('.wcs-rule-action-row').first().clone();
+			$action.find('input[type="text"]').val('');
+			$action.find('select').each(function () {
+				this.selectedIndex = 0;
+			});
+			$row.find('.wcs-rule-action-list').append($action);
+			reindexRules();
+			toggleRuleFields($row);
+		});
+
+		$(document).on('click', '.wcs-remove-action', function (e) {
+			e.preventDefault();
+			var $list = $(this).closest('.wcs-rule-action-list');
+			if ($list.find('.wcs-rule-action-row').length <= 1) {
+				$(this).closest('.wcs-rule-action-row').find('input[type="text"]').val('');
+				return;
+			}
+			$(this).closest('.wcs-rule-action-row').remove();
+			reindexRules();
 		});
 
 		$(document).on('change', '.wcs-rule-type', function () {
@@ -251,7 +408,7 @@
 			toggleRuleFields($row);
 		});
 
-		$(document).on('change', '.wcs-rule-source, .wcs-rule-operator, .wcs-rule-action', function () {
+		$(document).on('change', '.wcs-rule-source, .wcs-rule-operator, .wcs-rule-action, .wcs-rule-value-type', function () {
 			toggleRuleFields($(this).closest('.wcs-rule-row'));
 		});
 
@@ -268,6 +425,7 @@
 		});
 
 		refreshRuleBuilder();
+		refreshRuleMeasurementOptions();
 	}
 
 	function bindDeleteChoice() {

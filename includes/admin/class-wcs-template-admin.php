@@ -194,6 +194,88 @@ class WCS_Template_Admin {
 		$data  = $this->template->get_template_data( (int) $post->ID ) ?? array();
 		$rules = (array) ( $data['validation_rules'] ?? $data['rules'] ?? array() );
 		$groups = $this->registry->get_groups();
+		$option_map = (array) ( $data['extra_option_map'] ?? array() );
+		$choice_step_map = (array) ( $data['choice_step_map'] ?? array() );
+		$dimensions = (array) ( $data['dimensions'] ?? array() );
+		$side_measurements = ! empty( $dimensions['side_measurements'] ) && is_array( $dimensions['side_measurements'] )
+			? array_values( $dimensions['side_measurements'] )
+			: array(
+				array(
+					'label' => __( 'Width', 'woo-spiegelloft-configurator' ),
+					'key'   => 'width',
+				),
+				array(
+					'label' => __( 'Height', 'woo-spiegelloft-configurator' ),
+					'key'   => 'height',
+				),
+			);
+		$option_choices = array();
+		$template_field_choices = array();
+		$measurement_field_choices = array();
+
+		foreach ( $side_measurements as $measurement ) {
+			$label = (string) ( $measurement['label'] ?? '' );
+			$key   = sanitize_title( (string) ( $measurement['key'] ?? $label ) );
+			if ( '' === $label || '' === $key ) {
+				continue;
+			}
+			$measurement_field_choices[ 'side_' . str_replace( '-', '_', $key ) ] = $label;
+		}
+
+		foreach ( $groups as $group_slug => $group ) {
+			$group_slug = (string) $group_slug;
+			$selected_ids = array_values( array_filter( array_map( 'absint', (array) ( $option_map[ $group_slug ] ?? array() ) ) ) );
+			if ( empty( $selected_ids ) ) {
+				continue;
+			}
+			$options = array();
+			foreach ( $selected_ids as $option_id ) {
+				$option = $this->catalog->get_option( $option_id );
+				if ( $option ) {
+					$options[] = $option;
+				}
+			}
+			foreach ( $options as $option ) {
+				$meta        = (array) ( $option['meta'] ?? array() );
+				$option_data = (array) ( $meta['_wcs_option_data'] ?? array() );
+				$value       = (string) ( $option_data['value'] ?? $option['slug'] ?? '' );
+				$label       = (string) ( $option_data['name'] ?? $option['title'] ?? $value );
+				if ( '' === $value ) {
+					continue;
+				}
+				$field_key = ! empty( $choice_step_map )
+					? $group_slug . '__choice_' . (int) ( $option['id'] ?? 0 )
+					: $group_slug;
+				$template_field_choices[ $field_key ] = $label;
+				$option_choices[ $group_slug ][] = array(
+					'value' => $value,
+					'label' => $label,
+					'group' => (string) ( $group['label'] ?? $group_slug ),
+				);
+			}
+		}
+
+		if ( empty( $template_field_choices ) ) {
+			foreach ( $this->catalog->get_all_options() as $option ) {
+				$meta        = (array) ( $option['meta'] ?? array() );
+				$option_data = (array) ( $meta['_wcs_option_data'] ?? array() );
+				$value       = (string) ( $option_data['value'] ?? $option['slug'] ?? '' );
+				$label       = (string) ( $option_data['name'] ?? $option['title'] ?? $value );
+				$group_slug  = (string) ( $option['group'] ?? '' );
+				if ( '' === $value ) {
+					continue;
+				}
+				$field_key = '' !== $group_slug
+					? ( ! empty( $choice_step_map ) ? $group_slug . '__choice_' . (int) ( $option['id'] ?? 0 ) : $group_slug )
+					: $value;
+				$template_field_choices[ $field_key ] = $label;
+				$option_choices[ $group_slug ?: 'choices' ][] = array(
+					'value' => $value,
+					'label' => $label,
+					'group' => __( 'Choices', 'woo-spiegelloft-configurator' ),
+				);
+			}
+		}
 
 		include WCS_PLUGIN_DIR . 'templates/admin/template-restrictions-meta.php';
 	}
@@ -304,27 +386,98 @@ class WCS_Template_Admin {
 				if ( ! is_array( $rule ) ) {
 					continue;
 				}
-				$when           = array();
-				$when_operator  = sanitize_text_field( (string) ( $rule['when_operator'] ?? 'equals' ) );
-				$when_source    = sanitize_text_field( (string) ( $rule['when_source'] ?? 'category' ) );
-				$when_path      = sanitize_text_field( (string) ( $rule['when_path'] ?? $rule['when_group'] ?? '' ) );
-				$value_optional = in_array( $when_operator, array( 'selected', 'empty' ), true );
-				if ( '' !== $when_path && ( ! empty( $rule['when_value'] ) || $value_optional ) ) {
-					$when[ $when_path ] = sanitize_text_field( (string) ( $rule['when_value'] ?? '' ) );
+				$conditions = array();
+				$raw_conditions = isset( $rule['conditions'] ) && is_array( $rule['conditions'] ) ? $rule['conditions'] : array();
+				foreach ( $raw_conditions as $condition ) {
+					if ( ! is_array( $condition ) ) {
+						continue;
+					}
+					$path     = sanitize_text_field( (string) ( $condition['path'] ?? '' ) );
+					$operator = sanitize_text_field( (string) ( $condition['operator'] ?? 'equals' ) );
+					if ( '' === $path ) {
+						continue;
+					}
+					$conditions[] = array(
+						'source'   => sanitize_text_field( (string) ( $condition['source'] ?? 'category' ) ),
+						'path'     => $path,
+						'field'    => sanitize_text_field( (string) ( $condition['field'] ?? 'value' ) ),
+						'type'     => sanitize_text_field( (string) ( $condition['type'] ?? 'selection' ) ),
+						'operator' => $operator,
+						'value'    => sanitize_text_field( (string) ( $condition['value'] ?? '' ) ),
+					);
+				}
+				if ( empty( $conditions ) ) {
+					$when_operator  = sanitize_text_field( (string) ( $rule['when_operator'] ?? 'equals' ) );
+					$when_source    = sanitize_text_field( (string) ( $rule['when_source'] ?? 'category' ) );
+					$when_path      = sanitize_text_field( (string) ( $rule['when_path'] ?? $rule['when_group'] ?? '' ) );
+					if ( '' !== $when_path ) {
+						$conditions[] = array(
+							'source'   => $when_source,
+							'path'     => $when_path,
+							'field'    => sanitize_text_field( (string) ( $rule['when_field'] ?? 'value' ) ),
+							'type'     => 'dimension' === $when_source ? 'number' : 'selection',
+							'operator' => $when_operator,
+							'value'    => sanitize_text_field( (string) ( $rule['when_value'] ?? '' ) ),
+						);
+					}
+				}
+
+				$actions = array();
+				$raw_actions = isset( $rule['actions'] ) && is_array( $rule['actions'] ) ? $rule['actions'] : array();
+				foreach ( $raw_actions as $action ) {
+					if ( ! is_array( $action ) ) {
+						continue;
+					}
+					$action_name = sanitize_text_field( (string) ( $action['action'] ?? '' ) );
+					if ( '' === $action_name ) {
+						continue;
+					}
+					$actions[] = array(
+						'action'       => $action_name,
+						'target_type'  => sanitize_text_field( (string) ( $action['target_type'] ?? 'category' ) ),
+						'target'       => sanitize_text_field( (string) ( $action['target'] ?? '' ) ),
+						'target_value' => sanitize_text_field( (string) ( $action['target_value'] ?? '' ) ),
+						'value'        => sanitize_text_field( (string) ( $action['value'] ?? '' ) ),
+						'min'          => sanitize_text_field( (string) ( $action['min'] ?? '' ) ),
+						'max'          => sanitize_text_field( (string) ( $action['max'] ?? $action['value'] ?? '' ) ),
+					);
+				}
+				if ( empty( $actions ) ) {
+					$actions[] = array(
+						'action'       => sanitize_text_field( (string) ( $rule['then'] ?? 'require' ) ),
+						'target_type'  => sanitize_text_field( (string) ( $rule['target_type'] ?? 'category' ) ),
+						'target'       => sanitize_text_field( (string) ( $rule['target'] ?? '' ) ),
+						'target_value' => sanitize_text_field( (string) ( $rule['target_value'] ?? '' ) ),
+						'value'        => sanitize_text_field( (string) ( $rule['max'] ?? '' ) ),
+						'min'          => sanitize_text_field( (string) ( $rule['min'] ?? '' ) ),
+						'max'          => sanitize_text_field( (string) ( $rule['max'] ?? '' ) ),
+					);
+				}
+
+				$primary_condition = $conditions[0] ?? array();
+				$primary_action    = $actions[0] ?? array();
+				$when              = array();
+				$when_path         = (string) ( $primary_condition['path'] ?? '' );
+				$when_operator     = (string) ( $primary_condition['operator'] ?? 'equals' );
+				if ( '' !== $when_path ) {
+					$when[ $when_path ] = (string) ( $primary_condition['value'] ?? '' );
 				}
 				$rules[] = array(
 					'when'          => $when,
-					'when_source'   => $when_source,
+					'match'         => sanitize_text_field( (string) ( $rule['match'] ?? 'all' ) ),
+					'conditions'    => $conditions,
+					'actions'       => $actions,
+					'when_source'   => (string) ( $primary_condition['source'] ?? 'category' ),
 					'when_path'     => $when_path,
-					'when_field'    => sanitize_text_field( (string) ( $rule['when_field'] ?? 'value' ) ),
+					'when_field'    => (string) ( $primary_condition['field'] ?? 'value' ),
 					'when_operator' => $when_operator,
-					'rule_type'     => sanitize_text_field( (string) ( $rule['rule_type'] ?? 'required' ) ),
-					'then'          => sanitize_text_field( (string) ( $rule['then'] ?? 'require' ) ),
-					'target_type'   => sanitize_text_field( (string) ( $rule['target_type'] ?? 'category' ) ),
-					'target'        => sanitize_text_field( (string) ( $rule['target'] ?? '' ) ),
-					'target_value'  => sanitize_text_field( (string) ( $rule['target_value'] ?? '' ) ),
-					'min'           => sanitize_text_field( (string) ( $rule['min'] ?? '' ) ),
-					'max'           => sanitize_text_field( (string) ( $rule['max'] ?? '' ) ),
+					'rule_type'     => sanitize_text_field( (string) ( $rule['rule_type'] ?? 'required_field' ) ),
+					'then'          => (string) ( $primary_action['action'] ?? 'require' ),
+					'target_type'   => (string) ( $primary_action['target_type'] ?? 'category' ),
+					'target'        => (string) ( $primary_action['target'] ?? '' ),
+					'target_value'  => (string) ( $primary_action['target_value'] ?? '' ),
+					'min'           => (string) ( $primary_action['min'] ?? '' ),
+					'max'           => (string) ( $primary_action['max'] ?? $primary_action['value'] ?? '' ),
 					'message'       => sanitize_text_field( (string) ( $rule['message'] ?? '' ) ),
 					'error_seconds' => absint( $rule['error_seconds'] ?? 4 ),
 					'restore'       => ! empty( $rule['restore'] ),

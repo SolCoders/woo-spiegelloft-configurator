@@ -128,32 +128,77 @@ class WCS_Validation_Engine {
 	 */
 	private function validate_rule( array $selections, array $template, array $rule ) {
 		$when          = (array) ( $rule['when'] ?? array() );
-		$when_source   = (string) ( $rule['when_source'] ?? 'category' );
-		$field         = (string) ( $rule['when_field'] ?? 'value' );
-		$operator      = (string) ( $rule['when_operator'] ?? 'equals' );
-		$then          = (string) ( $rule['then'] ?? 'require' );
-		$target        = (string) ( $rule['target'] ?? '' );
-		$target_value  = (string) ( $rule['target_value'] ?? '' );
-		$target_type   = (string) ( $rule['target_type'] ?? 'category' );
 		$option_lookup = (array) ( $template['_option_lookup'] ?? array() );
+		$conditions    = isset( $rule['conditions'] ) && is_array( $rule['conditions'] ) ? (array) $rule['conditions'] : array();
+		$actions       = isset( $rule['actions'] ) && is_array( $rule['actions'] ) ? (array) $rule['actions'] : array();
 
-		$matches = true;
-		foreach ( $when as $key => $expected ) {
-			$actual = $this->get_selection_path_value( $selections, (string) $key );
-			if ( 'dimension' === $when_source && null === $actual ) {
-				$actual = $this->evaluate_formula( (string) $key, $this->build_formula_context( $selections, $template ) );
-			}
-			if ( ! $this->selection_matches( $this->get_comparable_selection_value( $actual, $field, (string) $key, $option_lookup ), $expected, $operator ) ) {
-				$matches = false;
-				break;
+		if ( empty( $conditions ) ) {
+			foreach ( $when as $key => $expected ) {
+				$conditions[] = array(
+					'source'   => (string) ( $rule['when_source'] ?? 'category' ),
+					'path'     => (string) $key,
+					'field'    => (string) ( $rule['when_field'] ?? 'value' ),
+					'type'     => 'dimension' === (string) ( $rule['when_source'] ?? '' ) ? 'number' : 'selection',
+					'operator' => (string) ( $rule['when_operator'] ?? 'equals' ),
+					'value'    => $expected,
+				);
 			}
 		}
+
+		$results = array();
+		foreach ( $conditions as $condition ) {
+			if ( ! is_array( $condition ) ) {
+				continue;
+			}
+			$key      = (string) ( $condition['path'] ?? '' );
+			$source   = (string) ( $condition['source'] ?? 'category' );
+			$field    = (string) ( $condition['field'] ?? 'value' );
+			$operator = (string) ( $condition['operator'] ?? 'equals' );
+			$expected = (string) ( $condition['value'] ?? '' );
+			$actual   = $this->get_selection_path_value( $selections, $key );
+			if ( 'dimension' === $source && null === $actual ) {
+				$actual = $this->evaluate_formula( $key, $this->build_formula_context( $selections, $template ) );
+			}
+			$results[] = $this->selection_matches( $this->get_comparable_selection_value( $actual, $field, $key, $option_lookup ), $expected, $operator );
+		}
+
+		$matches = 'any' === (string) ( $rule['match'] ?? 'all' ) ? in_array( true, $results, true ) : ! in_array( false, $results, true );
 
 		if ( ! $matches ) {
 			return true;
 		}
 
-		if ( in_array( $then, array( 'show', 'hide', 'clear', 'disable_option' ), true ) ) {
+		if ( empty( $actions ) ) {
+			$actions[] = array(
+				'action'       => (string) ( $rule['then'] ?? 'require' ),
+				'target_type'  => (string) ( $rule['target_type'] ?? 'category' ),
+				'target'       => (string) ( $rule['target'] ?? '' ),
+				'target_value' => (string) ( $rule['target_value'] ?? '' ),
+			);
+		}
+
+		foreach ( $actions as $action ) {
+			if ( ! is_array( $action ) ) {
+				continue;
+			}
+			$then         = (string) ( $action['action'] ?? $action['then'] ?? 'require' );
+			$target       = (string) ( $action['target'] ?? '' );
+			$target_value = (string) ( $action['target_value'] ?? '' );
+			$target_type  = (string) ( $action['target_type'] ?? 'category' );
+
+			$result = $this->validate_matched_action( $selections, $template, $then, $target, $target_value, $target_type, $rule );
+			if ( is_wp_error( $result ) ) {
+				return $result;
+			}
+		}
+
+		return true;
+	}
+
+	private function validate_matched_action( array $selections, array $template, string $then, string $target, string $target_value, string $target_type, array $rule ) {
+		$option_lookup = (array) ( $template['_option_lookup'] ?? array() );
+
+		if ( in_array( $then, array( 'show', 'hide', 'clear', 'disable_option', 'disable', 'enable', 'set_min', 'set_max' ), true ) ) {
 			return true;
 		}
 
@@ -311,22 +356,45 @@ class WCS_Validation_Engine {
 	 * @param string $operator Condition operator.
 	 */
 	private function selection_matches( $actual, $expected, string $operator ): bool {
-		if ( 'selected' === $operator ) {
+		if ( in_array( $operator, array( 'selected', 'is_not_empty' ), true ) ) {
 			return ! empty( $actual );
 		}
 
-		if ( 'empty' === $operator ) {
+		if ( in_array( $operator, array( 'empty', 'is_empty' ), true ) ) {
 			return empty( $actual );
 		}
 
-		if ( in_array( $operator, array( 'greater_than', 'less_than' ), true ) ) {
+		if ( 'is_true' === $operator ) {
+			return in_array( strtolower( (string) $actual ), array( '1', 'true', 'yes', 'on' ), true );
+		}
+
+		if ( 'is_false' === $operator ) {
+			return empty( $actual ) || in_array( strtolower( (string) $actual ), array( '0', 'false', 'no', 'off' ), true );
+		}
+
+		if ( in_array( $operator, array( 'greater_than', 'greater_than_or_equal', 'less_than', 'less_than_or_equal' ), true ) ) {
 			if ( ! is_numeric( $actual ) || ! is_numeric( $expected ) ) {
 				return false;
 			}
 
-			return 'greater_than' === $operator
-				? (float) $actual > (float) $expected
-				: (float) $actual < (float) $expected;
+			if ( 'greater_than' === $operator ) {
+				return (float) $actual > (float) $expected;
+			}
+			if ( 'greater_than_or_equal' === $operator ) {
+				return (float) $actual >= (float) $expected;
+			}
+			return 'less_than' === $operator ? (float) $actual < (float) $expected : (float) $actual <= (float) $expected;
+		}
+
+		if ( in_array( $operator, array( 'contains', 'not_contains' ), true ) ) {
+			$contains = false !== stripos( (string) $actual, (string) $expected );
+			return 'not_contains' === $operator ? ! $contains : $contains;
+		}
+
+		if ( in_array( $operator, array( 'one_of', 'not_one_of' ), true ) ) {
+			$values = array_map( 'trim', explode( ',', (string) $expected ) );
+			$hit    = in_array( (string) $actual, $values, true );
+			return 'not_one_of' === $operator ? ! $hit : $hit;
 		}
 
 		$contains = $this->selection_contains( $actual, $expected );
@@ -446,6 +514,15 @@ class WCS_Validation_Engine {
 			return null;
 		}
 
+		$formula = preg_replace_callback(
+			'/\{([^}]+)\}/',
+			static function ( array $matches ) use ( $context ): string {
+				$key = sanitize_key( trim( (string) $matches[1] ) );
+				return array_key_exists( $key, $context ) ? (string) $context[ $key ] : '0';
+			},
+			$formula
+		) ?? $formula;
+
 		if ( is_numeric( $formula ) ) {
 			return (float) $formula;
 		}
@@ -500,14 +577,16 @@ class WCS_Validation_Engine {
 			}
 		}
 
-		$parts = $this->split_formula( $formula, '/' );
-		if ( $parts ) {
-			$left  = $this->evaluate_formula( $parts[0], $context );
-			$right = $this->evaluate_formula( $parts[1], $context );
-			if ( null === $left || null === $right || 0.0 === $right ) {
-				return null;
+		foreach ( array( '*', '/' ) as $operator ) {
+			$parts = $this->split_formula( $formula, $operator );
+			if ( $parts ) {
+				$left  = $this->evaluate_formula( $parts[0], $context );
+				$right = $this->evaluate_formula( $parts[1], $context );
+				if ( null === $left || null === $right || ( '/' === $operator && 0.0 === $right ) ) {
+					return null;
+				}
+				return '*' === $operator ? $left * $right : $left / $right;
 			}
-			return $left / $right;
 		}
 
 		$key = sanitize_key( $formula );
