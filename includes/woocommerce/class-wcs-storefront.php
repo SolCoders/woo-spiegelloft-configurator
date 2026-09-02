@@ -290,7 +290,7 @@ class WCS_Storefront {
 	 * Check whether the configurator view has been requested.
 	 */
 	private function is_configurator_view(): bool {
-		return isset( $_GET['view'] ) && 'configurator' === sanitize_key( wp_unslash( $_GET['view'] ) );
+		return $this->is_configured_product_page();
 	}
 
 	/**

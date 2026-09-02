@@ -14,6 +14,8 @@ defined( 'ABSPATH' ) || exit;
 $base_price = (float) $product->get_price();
 $extras     = (array) ( $config['extras'] ?? array() );
 $steps      = (array) ( $config['steps'] ?? array() );
+$layout     = get_option( 'wcs_configurator_layout', 'compact_dropdown' );
+$layout     = in_array( $layout, array( 'compact_dropdown', 'visual_cards' ), true ) ? $layout : 'compact_dropdown';
 $side_measurements = array_values( (array) ( $config['side_measurements'] ?? array() ) );
 $sidewise_measurements = ! empty( $side_measurements ) || 'sidewise' === (string) ( $config['measurement_mode'] ?? 'standard' );
 $step_one_groups = array();
@@ -24,7 +26,7 @@ foreach ( $steps as $step ) {
 	}
 }
 ?>
-<form class="cart wcs-configurator" method="post" enctype="multipart/form-data" data-base-price="<?php echo esc_attr( (string) $base_price ); ?>" data-rules="<?php echo esc_attr( wp_json_encode( (array) ( $config['behavior_rules'] ?? $config['validation_rules'] ?? array() ) ) ); ?>">
+<form class="cart wcs-configurator wcs-configurator--<?php echo esc_attr( str_replace( '_', '-', $layout ) ); ?>" method="post" enctype="multipart/form-data" data-layout="<?php echo esc_attr( $layout ); ?>" data-base-price="<?php echo esc_attr( (string) $base_price ); ?>" data-rules="<?php echo esc_attr( wp_json_encode( (array) ( $config['behavior_rules'] ?? $config['validation_rules'] ?? array() ) ) ); ?>">
 	<input type="hidden" name="wcs_selections" class="wcs-selections-input" value="">
 	<input type="hidden" name="quantity" value="1">
 

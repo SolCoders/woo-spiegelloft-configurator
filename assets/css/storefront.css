@@ -355,13 +355,6 @@
 	margin: 0;
 }
 
-.wcs-customer-field.is-required.is-empty {
-	padding: 0;
-	border: 0;
-	border-radius: 0;
-	background: transparent;
-}
-
 .wcs-customer-field.is-required.is-empty > .wcs-customer-field__label {
 	color: #161616;
 }
@@ -1034,10 +1027,6 @@
 	.wcs-image-choice-list--sub {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
-
-	.wcs-customer-field.is-required.is-empty {
-		padding: 0;
-	}
 }
 
 .wcs-custom-select {
@@ -1552,24 +1541,6 @@
 	transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease !important;
 }
 
-.wcs-configurator button.wcs-size-step--minus,
-.wcs-configurator [type="button"].wcs-size-step--minus {
-	background: #fcfbf7 !important;
-	border: 1px solid #f1efed !important;
-	color: #585858 !important;
-}
-
-.wcs-configurator button.wcs-size-step--plus,
-.wcs-configurator [type="button"].wcs-size-step--plus,
-.wcs-configurator button.wcs-step-next,
-.wcs-configurator button.wcs-add-to-cart,
-.wcs-configurator [type="button"].wcs-step-next,
-.wcs-configurator [type="submit"].wcs-add-to-cart {
-	background: #0a878c !important;
-	border-color: #0a878c !important;
-	color: #ffffff !important;
-}
-
 .wcs-configurator button.wcs-step-back,
 .wcs-configurator [type="button"].wcs-step-back {
 	background: #fcfbf7 !important;
@@ -1712,4 +1683,430 @@
 	font-family: inherit !important;
 	text-transform: none !important;
 	width: 100% !important;
+}
+
+.wcs-configurator--compact-dropdown .wcs-configurator__panel {
+	height: auto;
+	min-height: 640px;
+	max-width: 860px;
+	margin: 0 auto;
+	padding: 26px 34px 14px;
+	border: 1px solid #dfdfdf;
+	border-radius: 8px;
+	background: #fcfaf7;
+	box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+	overflow: visible;
+}
+
+.wcs-configurator--compact-dropdown .wcs-configurator__header {
+	padding-bottom: 18px;
+	border-bottom: 1px solid #e5e1dc;
+}
+
+.wcs-configurator--compact-dropdown .wcs-configurator__header h2 {
+	font-size: 30px !important;
+}
+
+.wcs-configurator--compact-dropdown .wcs-configurator__price {
+	display: grid;
+	gap: 6px;
+	min-width: 164px;
+	padding: 17px 22px;
+	text-align: center;
+	font-size: 30px !important;
+}
+
+.wcs-configurator--compact-dropdown .wcs-configurator__price::after {
+	content: "Inkl. MwSt.";
+	color: #585858;
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 1;
+}
+
+.wcs-configurator--compact-dropdown .wcs-configurator__content {
+	overflow: visible;
+	padding: 0;
+}
+
+.wcs-configurator--compact-dropdown .wcs-configurator__section {
+	margin: 0;
+}
+
+.wcs-configurator--compact-dropdown .wcs-configurator__section > h3,
+.wcs-configurator--compact-dropdown .wcs-configurator__section-copy,
+.wcs-configurator--compact-dropdown .wcs-configurator__group-title,
+.wcs-configurator--compact-dropdown .wcs-configurator__help,
+.wcs-configurator--compact-dropdown .wcs-configurator__step-label,
+.wcs-configurator--compact-dropdown .wcs-review-section {
+	display: none !important;
+}
+
+.wcs-configurator--compact-dropdown .wcs-size-sidewise,
+.wcs-configurator--compact-dropdown .wcs-size-side-pair,
+.wcs-configurator--compact-dropdown .wcs-size-box {
+	display: grid;
+	gap: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
+}
+
+.wcs-configurator--compact-dropdown .wcs-size-side-pair {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.wcs-configurator--compact-dropdown .wcs-size-box,
+.wcs-configurator--compact-dropdown .wcs-size-side-row,
+.wcs-configurator--compact-dropdown .wcs-step-option-group,
+.wcs-configurator--compact-dropdown .wcs-position-select,
+.wcs-configurator--compact-dropdown .wcs-customer-field {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 250px;
+	align-items: center;
+	column-gap: 20px;
+	margin: 0;
+	padding: 10px;
+	border-bottom: 1px solid #ebe7e1;
+	background: transparent;
+}
+
+.wcs-configurator--compact-dropdown .wcs-size-box {
+	grid-template-columns: minmax(0, 1fr);
+	padding: 0;
+	border-bottom: 0;
+}
+
+.wcs-configurator--compact-dropdown .wcs-size-box label,
+.wcs-configurator--compact-dropdown .wcs-size-side-row label {
+	display: contents;
+}
+
+.wcs-configurator--compact-dropdown .wcs-size-box__times {
+	display: none;
+}
+
+.wcs-configurator--compact-dropdown .wcs-size-box label > span:first-child,
+.wcs-configurator--compact-dropdown .wcs-size-side-row label > span:first-child,
+.wcs-configurator--compact-dropdown .wcs-option-heading,
+.wcs-configurator--compact-dropdown .wcs-position-select > h3,
+.wcs-configurator--compact-dropdown .wcs-customer-field__label,
+.wcs-configurator--compact-dropdown .wcs-customer-nested-box > .wcs-customer-field > .wcs-customer-field__label {
+	display: flex !important;
+	align-items: center;
+	justify-content: start;
+	gap: 5px 16px;
+	margin: 0;
+	color: #111827 !important;
+	font-size: 14px !important;
+	font-weight: 800 !important;
+	line-height: 1.25 !important;
+}
+
+.wcs-configurator--compact-dropdown .wcs-size-box label > span:first-child::before,
+.wcs-configurator--compact-dropdown .wcs-size-side-row label > span:first-child::before,
+.wcs-configurator--compact-dropdown .wcs-customer-field__label::before,
+.wcs-configurator--compact-dropdown .wcs-customer-nested-box > .wcs-customer-field > .wcs-customer-field__label::before {
+	content: "i";
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	background: #6b7f82;
+	color: #ffffff;
+	font-size: 12px;
+	font-weight: 800;
+	line-height: 1;
+}
+
+.wcs-configurator--compact-dropdown .wcs-option-info {
+	order: -1;
+	width: 18px;
+	height: 18px;
+	border: 0;
+	background: #6b7f82;
+	color: #ffffff;
+	font-size: 12px;
+}
+
+.wcs-configurator--compact-dropdown .wcs-option-heading h3 {
+	font-size: 14px !important;
+}
+
+.wcs-configurator--compact-dropdown .wcs-size-box small,
+.wcs-configurator--compact-dropdown .wcs-size-side-row small {
+	display: block;
+	margin: 2px 0 0 34px;
+	font-size: 11px !important;
+}
+
+.wcs-configurator--compact-dropdown .wcs-size-control,
+.wcs-configurator--compact-dropdown .wcs-option-select,
+.wcs-configurator--compact-dropdown .wcs-position-select .wcs-option-select,
+.wcs-configurator--compact-dropdown .wcs-custom-select,
+.wcs-configurator--compact-dropdown .wcs-customer-field > input.wcs-customer-field-input,
+.wcs-configurator--compact-dropdown .wcs-customer-field > select.wcs-customer-field-input {
+	grid-column: 2;
+	width: 100% !important;
+	margin-bottom: 0 !important;
+}
+
+.wcs-configurator--compact-dropdown .wcs-size-control {
+	display: grid;
+	grid-template-columns: 44px minmax(0, 1fr) 44px;
+}
+
+.wcs-configurator--compact-dropdown .wcs-size-control em {
+	display: none;
+}
+
+.wcs-configurator--compact-dropdown .wcs-size-box input,
+.wcs-configurator--compact-dropdown .wcs-size-side-row input {
+	grid-column: 2;
+	height: 38px !important;
+	min-height: 38px !important;
+	padding: 0 12px !important;
+	border-radius: 4px !important;
+	color: #111827 !important;
+	font-size: 14px !important;
+	font-weight: 700 !important;
+}
+
+.wcs-configurator--compact-dropdown .wcs-size-step {
+	position: static;
+	width: 30px;
+	height: 30px;
+	border-color: #0a878c !important;
+	border-radius: 4px !important;
+	background: #0a878c !important;
+	color: #ffffff !important;
+	font-size: 16px;
+}
+
+.wcs-configurator--compact-dropdown .wcs-custom-select__button {
+	height: 38px !important;
+	min-height: 38px !important;
+	padding: 0 14px !important;
+	border: 1px solid #d7dce3 !important;
+	border-radius: 4px !important;
+	background: #ffffff !important;
+	font-weight: 500 !important;
+}
+
+.wcs-configurator--compact-dropdown .wcs-custom-select__menu {
+	top: calc(100% + 4px);
+	max-height: 310px;
+	overflow-y: auto;
+	border-color: #d7dce3;
+	border-radius: 4px;
+}
+
+.wcs-configurator--compact-dropdown .wcs-custom-select__option {
+	min-height: 46px;
+	padding: 8px 12px;
+}
+
+.wcs-configurator--compact-dropdown .wcs-custom-select__option img {
+	width: 36px;
+	height: 36px;
+}
+
+.wcs-configurator--compact-dropdown .wcs-customer-field-target,
+.wcs-configurator--compact-dropdown .wcs-customer-nested-target {
+	display: grid;
+	grid-column: 1 / -1;
+	gap: 0;
+	margin: 0;
+}
+
+.wcs-configurator--compact-dropdown .wcs-customer-field-target[hidden],
+.wcs-configurator--compact-dropdown .wcs-customer-nested-target[hidden],
+.wcs-configurator--compact-dropdown .wcs-position-select[hidden] {
+	display: none !important;
+}
+
+.wcs-configurator--compact-dropdown .wcs-customer-nested-box {
+	display: grid;
+	grid-column: 1 / -1;
+	gap: 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
+}
+
+.wcs-configurator--compact-dropdown .wcs-step-option-group:has(.wcs-option-select--hidden-parent) {
+	gap: 0 20px;
+}
+
+.wcs-configurator--compact-dropdown .wcs-step-option-group:has(.wcs-option-select--hidden-parent) .wcs-customer-field-target {
+	display: none !important;
+}
+
+.wcs-configurator--compact-dropdown .wcs-step-option-group:has(.wcs-option-select--hidden-parent) > .wcs-dependent-inline-field {
+	display: contents;
+}
+
+.wcs-configurator--compact-dropdown .wcs-step-option-group:has(.wcs-option-select--hidden-parent) > .wcs-dependent-inline-field > .wcs-custom-select,
+.wcs-configurator--compact-dropdown .wcs-step-option-group:has(.wcs-option-select--hidden-parent) > .wcs-dependent-inline-field > input.wcs-customer-field-input,
+.wcs-configurator--compact-dropdown .wcs-step-option-group:has(.wcs-option-select--hidden-parent) > .wcs-dependent-inline-field > select.wcs-customer-field-input {
+	grid-column: 2;
+	grid-row: 1;
+	align-self: center;
+}
+
+.wcs-configurator--compact-dropdown .wcs-step-option-group:has(.wcs-option-select--hidden-parent) > .wcs-dependent-inline-field > .wcs-customer-nested-target {
+	grid-column: 1 / -1;
+	grid-row: 2;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.wcs-configurator--compact-dropdown .wcs-step-option-group:has(.wcs-option-select--hidden-parent) .wcs-customer-field[data-wcs-nested-parent] {
+	grid-column: 1 / -1;
+	display: grid;
+	grid-template-columns: 300px minmax(0, 1fr);
+	align-items: center;
+	gap: 20px;
+	width: auto;
+	margin: 0 -8px;
+	padding: 10px 8px;
+	border-bottom: 1px solid #ebe7e1;
+}
+
+.wcs-configurator--compact-dropdown .wcs-step-option-group:has(.wcs-option-select--hidden-parent) > .wcs-dependent-row {
+	grid-column: 1 / -1;
+	display: grid;
+	grid-template-columns: 300px minmax(0, 1fr);
+	align-items: center;
+	gap: 20px;
+	margin: 0 -8px;
+	padding: 10px 8px;
+	border-bottom: 1px solid #ebe7e1;
+}
+
+.wcs-configurator--compact-dropdown .wcs-step-option-group:has(.wcs-option-select--hidden-parent) .wcs-customer-nested-box {
+	gap: 0;
+}
+
+.wcs-configurator--compact-dropdown .wcs-step-option-group:has(.wcs-option-select--hidden-parent) .wcs-customer-nested-box > .wcs-customer-field {
+	grid-template-columns: 300px minmax(0, 1fr);
+	padding: 10px 8px;
+	border-bottom: 1px solid #ebe7e1;
+}
+
+.wcs-configurator--compact-dropdown .wcs-customer-nested-box > .wcs-customer-field > .wcs-customer-field__label {
+	gap: 16px !important;
+	padding-left: 0;
+}
+
+.wcs-configurator--compact-dropdown .wcs-customer-field-target[hidden],
+.wcs-configurator--compact-dropdown .wcs-customer-nested-target[hidden],
+.wcs-configurator--compact-dropdown .wcs-position-select[hidden] {
+	display: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+}
+
+.wcs-configurator--compact-dropdown .wcs-customer-nested-box--inline {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.wcs-configurator--compact-dropdown .wcs-customer-field--text {
+	position: static;
+}
+
+.wcs-configurator--compact-dropdown .wcs-customer-field input,
+.wcs-configurator--compact-dropdown .wcs-customer-field select {
+	height: 38px !important;
+	min-height: 38px !important;
+	padding: 0 12px !important;
+	border: 1px solid #d7dce3 !important;
+	border-radius: 10px !important;
+	background: #ffffff !important;
+	color: #111827 !important;
+	font-size: 14px !important;
+	font-weight: 500 !important;
+}
+
+.wcs-configurator--compact-dropdown .wcs-customer-field__error {
+	grid-column: 2;
+	margin: -2px 0 4px;
+	font-size: 13px;
+}
+
+.wcs-configurator--compact-dropdown .wcs-configurator__footer {
+	grid-template-columns: minmax(0, 1fr) auto;
+	padding: 14px 8px 0;
+	border-top: 0;
+	box-shadow: none;
+}
+
+.wcs-configurator--compact-dropdown .wcs-step-back,
+.wcs-configurator--compact-dropdown .wcs-step-next,
+.wcs-configurator--compact-dropdown .wcs-configurator__footer-total {
+	display: none !important;
+}
+
+.wcs-configurator--compact-dropdown .wcs-configurator__footer .wcs-add-to-cart:not([hidden]) {
+	grid-column: 2;
+	display: inline-flex !important;
+	min-width: 170px !important;
+	max-width: none !important;
+}
+
+@media (max-width: 760px) {
+	.wcs-configurator--compact-dropdown .wcs-configurator__panel {
+		min-height: 0;
+		padding: 20px 16px 14px;
+	}
+
+	.wcs-configurator--compact-dropdown .wcs-configurator__header {
+		display: grid;
+	}
+
+	.wcs-configurator--compact-dropdown .wcs-configurator__price {
+		justify-self: start;
+		min-width: 0;
+	}
+
+	.wcs-configurator--compact-dropdown .wcs-size-side-row,
+	.wcs-configurator--compact-dropdown .wcs-step-option-group,
+	.wcs-configurator--compact-dropdown .wcs-position-select,
+	.wcs-configurator--compact-dropdown .wcs-customer-field {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 8px;
+		padding: 10px 0;
+	}
+
+	.wcs-configurator--compact-dropdown .wcs-size-control,
+	.wcs-configurator--compact-dropdown .wcs-option-select,
+	.wcs-configurator--compact-dropdown .wcs-position-select .wcs-option-select,
+	.wcs-configurator--compact-dropdown .wcs-custom-select,
+	.wcs-configurator--compact-dropdown .wcs-customer-field > input.wcs-customer-field-input,
+	.wcs-configurator--compact-dropdown .wcs-customer-field > select.wcs-customer-field-input,
+	.wcs-configurator--compact-dropdown .wcs-customer-field__error {
+		grid-column: 1;
+	}
+
+	.wcs-configurator--compact-dropdown .wcs-step-option-group:has(.wcs-option-select--hidden-parent) .wcs-customer-field-target {
+		grid-column: 1;
+		grid-row: auto;
+	}
+
+	.wcs-configurator--compact-dropdown .wcs-step-option-group:has(.wcs-option-select--hidden-parent) .wcs-customer-field-target > .wcs-customer-field:first-child,
+	.wcs-configurator--compact-dropdown .wcs-step-option-group:has(.wcs-option-select--hidden-parent) .wcs-customer-field[data-wcs-nested-parent],
+	.wcs-configurator--compact-dropdown .wcs-step-option-group:has(.wcs-option-select--hidden-parent) .wcs-customer-nested-box > .wcs-customer-field {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.wcs-configurator--compact-dropdown .wcs-step-option-group:has(.wcs-option-select--hidden-parent) .wcs-customer-field-target > .wcs-customer-field:first-child > .wcs-custom-select,
+	.wcs-configurator--compact-dropdown .wcs-step-option-group:has(.wcs-option-select--hidden-parent) .wcs-customer-field-target > .wcs-customer-field:first-child > input.wcs-customer-field-input,
+	.wcs-configurator--compact-dropdown .wcs-step-option-group:has(.wcs-option-select--hidden-parent) .wcs-customer-field-target > .wcs-customer-field:first-child > select.wcs-customer-field-input {
+		grid-column: 1;
+	}
 }
