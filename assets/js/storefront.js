@@ -87,7 +87,7 @@
 		var $prices = $wrap.find('.wcs-configurator__price, .wcs-configurator__footer-price');
 		var previous = parseFloat($wrap.data('current-total'));
 		var start = isNaN(previous) ? total : previous;
-		var duration = 900;
+		var duration = 1200;
 		var started = null;
 		var frame = $wrap.data('priceFrame');
 
@@ -100,6 +100,7 @@
 			return;
 		}
 
+		$prices.addClass('is-counting');
 		function tick(timestamp) {
 			if (started === null) {
 				started = timestamp;
@@ -112,6 +113,7 @@
 				$wrap.data('priceFrame', window.requestAnimationFrame(tick));
 			} else {
 				$prices.text(money(total));
+				$prices.removeClass('is-counting');
 				$wrap.removeData('priceFrame');
 			}
 		}
@@ -136,6 +138,31 @@
 		$error.text(message).prop('hidden', false);
 		window.clearTimeout($input.data('wcsRangeTimer'));
 		$input.data('wcsRangeTimer', window.setTimeout(function () {
+			$error.prop('hidden', true);
+		}, 3200));
+	}
+
+	function hideFieldPopup($field) {
+		$field.find('> .wcs-range-popup, > .wcs-size-control > .wcs-range-popup, > .wcs-custom-select > .wcs-range-popup').prop('hidden', true);
+	}
+
+	function showFieldPopup($field, message) {
+		var $anchor = $field.children('.wcs-size-control, .wcs-custom-select').first();
+		var $error;
+
+		if (!$anchor.length) {
+			$anchor = $field;
+		}
+
+		$error = $anchor.children('.wcs-range-popup').first();
+		if (!$error.length) {
+			$error = $('<span class="wcs-range-popup" role="alert"></span>');
+			$anchor.append($error);
+		}
+
+		$error.text(message).prop('hidden', false);
+		window.clearTimeout($field.data('wcsPopupTimer'));
+		$field.data('wcsPopupTimer', window.setTimeout(function () {
 			$error.prop('hidden', true);
 		}, 3200));
 	}
@@ -380,18 +407,47 @@
 			var placeholder = field.placeholder ? ' placeholder="' + escapeHtml(field.placeholder) + '"' : '';
 			var required = !!field.required;
 			var requiredAttr = required ? ' aria-required="true" data-required="1"' : '';
+			var behaviorAttr = '';
 			var requiredClass = required ? ' is-required is-empty' : '';
 			if (!field.key || !label) {
 				return;
 			}
-			html += '<div class="wcs-customer-field' + (nested ? ' wcs-customer-field--nested' : '') + (field.type === 'text' ? ' wcs-customer-field--text' : ' wcs-customer-field--choices') + requiredClass + '" data-required-label="' + escapeHtml(label) + '">';
+			if (field.read_only) {
+				behaviorAttr += ' readonly';
+			}
+			if (field.disabled) {
+				behaviorAttr += ' disabled';
+			}
+			html += '<div class="wcs-customer-field' + (nested ? ' wcs-customer-field--nested' : '') + (field.type === 'text' ? ' wcs-customer-field--text' : field.type === 'number' ? ' wcs-customer-field--number' : ' wcs-customer-field--choices') + requiredClass + '" data-required-label="' + escapeHtml(label) + '">';
 			if (!(skipFirstLabel && index === 0)) {
 				html += '<label class="wcs-customer-field__label" for="wcs-field-' + escapeHtml(key) + '">' + escapeHtml(label) + '</label>';
 			}
 			if (field.type === 'text') {
-				html += '<input id="wcs-field-' + escapeHtml(key) + '" type="text" class="wcs-customer-field-input" data-key="' + escapeHtml(key) + '" data-price="' + escapeHtml(field.price_enabled ? (parseFloat(field.price) || 0) : 0) + '"' + placeholder + requiredAttr + '>';
+				html += '<input id="wcs-field-' + escapeHtml(key) + '" type="text" class="wcs-customer-field-input" data-key="' + escapeHtml(key) + '" data-price="' + escapeHtml(field.price_enabled ? (parseFloat(field.price) || 0) : 0) + '"' + placeholder + requiredAttr + behaviorAttr + '>';
+			} else if (field.type === 'number') {
+				var defaultNumberValue = field.min !== undefined && field.min !== '' ? field.min : '0';
+				var buttonAttr = field.disabled ? ' disabled aria-disabled="true"' : '';
+				html += '<span class="wcs-size-control wcs-customer-number-control' + (field.read_only ? ' is-readonly' : '') + (field.disabled ? ' is-disabled' : '') + '">';
+				if (!field.read_only) {
+					html += '<button type="button" class="wcs-size-step wcs-size-step--minus" data-step="-1" aria-label="' + escapeHtml('Decrease value') + '"' + buttonAttr + '>-</button>';
+				}
+				html += '<input id="wcs-field-' + escapeHtml(key) + '" type="number" class="wcs-customer-field-input wcs-customer-number-input" data-key="' + escapeHtml(key) + '" data-label="' + escapeHtml(label) + '" data-price="' + escapeHtml(field.price_enabled ? (parseFloat(field.price) || 0) : 0) + '"';
+				if (field.min !== undefined && field.min !== '') {
+					html += ' min="' + escapeHtml(field.min) + '"';
+				}
+				if (field.max !== undefined && field.max !== '') {
+					html += ' max="' + escapeHtml(field.max) + '"';
+				}
+				if (field.step !== undefined && field.step !== '') {
+					html += ' step="' + escapeHtml(field.step) + '"';
+				}
+				html += ' value="' + escapeHtml(defaultNumberValue) + '"' + placeholder + requiredAttr + behaviorAttr + '>';
+				if (!field.read_only) {
+					html += '<button type="button" class="wcs-size-step wcs-size-step--plus" data-step="1" aria-label="' + escapeHtml('Increase value') + '"' + buttonAttr + '>+</button>';
+				}
+				html += '</span>';
 			} else {
-				html += '<select id="wcs-field-' + escapeHtml(key) + '" class="wcs-customer-field-input wcs-customer-field-select" data-key="' + escapeHtml(key) + '"' + requiredAttr + '>';
+				html += '<select id="wcs-field-' + escapeHtml(key) + '" class="wcs-customer-field-input wcs-customer-field-select" data-key="' + escapeHtml(key) + '"' + requiredAttr + (field.disabled ? ' disabled' : '') + '>';
 				html += '<option value="">' + escapeHtml(field.placeholder || 'Please select') + '</option>';
 				(field.options || []).forEach(function (option) {
 					var price = parseFloat(option.price) || 0;
@@ -513,17 +569,28 @@
 		syncImageChoices($select);
 	}
 
-	function validateCustomerFields($scope) {
+	function validateCustomerFields($scope, showErrors) {
+		var hasErrors = false;
 		($scope || $('.wcs-configurator')).find('.wcs-customer-field.is-required').each(function () {
 			var $field = $(this);
-			var $input = $field.children('.wcs-customer-field-input').first();
+			var $input = $field.children('.wcs-customer-field-input, .wcs-size-control').find('.wcs-customer-field-input').add($field.children('.wcs-customer-field-input')).first();
 			var empty = !$input.val();
+			var label = $field.data('required-label') || 'This field';
 			$field.toggleClass('is-empty', empty);
-			$field.find('> .wcs-customer-field__error').prop('hidden', !empty);
+			$field.find('> .wcs-customer-field__error').prop('hidden', true);
+			if (empty) {
+				hasErrors = true;
+				if (showErrors) {
+					showFieldPopup($field, label + ' darf nicht leer sein.');
+				}
+			} else {
+				hideFieldPopup($field);
+			}
 		});
 		($scope || $('.wcs-configurator')).find('.wcs-customer-nested-box').each(function () {
 			$(this).toggleClass('has-required-empty', $(this).find('.wcs-customer-field.is-required.is-empty').length > 0);
 		});
+		return !hasErrors;
 	}
 
 	function buildCustomSelect($selects) {
@@ -641,7 +708,8 @@
 		});
 
 		$(document).on('input change', '.wcs-configurator input, .wcs-configurator select', function (e) {
-			if ($(this).hasClass('wcs-dimension-input')) {
+			hideFieldPopup($(this).closest('.wcs-customer-field'));
+			if ($(this).hasClass('wcs-dimension-input') || $(this).hasClass('wcs-customer-number-input')) {
 				var $dimension = $(this);
 				var $dimensionWrap = $dimension.closest('.wcs-configurator');
 				window.clearTimeout($dimension.data('wcsClampTimer'));
@@ -667,7 +735,7 @@
 			}
 			syncCustomSelect($(this));
 			syncImageChoices($(this));
-			validateCustomerFields($(this).closest('.wcs-configurator'));
+			validateCustomerFields($(this).closest('.wcs-configurator'), false);
 			var engine = $(this).closest('.wcs-configurator').data('wcsRuleEngine');
 			if (engine) {
 				engine.evaluate($(this).data('key') || $(this).data('group'));
@@ -675,21 +743,35 @@
 			collect($(this).closest('.wcs-configurator'));
 		});
 
+		$(document).on('click', '.wcs-add-to-cart', function (e) {
+			var $wrap = $(this).closest('.wcs-configurator');
+			if (!validateCustomerFields($wrap, true)) {
+				e.preventDefault();
+				scrollToFirstIssue($wrap);
+			}
+		});
+
 		$(document).on('click', '.wcs-size-step', function (e) {
 			e.preventDefault();
 			var $button = $(this);
-			var $input = $button.siblings('.wcs-dimension-input').first();
-			var step = parseFloat($button.data('step')) || 0;
+			var $input = $button.siblings('.wcs-dimension-input, .wcs-customer-number-input').first();
+			var direction = parseFloat($button.data('step')) || 0;
+			var inputStep = parseFloat($input.attr('step'));
+			var step = isNaN(inputStep) || inputStep <= 0 ? 1 : inputStep;
+			var precision = Math.max(
+				String(step).split('.')[1] ? String(step).split('.')[1].length : 0,
+				String($input.val()).split('.')[1] ? String($input.val()).split('.')[1].length : 0
+			);
 			var min = parseFloat($input.attr('min'));
 			var max = parseFloat($input.attr('max'));
 			var value = parseFloat($input.val());
 
-			if (!$input.length || !step) {
+			if (!$input.length || !direction || $button.prop('disabled') || $input.prop('disabled') || $input.prop('readonly')) {
 				return;
 			}
 
 			value = isNaN(value) ? (isNaN(min) ? 0 : min) : value;
-			value += step;
+			value += direction * step;
 			if (!isNaN(min)) {
 				value = Math.max(min, value);
 			}
@@ -697,6 +779,7 @@
 				value = Math.min(max, value);
 			}
 
+			value = Number(value.toFixed(Math.min(precision, 6)));
 			$input.val(value).trigger('change');
 		});
 

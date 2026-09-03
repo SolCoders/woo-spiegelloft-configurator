@@ -3,7 +3,7 @@
  * Plugin Name:       Woo Spiegelloft Configurator
  * Plugin URI:        https://github.com/SolCoders/woo-spiegelloft-configurator
  * Description:       Dynamic mirror configurator for WooCommerce — templates, extras catalog, and REST API.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            SolCoders
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WCS_VERSION', '1.0.0' );
+define( 'WCS_VERSION', '1.0.1' );
 define( 'WCS_PLUGIN_FILE', __FILE__ );
 define( 'WCS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WCS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

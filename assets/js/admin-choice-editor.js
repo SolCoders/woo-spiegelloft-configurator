@@ -234,15 +234,65 @@
 		var $box = $row.children('.wcs-customer-field-box');
 		var $grid = $box.children('.wcs-customer-field-grid');
 		var $options = $box.children('.wcs-customer-field-options');
-		var isDropdown = $grid.find('.wcs-customer-field-type').first().val() !== 'text';
-		$row.toggleClass('is-dropdown', isDropdown);
+		var fieldType = String($grid.find('.wcs-customer-field-type').first().val() || 'dropdown').toLowerCase();
+		if (['dropdown', 'text', 'number'].indexOf(fieldType) === -1) {
+			fieldType = 'dropdown';
+		}
+		var isDropdown = fieldType === 'dropdown';
+		var isText = fieldType === 'text';
+		var isNumber = fieldType === 'number';
+		$row.removeClass('is-dropdown is-text-field is-number-field')
+			.addClass(isDropdown ? 'is-dropdown' : isText ? 'is-text-field' : 'is-number-field')
+			.attr('data-field-type', fieldType);
 		$row.addClass('has-prices');
-		$options.toggle(isDropdown);
-		$grid.find('.wcs-customer-field-required').closest('.wcs-customer-field-meta').show();
+		$options.prop('hidden', false).css('display', isDropdown ? 'grid' : 'none');
+		$grid.find('.wcs-field-settings-validation').prop('hidden', !isNumber);
+		$grid.find('.wcs-customer-field-readonly').closest('.wcs-field-settings-toggle').prop('hidden', isDropdown);
 		$options.children('.wcs-customer-field-option').children('.wcs-customer-field-option-price').toggle(isDropdown);
 		$options.children('.wcs-customer-field-option').children('.wcs-customer-option-position').each(function () {
 			$(this).toggleClass('is-enabled', $(this).children('.wcs-customer-option-position-switch').find('.wcs-customer-option-position-toggle').is(':checked'));
 		});
+		updateFieldSettingsBadge($row);
+	}
+
+	function updateFieldSettingsBadge($row) {
+		var $grid = $row.children('.wcs-customer-field-box').children('.wcs-customer-field-grid');
+		var fieldType = String($grid.find('.wcs-customer-field-type').first().val() || 'dropdown').toLowerCase();
+		var count = 0;
+
+		if ($grid.find('.wcs-customer-field-required').first().is(':checked')) count++;
+		if (fieldType !== 'dropdown' && $grid.find('.wcs-customer-field-readonly').first().is(':checked')) count++;
+		if ($grid.find('.wcs-customer-field-disabled').first().is(':checked')) count++;
+		if (fieldType === 'number') {
+			if ($grid.find('.wcs-customer-field-min').first().val() !== '') count++;
+			if ($grid.find('.wcs-customer-field-max').first().val() !== '') count++;
+			if ($grid.find('.wcs-customer-field-step').first().val() !== '') count++;
+		}
+
+		$grid.find('.wcs-field-settings-badge').first().text(count).prop('hidden', count < 1);
+	}
+
+	function closeFieldSettings($except) {
+		$('.wcs-field-settings-popover').each(function () {
+			var $popover = $(this);
+			if ($except && $except.length && $popover.is($except)) {
+				return;
+			}
+			$popover.prop('hidden', true);
+			$popover.closest('.wcs-customer-field-grid').find('.wcs-field-settings-button').attr('aria-expanded', 'false');
+		});
+		if (!$except || !$except.length) {
+			$('.wcs-customer-field-list').filter(function () {
+				return $(this).data('customer-sortable');
+			}).sortable('enable');
+		}
+	}
+
+	function resetFieldSettings($row) {
+		var $grid = $row.children('.wcs-customer-field-box').children('.wcs-customer-field-grid');
+		$grid.find('.wcs-customer-field-required, .wcs-customer-field-readonly, .wcs-customer-field-disabled').prop('checked', false);
+		$grid.find('.wcs-customer-field-min, .wcs-customer-field-max, .wcs-customer-field-step').val('');
+		refreshCustomerFieldRow($row);
 	}
 
 	function reindexCustomerFields() {
@@ -287,7 +337,12 @@
 			else if ($input.hasClass('wcs-customer-field-type')) suffix = '[type]';
 			else if ($input.hasClass('wcs-customer-field-key')) suffix = '[key]';
 			else if ($input.hasClass('wcs-customer-field-placeholder')) suffix = '[placeholder]';
+			else if ($input.hasClass('wcs-customer-field-min')) suffix = '[min]';
+			else if ($input.hasClass('wcs-customer-field-max')) suffix = '[max]';
+			else if ($input.hasClass('wcs-customer-field-step')) suffix = '[step]';
 			else if ($input.hasClass('wcs-customer-field-required')) suffix = '[required]';
+			else if ($input.hasClass('wcs-customer-field-readonly')) suffix = '[read_only]';
+			else if ($input.hasClass('wcs-customer-field-disabled')) suffix = '[disabled]';
 		} else {
 			if ($input.hasClass('wcs-customer-field-option-label')) suffix = '[label]';
 			else if ($input.hasClass('wcs-image-url')) suffix = '[image]';
@@ -304,7 +359,7 @@
 			? $list.children('.wcs-customer-field-row').first()
 			: $('.wcs-customer-field-row').first();
 		var $template = $source.clone();
-		$template.find('input[type="text"]').val('');
+		$template.find('input[type="text"], input[type="number"]').val('');
 		$template.find('input[type="checkbox"]').prop('checked', false);
 		$template.children('.wcs-customer-field-box').children('.wcs-customer-field-options').children('.wcs-customer-field-option').not(':first').remove();
 		$template.find('.wcs-customer-field-option').removeClass('has-nested-fields');
@@ -383,7 +438,12 @@
 			label: $field.find('> .wcs-customer-field-box > .wcs-customer-field-grid .wcs-customer-field-label').first().val() || '',
 			type: $field.find('> .wcs-customer-field-box > .wcs-customer-field-grid .wcs-customer-field-type').first().val() || 'dropdown',
 			placeholder: $field.find('> .wcs-customer-field-box > .wcs-customer-field-grid .wcs-customer-field-placeholder').first().val() || '',
+			min: $field.find('> .wcs-customer-field-box > .wcs-customer-field-grid .wcs-customer-field-min').first().val() || '',
+			max: $field.find('> .wcs-customer-field-box > .wcs-customer-field-grid .wcs-customer-field-max').first().val() || '',
+			step: $field.find('> .wcs-customer-field-box > .wcs-customer-field-grid .wcs-customer-field-step').first().val() || '',
 			required: $field.find('> .wcs-customer-field-box > .wcs-customer-field-grid .wcs-customer-field-required').first().is(':checked'),
+			read_only: $field.find('> .wcs-customer-field-box > .wcs-customer-field-grid .wcs-customer-field-readonly').first().is(':checked'),
+			disabled: $field.find('> .wcs-customer-field-box > .wcs-customer-field-grid .wcs-customer-field-disabled').first().is(':checked'),
 			options: []
 		};
 
@@ -419,9 +479,14 @@
 		var $grid = $box.children('.wcs-customer-field-grid');
 		var $options = $box.children('.wcs-customer-field-options');
 		$grid.find('.wcs-customer-field-label').first().val(data.label || '');
-		$grid.find('.wcs-customer-field-type').first().val(data.type === 'text' ? 'text' : 'dropdown');
+		$grid.find('.wcs-customer-field-type').first().val(['dropdown', 'text', 'number'].indexOf(data.type) !== -1 ? data.type : 'dropdown');
 		$grid.find('.wcs-customer-field-placeholder').first().val(data.placeholder || '');
+		$grid.find('.wcs-customer-field-min').first().val(data.min || '');
+		$grid.find('.wcs-customer-field-max').first().val(data.max || '');
+		$grid.find('.wcs-customer-field-step').first().val(data.step || '');
 		$grid.find('.wcs-customer-field-required').first().prop('checked', !!data.required);
+		$grid.find('.wcs-customer-field-readonly').first().prop('checked', !!data.read_only);
+		$grid.find('.wcs-customer-field-disabled').first().prop('checked', !!data.disabled);
 
 		$options.children('.wcs-customer-field-option').not(':first').remove();
 		var options = Array.isArray(data.options) && data.options.length ? data.options : [{ label: '', image: '', price: '', nested_enabled: false, customer_fields: [] }];
@@ -687,6 +752,7 @@
 				connectWith: '.wcs-customer-field-list',
 				items: '> .wcs-customer-field-row',
 				handle: '.wcs-customer-drag-handle, > .wcs-customer-field-box > .wcs-customer-field-grid',
+				cancel: 'input, textarea, select, button, .wcs-field-settings-popover, .wcs-field-settings-popover *',
 				placeholder: 'wcs-customer-field-sort-placeholder',
 				forcePlaceholderSize: true,
 				tolerance: 'pointer',
@@ -723,7 +789,7 @@
 		function ensureNestedDropdownOptionList($option) {
 			var $nestedList = $option.children('.wcs-customer-option-position-fields').children('.wcs-customer-field-list');
 			var $field = $nestedList.children('.wcs-customer-field-row').filter(function () {
-				return $(this).find('> .wcs-customer-field-box > .wcs-customer-field-grid .wcs-customer-field-type').first().val() !== 'text';
+				return $(this).find('> .wcs-customer-field-box > .wcs-customer-field-grid .wcs-customer-field-type').first().val() === 'dropdown';
 			}).first();
 
 			$option.addClass('has-nested-fields').removeClass('is-nested-collapsed');
@@ -841,6 +907,37 @@
 
 		$(document).on('change', '.wcs-customer-field-type', function () {
 			refreshCustomerFieldRow($(this).closest('.wcs-customer-field-row'));
+		});
+
+		$(document).on('click', '.wcs-field-settings-button', function (e) {
+			e.preventDefault();
+			e.stopPropagation();
+			var $button = $(this);
+			var $popover = $button.siblings('.wcs-field-settings-popover');
+			var open = $popover.prop('hidden');
+
+			closeFieldSettings($popover);
+			$popover.prop('hidden', !open);
+			$button.attr('aria-expanded', open ? 'true' : 'false');
+			$button.closest('.wcs-customer-field-list').sortable(open ? 'disable' : 'enable');
+			refreshCustomerFieldRow($button.closest('.wcs-customer-field-row'));
+		});
+
+		$(document).on('click', '.wcs-field-settings-popover', function (e) {
+			e.stopPropagation();
+		});
+
+		$(document).on('click', function () {
+			closeFieldSettings();
+		});
+
+		$(document).on('click', '.wcs-field-settings-reset', function (e) {
+			e.preventDefault();
+			resetFieldSettings($(this).closest('.wcs-customer-field-row'));
+		});
+
+		$(document).on('input change', '.wcs-customer-field-required, .wcs-customer-field-readonly, .wcs-customer-field-disabled, .wcs-customer-field-min, .wcs-customer-field-max, .wcs-customer-field-step', function () {
+			updateFieldSettingsBadge($(this).closest('.wcs-customer-field-row'));
 		});
 
 		$(document).on('click', '.wcs-customer-option-add', function (e) {

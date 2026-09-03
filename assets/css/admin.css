@@ -792,7 +792,7 @@
 
 .wcs-customer-field-grid {
 	display: grid;
-	grid-template-columns: 2fr 0.9fr 1.7fr 0.7fr;
+	grid-template-columns: minmax(180px, 1fr) minmax(150px, 0.75fr) minmax(220px, 1.2fr) 56px;
 	gap: 18px;
 	align-items: center;
 	min-width: 0;
@@ -811,6 +811,7 @@
 }
 
 .wcs-customer-field-grid input[type="text"],
+.wcs-customer-field-grid input[type="number"],
 .wcs-customer-field-grid .wcs-customer-field-price,
 .wcs-customer-field-grid select,
 .wcs-customer-field-option input[type="text"] {
@@ -829,6 +830,7 @@
 }
 
 .wcs-customer-field-grid input[type="text"]:focus,
+.wcs-customer-field-grid input[type="number"]:focus,
 .wcs-customer-field-grid select:focus,
 .wcs-customer-field-option input[type="text"]:focus {
 	border-color: var(--wcs-builder-primary);
@@ -839,6 +841,223 @@
 	display: grid;
 	gap: 4px;
 	min-width: 0;
+}
+
+.wcs-customer-field-row:not(.is-number-field) .wcs-customer-number-range {
+	display: none;
+}
+
+.wcs-customer-field-settings-cell {
+	position: relative;
+	justify-self: end;
+}
+
+.wcs-field-settings-button {
+	position: relative;
+	display: inline-flex !important;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	min-width: 40px;
+	height: 40px;
+	min-height: 40px;
+	padding: 0 !important;
+	border: 1px solid #d8e0ee !important;
+	border-radius: 10px !important;
+	background: #ffffff !important;
+	color: #526174 !important;
+	box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+
+.wcs-field-settings-button:hover,
+.wcs-field-settings-button[aria-expanded="true"] {
+	border-color: #b7c7ff !important;
+	background: #f7f9ff !important;
+	color: #3156e7 !important;
+}
+
+.wcs-field-settings-button .dashicons {
+	display: block;
+	width: 18px;
+	height: 18px;
+	font-size: 18px;
+	line-height: 18px !important;
+}
+
+.wcs-field-settings-badge {
+	position: absolute;
+	top: -10px;
+	right: -10px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 !important;
+	border: 2px solid #ffffff;
+	border-radius: 999px;
+	background: #4f6ef7;
+	color: #ffffff;
+	font-size: 9px;
+	font-weight: 800;
+	line-height: 1;
+}
+
+.wcs-field-settings-badge[hidden] {
+	display: none !important;
+}
+
+.wcs-field-settings-popover {
+	position: absolute;
+	top: calc(100% + 12px);
+	right: 0;
+	z-index: 100;
+	width: min(360px, calc(100vw - 56px));
+	padding: 16px;
+	border: 1px solid #dbe3ef;
+	border-radius: 16px;
+	background: #ffffff;
+	box-shadow: 0 18px 45px rgba(15, 23, 42, 0.16);
+	text-align: left;
+	cursor: default;
+}
+
+.wcs-field-settings-popover[hidden] {
+	display: none !important;
+}
+
+.wcs-field-settings-popover::before {
+	content: "";
+	position: absolute;
+	top: -7px;
+	right: 16px;
+	width: 12px;
+	height: 12px;
+	border-top: 1px solid #dbe3ef;
+	border-left: 1px solid #dbe3ef;
+	background: #ffffff;
+	transform: rotate(45deg);
+}
+
+.wcs-field-settings-popover__head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 14px;
+	padding-bottom: 14px;
+	border-bottom: 1px solid #edf1f7;
+}
+
+.wcs-field-settings-popover__head strong,
+.wcs-field-settings-section h4 {
+	display: block;
+	margin: 0;
+	color: #111827;
+	font-size: 14px;
+	font-weight: 800;
+	line-height: 1.25;
+}
+
+.wcs-field-settings-popover__head span {
+	display: block;
+	margin-top: 3px;
+	color: #64748b;
+	font-size: 12px;
+	line-height: 1.35;
+}
+
+.wcs-field-settings-reset {
+	display: inline-flex !important;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	min-width: 32px;
+	height: 32px;
+	min-height: 32px;
+	padding: 0 !important;
+	border: 1px solid #d8e0ee !important;
+	border-radius: 9px !important;
+	background: #f8fafc !important;
+	color: #526174 !important;
+}
+
+.wcs-field-settings-reset:hover {
+	border-color: #b7c7ff !important;
+	color: #3156e7 !important;
+}
+
+.wcs-field-settings-section {
+	display: grid;
+	gap: 10px;
+	padding-top: 14px;
+}
+
+.wcs-field-settings-section + .wcs-field-settings-section {
+	margin-top: 14px;
+	border-top: 1px solid #edf1f7;
+}
+
+.wcs-field-settings-toggle,
+.wcs-field-settings-value {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 16px;
+	min-height: 36px;
+	margin: 0;
+	color: #334155;
+	font-size: 13px;
+	font-weight: 650;
+}
+
+.wcs-field-settings-toggle input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.wcs-field-settings-toggle i {
+	position: relative;
+	justify-self: end;
+	flex: 0 0 auto;
+	width: 38px;
+	height: 22px;
+	border-radius: 999px;
+	background: #d7deea;
+	transition: background 160ms ease;
+}
+
+.wcs-field-settings-toggle i::after {
+	content: "";
+	position: absolute;
+	top: 3px;
+	left: 3px;
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+	background: #ffffff;
+	box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18);
+	transition: transform 160ms ease;
+}
+
+.wcs-field-settings-toggle input:checked + i {
+	background: #4f6ef7;
+}
+
+.wcs-field-settings-toggle input:checked + i::after {
+	transform: translateX(16px);
+}
+
+.wcs-field-settings-value input {
+	justify-self: end;
+	width: 124px !important;
+	height: 36px !important;
+	min-height: 36px !important;
+	padding: 0 10px !important;
+	border: 1px solid #d8e0ee !important;
+	border-radius: 9px !important;
+	background: #fbfdff !important;
+	font-size: 13px !important;
 }
 
 .wcs-customer-field-grid label {
@@ -853,6 +1072,50 @@
 .wcs-customer-field-grid label input[type="checkbox"] {
 	flex: 0 0 auto;
 	margin: 0;
+}
+
+.wcs-customer-field-grid .wcs-field-settings-toggle {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 16px;
+	min-height: 36px;
+	width: 100%;
+	white-space: normal;
+}
+
+.wcs-customer-field-grid .wcs-field-settings-toggle input[type="checkbox"] {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	min-width: 1px;
+	min-height: 1px;
+	margin: 0;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.wcs-customer-field-grid .wcs-field-settings-toggle i {
+	display: block;
+	justify-self: end;
+	width: 38px;
+	height: 22px;
+	border-radius: 999px;
+	background: #d7deea;
+}
+
+.wcs-customer-field-grid .wcs-field-settings-value {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 16px;
+	min-height: 36px;
+	width: 100%;
+	white-space: normal;
+}
+
+.wcs-customer-field-grid .wcs-field-settings-value input {
+	justify-self: end;
 }
 
 .wcs-customer-field-add,
@@ -1704,7 +1967,7 @@
 }
 
 .wcs-choice-field-builder .wcs-customer-field-grid {
-	grid-template-columns: 2fr 0.9fr 1.7fr 0.75fr;
+	grid-template-columns: minmax(160px, 1fr) minmax(135px, 0.72fr) minmax(220px, 1.25fr) 56px;
 	gap: 18px;
 }
 
@@ -1717,6 +1980,7 @@
 }
 
 .wcs-choice-field-builder .wcs-customer-field-grid input[type="text"],
+.wcs-choice-field-builder .wcs-customer-field-grid input[type="number"],
 .wcs-choice-field-builder .wcs-customer-field-grid .wcs-customer-field-price,
 .wcs-choice-field-builder .wcs-customer-field-grid select,
 .wcs-choice-field-builder .wcs-customer-field-option input[type="text"] {
@@ -1727,6 +1991,10 @@
 	border-radius: 10px;
 	font-size: clamp(13px, 1.15vw, 16px);
 	line-height: 1.2;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-row:not(.is-number-field) .wcs-customer-number-range {
+	display: none;
 }
 
 .wcs-choice-field-builder .wcs-customer-field-options {
@@ -2174,8 +2442,55 @@
 
 .wcs-choice-field-builder .wcs-customer-field-grid,
 .wcs-choice-field-builder .wcs-customer-option-position-fields .wcs-customer-field-grid {
-	grid-template-columns: minmax(150px, 1fr) minmax(135px, 0.7fr) minmax(150px, 0.9fr) 72px;
+	grid-template-columns: minmax(150px, 1fr) minmax(135px, 0.7fr) minmax(190px, 0.95fr) 52px;
 	gap: 12px;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-row.is-number-field > .wcs-customer-field-box > .wcs-customer-field-grid {
+	grid-template-columns: minmax(150px, 1fr) minmax(135px, 0.7fr) minmax(190px, 0.95fr) 52px;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-row:has(> .wcs-customer-field-box > .wcs-customer-field-grid > .field-group > .wcs-customer-field-type option[value="number"]:checked) > .wcs-customer-field-box > .wcs-customer-field-grid {
+	grid-template-columns: minmax(150px, 1fr) minmax(135px, 0.7fr) minmax(190px, 0.95fr) 52px;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-row:has(> .wcs-customer-field-box > .wcs-customer-field-grid > .field-group > .wcs-customer-field-type option[value="number"]:checked) > .wcs-customer-field-box > .wcs-customer-field-options,
+.wcs-choice-field-builder .wcs-customer-field-row:has(> .wcs-customer-field-box > .wcs-customer-field-grid > .field-group > .wcs-customer-field-type option[value="text"]:checked) > .wcs-customer-field-box > .wcs-customer-field-options {
+	display: none !important;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-row:has(> .wcs-customer-field-box > .wcs-customer-field-grid > .field-group > .wcs-customer-field-type option[value="number"]:checked) > .wcs-customer-field-box > .wcs-customer-field-grid > .wcs-customer-number-range {
+	display: grid !important;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-row.is-dropdown > .wcs-customer-field-box > .wcs-customer-field-options {
+	display: grid !important;
+	visibility: visible !important;
+	height: auto !important;
+	opacity: 1 !important;
+	overflow: visible !important;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-row[data-field-type="dropdown"] > .wcs-customer-field-box > .wcs-customer-field-options,
+.wcs-choice-field-builder .wcs-customer-field-row:has(> .wcs-customer-field-box > .wcs-customer-field-grid > .field-group > .wcs-customer-field-type option[value="dropdown"]:checked) > .wcs-customer-field-box > .wcs-customer-field-options {
+	display: grid !important;
+	visibility: visible !important;
+	height: auto !important;
+	opacity: 1 !important;
+	overflow: visible !important;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-row.is-text-field > .wcs-customer-field-box > .wcs-customer-field-options,
+.wcs-choice-field-builder .wcs-customer-field-row.is-number-field > .wcs-customer-field-box > .wcs-customer-field-options {
+	display: none !important;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-row.is-number-field > .wcs-customer-field-box > .wcs-customer-field-grid > .wcs-customer-number-range {
+	display: grid !important;
+}
+
+.wcs-choice-field-builder .wcs-customer-number-range[hidden] {
+	display: none !important;
 }
 
 .wcs-choice-field-builder .wcs-customer-option-position-fields .wcs-customer-field-grid {
@@ -2192,6 +2507,7 @@
 }
 
 .wcs-choice-field-builder .wcs-customer-field-grid input[type="text"],
+.wcs-choice-field-builder .wcs-customer-field-grid input[type="number"],
 .wcs-choice-field-builder .wcs-customer-field-grid .wcs-customer-field-price,
 .wcs-choice-field-builder .wcs-customer-field-grid select,
 .wcs-choice-field-builder .wcs-customer-field-option input[type="text"] {
@@ -2200,6 +2516,39 @@
 	padding: 0 12px;
 	border-radius: 8px;
 	font-size: clamp(12px, 1vw, 14px);
+}
+
+.wcs-choice-field-builder .wcs-field-settings-popover .wcs-field-settings-toggle,
+.wcs-choice-field-builder .wcs-field-settings-popover .wcs-field-settings-value {
+	display: grid !important;
+	grid-template-columns: minmax(0, 1fr) auto !important;
+	align-items: center !important;
+	gap: 16px !important;
+	width: 100% !important;
+	min-height: 40px !important;
+	margin: 0 !important;
+	white-space: normal !important;
+}
+
+.wcs-choice-field-builder .wcs-field-settings-popover .wcs-field-settings-toggle > span,
+.wcs-choice-field-builder .wcs-field-settings-popover .wcs-field-settings-value > span {
+	min-width: 0 !important;
+	margin: 0 !important;
+	color: #334155 !important;
+	font-size: 13px !important;
+	font-weight: 650 !important;
+	line-height: 1.25 !important;
+}
+
+.wcs-choice-field-builder .wcs-field-settings-popover .wcs-field-settings-toggle > i,
+.wcs-choice-field-builder .wcs-field-settings-popover .wcs-field-settings-value > input {
+	justify-self: end !important;
+}
+
+.wcs-choice-field-builder .wcs-field-settings-popover .wcs-field-settings-value > input {
+	width: 124px !important;
+	height: 36px !important;
+	min-height: 36px !important;
 }
 
 .wcs-choice-field-builder .wcs-customer-field-option-head,

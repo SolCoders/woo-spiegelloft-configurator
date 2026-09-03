@@ -281,7 +281,8 @@ class WCS_Choice_Meta {
 
 			$label = sanitize_text_field( (string) ( $field['label'] ?? '' ) );
 			$key   = sanitize_title( (string) ( $field['key'] ?? $label ) );
-			$type  = 'text' === (string) ( $field['type'] ?? 'dropdown' ) ? 'text' : 'dropdown';
+			$type_raw = sanitize_key( (string) ( $field['type'] ?? 'dropdown' ) );
+			$type     = in_array( $type_raw, array( 'dropdown', 'text', 'number' ), true ) ? $type_raw : 'dropdown';
 			if ( '' === $label && '' === $key ) {
 				continue;
 			}
@@ -291,6 +292,8 @@ class WCS_Choice_Meta {
 				'key'         => $key,
 				'type'        => $type,
 				'required'    => ! empty( $field['required'] ),
+				'read_only'   => ! empty( $field['read_only'] ),
+				'disabled'    => ! empty( $field['disabled'] ),
 				'placeholder' => sanitize_text_field( (string) ( $field['placeholder'] ?? '' ) ),
 				'price_enabled' => true,
 			);
@@ -302,6 +305,11 @@ class WCS_Choice_Meta {
 				}
 			} else {
 				$row['price'] = (float) wc_format_decimal( (string) ( $field['price'] ?? '0' ) );
+				if ( 'number' === $type ) {
+					$row['min'] = sanitize_text_field( (string) ( $field['min'] ?? '' ) );
+					$row['max'] = sanitize_text_field( (string) ( $field['max'] ?? '' ) );
+					$row['step'] = sanitize_text_field( (string) ( $field['step'] ?? '' ) );
+				}
 			}
 
 			$fields[] = $row;

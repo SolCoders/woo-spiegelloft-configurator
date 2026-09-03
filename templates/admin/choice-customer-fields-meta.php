@@ -23,13 +23,14 @@ if ( ! function_exists( 'wcs_render_customer_field_rows' ) ) {
 		}
 
 		foreach ( $field_rows as $field_index => $field ) :
-			$field_type    = 'text' === (string) ( $field['type'] ?? 'dropdown' ) ? 'text' : 'dropdown';
+			$field_type_raw = (string) ( $field['type'] ?? 'dropdown' );
+			$field_type     = in_array( $field_type_raw, array( 'dropdown', 'text', 'number' ), true ) ? $field_type_raw : 'dropdown';
 			$field_options = ! empty( $field['options'] ) && is_array( $field['options'] )
 				? (array) $field['options']
 				: array( array( 'label' => '', 'value' => '', 'price' => '', 'image' => '' ) );
 			$field_name    = $base_name . '[' . $field_index . ']';
 			?>
-			<div class="wcs-customer-field-row builder-field" data-field-index="<?php echo esc_attr( (string) $field_index ); ?>" data-depth="<?php echo esc_attr( (string) $depth ); ?>">
+			<div class="wcs-customer-field-row builder-field is-<?php echo esc_attr( $field_type ); ?>-field <?php echo 'dropdown' === $field_type ? 'is-dropdown' : ''; ?>" data-field-index="<?php echo esc_attr( (string) $field_index ); ?>" data-depth="<?php echo esc_attr( (string) $depth ); ?>" data-field-type="<?php echo esc_attr( $field_type ); ?>">
 				<div class="wcs-customer-field-box builder-field__body">
 					<div class="wcs-customer-field-grid top-config">
 						<div class="field-group">
@@ -40,19 +41,65 @@ if ( ! function_exists( 'wcs_render_customer_field_rows' ) ) {
 							<label><?php esc_html_e( 'Field Type', 'woo-spiegelloft-configurator' ); ?></label>
 							<select class="select wcs-customer-field-type" name="<?php echo esc_attr( $field_name ); ?>[type]">
 								<option value="dropdown" <?php selected( $field_type, 'dropdown' ); ?>><?php esc_html_e( 'Dropdown', 'woo-spiegelloft-configurator' ); ?></option>
-								<option value="text" <?php selected( $field_type, 'text' ); ?>><?php esc_html_e( 'Text / number input', 'woo-spiegelloft-configurator' ); ?></option>
+								<option value="text" <?php selected( $field_type, 'text' ); ?>><?php esc_html_e( 'Text input', 'woo-spiegelloft-configurator' ); ?></option>
+								<option value="number" <?php selected( $field_type, 'number' ); ?>><?php esc_html_e( 'Number input', 'woo-spiegelloft-configurator' ); ?></option>
 							</select>
 						</div>
 						<div class="field-group">
 							<label><?php esc_html_e( 'Display Label', 'woo-spiegelloft-configurator' ); ?></label>
 							<input type="text" class="input wcs-customer-field-placeholder" name="<?php echo esc_attr( $field_name ); ?>[placeholder]" value="<?php echo esc_attr( (string) ( $field['placeholder'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'Placeholder', 'woo-spiegelloft-configurator' ); ?>">
 						</div>
-						<div class="field-group wcs-customer-field-meta">
-							<label><?php esc_html_e( 'Required', 'woo-spiegelloft-configurator' ); ?></label>
-							<label class="wcs-customer-required-switch">
-								<input type="checkbox" class="wcs-customer-field-required" name="<?php echo esc_attr( $field_name ); ?>[required]" value="1" <?php checked( ! empty( $field['required'] ) ); ?>>
-								<span class="screen-reader-text"><?php esc_html_e( 'Required field', 'woo-spiegelloft-configurator' ); ?></span>
-							</label>
+						<div class="field-group wcs-customer-field-settings-cell">
+							<label><?php esc_html_e( 'Settings', 'woo-spiegelloft-configurator' ); ?></label>
+							<button type="button" class="button wcs-field-settings-button" aria-haspopup="dialog" aria-expanded="false">
+								<span class="dashicons dashicons-admin-generic" aria-hidden="true"></span>
+								<span class="wcs-field-settings-badge">0</span>
+								<span class="screen-reader-text"><?php esc_html_e( 'Open field settings', 'woo-spiegelloft-configurator' ); ?></span>
+							</button>
+							<div class="wcs-field-settings-popover" role="dialog" aria-label="<?php esc_attr_e( 'Field settings', 'woo-spiegelloft-configurator' ); ?>" hidden>
+								<div class="wcs-field-settings-popover__head">
+									<div>
+										<strong><?php esc_html_e( 'Field settings', 'woo-spiegelloft-configurator' ); ?></strong>
+										<span><?php esc_html_e( 'Configure validation and behavior', 'woo-spiegelloft-configurator' ); ?></span>
+									</div>
+									<button type="button" class="button wcs-field-settings-reset" aria-label="<?php esc_attr_e( 'Reset field settings', 'woo-spiegelloft-configurator' ); ?>">
+										<span class="dashicons dashicons-update-alt" aria-hidden="true"></span>
+									</button>
+								</div>
+								<div class="wcs-field-settings-section">
+									<h4><?php esc_html_e( 'Behavior', 'woo-spiegelloft-configurator' ); ?></h4>
+									<label class="wcs-field-settings-toggle">
+										<span><?php esc_html_e( 'Required', 'woo-spiegelloft-configurator' ); ?></span>
+										<input type="checkbox" class="wcs-customer-field-required" name="<?php echo esc_attr( $field_name ); ?>[required]" value="1" <?php checked( ! empty( $field['required'] ) ); ?>>
+										<i aria-hidden="true"></i>
+									</label>
+									<label class="wcs-field-settings-toggle wcs-field-settings-readonly" <?php echo 'dropdown' === $field_type ? 'hidden' : ''; ?>>
+										<span><?php esc_html_e( 'Read only', 'woo-spiegelloft-configurator' ); ?></span>
+										<input type="checkbox" class="wcs-customer-field-readonly" name="<?php echo esc_attr( $field_name ); ?>[read_only]" value="1" <?php checked( ! empty( $field['read_only'] ) ); ?>>
+										<i aria-hidden="true"></i>
+									</label>
+									<label class="wcs-field-settings-toggle">
+										<span><?php esc_html_e( 'Disabled', 'woo-spiegelloft-configurator' ); ?></span>
+										<input type="checkbox" class="wcs-customer-field-disabled" name="<?php echo esc_attr( $field_name ); ?>[disabled]" value="1" <?php checked( ! empty( $field['disabled'] ) ); ?>>
+										<i aria-hidden="true"></i>
+									</label>
+								</div>
+								<div class="wcs-field-settings-section wcs-field-settings-validation" <?php echo 'number' === $field_type ? '' : 'hidden'; ?>>
+									<h4><?php esc_html_e( 'Validation', 'woo-spiegelloft-configurator' ); ?></h4>
+									<label class="wcs-field-settings-value">
+										<span><?php esc_html_e( 'Minimum', 'woo-spiegelloft-configurator' ); ?></span>
+										<input type="number" class="input wcs-customer-field-min" name="<?php echo esc_attr( $field_name ); ?>[min]" value="<?php echo esc_attr( (string) ( $field['min'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'Min', 'woo-spiegelloft-configurator' ); ?>">
+									</label>
+									<label class="wcs-field-settings-value">
+										<span><?php esc_html_e( 'Maximum', 'woo-spiegelloft-configurator' ); ?></span>
+										<input type="number" class="input wcs-customer-field-max" name="<?php echo esc_attr( $field_name ); ?>[max]" value="<?php echo esc_attr( (string) ( $field['max'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'Max', 'woo-spiegelloft-configurator' ); ?>">
+									</label>
+									<label class="wcs-field-settings-value">
+										<span><?php esc_html_e( 'Step', 'woo-spiegelloft-configurator' ); ?></span>
+										<input type="number" class="input wcs-customer-field-step" name="<?php echo esc_attr( $field_name ); ?>[step]" value="<?php echo esc_attr( (string) ( $field['step'] ?? '' ) ); ?>" placeholder="1">
+									</label>
+								</div>
+							</div>
 						</div>
 				</div>
 				<div class="wcs-customer-field-options">

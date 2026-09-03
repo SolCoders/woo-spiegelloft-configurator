@@ -502,12 +502,15 @@ class WCS_Config_Builder {
 			return null;
 		}
 
-		$type = 'text' === (string) ( $field['type'] ?? 'dropdown' ) ? 'text' : 'dropdown';
+		$type_raw = (string) ( $field['type'] ?? 'dropdown' );
+		$type     = in_array( $type_raw, array( 'dropdown', 'text', 'number' ), true ) ? $type_raw : 'dropdown';
 		$row  = array(
 			'label'       => (string) ( $field['label'] ?? '' ),
 			'key'         => sanitize_title( (string) ( $field['key'] ?? $field['label'] ?? '' ) ),
 			'type'        => $type,
 			'required'    => ! empty( $field['required'] ),
+			'read_only'   => ! empty( $field['read_only'] ),
+			'disabled'    => ! empty( $field['disabled'] ),
 			'placeholder' => (string) ( $field['placeholder'] ?? '' ),
 			'price_enabled' => ! empty( $field['price_enabled'] ),
 		);
@@ -521,8 +524,15 @@ class WCS_Config_Builder {
 			if ( empty( $row['options'] ) ) {
 				return null;
 			}
-		} elseif ( ! empty( $row['price_enabled'] ) ) {
-			$row['price'] = (float) ( $field['price'] ?? 0 );
+		} else {
+			if ( 'number' === $type ) {
+				$row['min'] = (string) ( $field['min'] ?? '' );
+				$row['max'] = (string) ( $field['max'] ?? '' );
+				$row['step'] = (string) ( $field['step'] ?? '' );
+			}
+			if ( ! empty( $row['price_enabled'] ) ) {
+				$row['price'] = (float) ( $field['price'] ?? 0 );
+			}
 		}
 
 		return $row;
@@ -620,6 +630,22 @@ class WCS_Config_Builder {
 						(string) $field['label']
 					)
 				);
+			}
+
+			if ( 'number' === (string) $field['type'] && '' !== (string) $value ) {
+				$number = (float) $value;
+				$min    = '' !== (string) ( $field['min'] ?? '' ) ? (float) $field['min'] : null;
+				$max    = '' !== (string) ( $field['max'] ?? '' ) ? (float) $field['max'] : null;
+				if ( ! is_numeric( $value ) || ( null !== $min && $number < $min ) || ( null !== $max && $number > $max ) ) {
+					return new WP_Error(
+						'wcs_invalid_customer_field_range',
+						sprintf(
+							/* translators: %s: customer field label */
+							__( 'Invalid value entered for %s.', 'woo-spiegelloft-configurator' ),
+							(string) $field['label']
+						)
+					);
+				}
 			}
 
 			if ( 'dropdown' !== (string) $field['type'] || '' === (string) $value ) {
