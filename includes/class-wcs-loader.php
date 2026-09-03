@@ -126,6 +126,7 @@ class WCS_Loader {
 
 		$plugin_screens = array(
 			'toplevel_page_wcs-configurator',
+			'mirror-builder_page_wcs-configurator-settings',
 			'wcs_extra_option',
 			'wcs_template',
 			'product',

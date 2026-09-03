@@ -19,6 +19,7 @@ class WCS_Admin {
 	 */
 	public function register(): void {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
+		add_action( 'admin_menu', array( $this, 'register_settings_menu' ), 99 );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 	}
 
@@ -45,6 +46,12 @@ class WCS_Admin {
 			array( $this, 'render_dashboard' )
 		);
 
+	}
+
+	/**
+	 * Register settings submenu after other plugin submenus.
+	 */
+	public function register_settings_menu(): void {
 		add_submenu_page(
 			'wcs-configurator',
 			__( 'Settings', 'woo-spiegelloft-configurator' ),
@@ -94,18 +101,32 @@ class WCS_Admin {
 			<h1><?php esc_html_e( 'Mirror Builder Settings', 'woo-spiegelloft-configurator' ); ?></h1>
 			<form method="post" action="options.php">
 				<?php settings_fields( 'wcs_configurator_settings' ); ?>
-				<table class="form-table" role="presentation">
-					<tr>
-						<th scope="row"><?php esc_html_e( 'Configurator layout', 'woo-spiegelloft-configurator' ); ?></th>
-						<td>
-							<select name="wcs_configurator_layout">
-								<option value="compact_dropdown" <?php selected( $layout, 'compact_dropdown' ); ?>><?php esc_html_e( 'Compact dropdown layout', 'woo-spiegelloft-configurator' ); ?></option>
-								<option value="visual_cards" <?php selected( $layout, 'visual_cards' ); ?>><?php esc_html_e( 'Visual card layout', 'woo-spiegelloft-configurator' ); ?></option>
-							</select>
-							<p class="description"><?php esc_html_e( 'Compact dropdown keeps every option visible in one plain configurator. Visual card layout restores the previous image-card design.', 'woo-spiegelloft-configurator' ); ?></p>
-						</td>
-					</tr>
-				</table>
+				<section class="wcs-settings-panel">
+					<h2><?php esc_html_e( 'Configurator layout', 'woo-spiegelloft-configurator' ); ?></h2>
+					<p><?php esc_html_e( 'Choose how customers select mirror options on the product page.', 'woo-spiegelloft-configurator' ); ?></p>
+					<div class="wcs-layout-options">
+						<label class="wcs-layout-card">
+							<input type="radio" name="wcs_configurator_layout" value="compact_dropdown" <?php checked( $layout, 'compact_dropdown' ); ?>>
+							<span class="wcs-layout-card__preview wcs-layout-card__preview--compact" aria-hidden="true">
+								<span></span><span></span><span></span><span></span>
+							</span>
+							<span class="wcs-layout-card__body">
+								<strong><?php esc_html_e( 'Compact dropdown layout', 'woo-spiegelloft-configurator' ); ?></strong>
+								<small><?php esc_html_e( 'Plain rows with labels on one side and dropdown fields on the other.', 'woo-spiegelloft-configurator' ); ?></small>
+							</span>
+						</label>
+						<label class="wcs-layout-card">
+							<input type="radio" name="wcs_configurator_layout" value="visual_cards" <?php checked( $layout, 'visual_cards' ); ?>>
+							<span class="wcs-layout-card__preview wcs-layout-card__preview--cards" aria-hidden="true">
+								<span></span><span></span><span></span><span></span>
+							</span>
+							<span class="wcs-layout-card__body">
+								<strong><?php esc_html_e( 'Visual card layout', 'woo-spiegelloft-configurator' ); ?></strong>
+								<small><?php esc_html_e( 'Previous design with large image cards for visual choices.', 'woo-spiegelloft-configurator' ); ?></small>
+							</span>
+						</label>
+					</div>
+				</section>
 				<?php submit_button(); ?>
 			</form>
 		</div>

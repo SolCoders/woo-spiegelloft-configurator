@@ -70,8 +70,7 @@
 		});
 
 		$wrap.find('.wcs-selections-input').val(JSON.stringify(selections));
-		$wrap.find('.wcs-configurator__price').text(money(total));
-		$wrap.find('.wcs-configurator__footer-price').text(money(total));
+		setPrice($wrap, total);
 		renderReview($wrap, total);
 	}
 
@@ -82,6 +81,86 @@
 	function optionDisplayPrice(price) {
 		var amount = parseFloat(price) || 0;
 		return amount ? '+ ' + money(amount) : '';
+	}
+
+	function setPrice($wrap, total) {
+		var $prices = $wrap.find('.wcs-configurator__price, .wcs-configurator__footer-price');
+		var previous = parseFloat($wrap.data('current-total'));
+		var start = isNaN(previous) ? total : previous;
+		var duration = 900;
+		var started = null;
+		var frame = $wrap.data('priceFrame');
+
+		$wrap.data('current-total', total);
+		if (frame) {
+			window.cancelAnimationFrame(frame);
+		}
+		if (start === total) {
+			$prices.text(money(total));
+			return;
+		}
+
+		function tick(timestamp) {
+			if (started === null) {
+				started = timestamp;
+			}
+			var progress = Math.min((timestamp - started) / duration, 1);
+			var eased = 1 - Math.pow(1 - progress, 3);
+			var value = start + ((total - start) * eased);
+			$prices.text(money(value));
+			if (progress < 1) {
+				$wrap.data('priceFrame', window.requestAnimationFrame(tick));
+			} else {
+				$prices.text(money(total));
+				$wrap.removeData('priceFrame');
+			}
+		}
+
+		$wrap.data('priceFrame', window.requestAnimationFrame(tick));
+	}
+
+	function rangeMessage($input, min, max) {
+		var label = $input.data('label') || $input.closest('label').find('> span:first-child').clone().children().remove().end().text() || 'value';
+		return 'You can only enter ' + String(label).trim() + ' between ' + min + 'mm - ' + max + 'mm';
+	}
+
+	function showDimensionRangeError($input, message) {
+		var $control = $input.closest('.wcs-size-control');
+		var $error = $control.find('.wcs-range-popup').first();
+
+		if (!$error.length) {
+			$error = $('<span class="wcs-range-popup" role="alert"></span>');
+			$control.append($error);
+		}
+
+		$error.text(message).prop('hidden', false);
+		window.clearTimeout($input.data('wcsRangeTimer'));
+		$input.data('wcsRangeTimer', window.setTimeout(function () {
+			$error.prop('hidden', true);
+		}, 3200));
+	}
+
+	function clampDimensionInput($input, showError) {
+		var min = parseFloat($input.attr('min'));
+		var max = parseFloat($input.attr('max'));
+		var value = parseFloat($input.val());
+		var clamped = value;
+
+		if (isNaN(value)) {
+			return;
+		}
+		if (!isNaN(min)) {
+			clamped = Math.max(min, clamped);
+		}
+		if (!isNaN(max)) {
+			clamped = Math.min(max, clamped);
+		}
+		if (clamped !== value) {
+			$input.val(clamped);
+			if (showError && !isNaN(min) && !isNaN(max)) {
+				showDimensionRangeError($input, rangeMessage($input, min, max));
+			}
+		}
 	}
 
 	function reviewRow(title, lines) {
@@ -561,7 +640,24 @@
 			$wrap.find('.wcs-configurator__image img').attr('src', image);
 		});
 
-		$(document).on('input change', '.wcs-configurator input, .wcs-configurator select', function () {
+		$(document).on('input change', '.wcs-configurator input, .wcs-configurator select', function (e) {
+			if ($(this).hasClass('wcs-dimension-input')) {
+				var $dimension = $(this);
+				var $dimensionWrap = $dimension.closest('.wcs-configurator');
+				window.clearTimeout($dimension.data('wcsClampTimer'));
+				if (e.type === 'input') {
+					$dimension.data('wcsClampTimer', window.setTimeout(function () {
+						clampDimensionInput($dimension, true);
+						var engine = $dimensionWrap.data('wcsRuleEngine');
+						if (engine) {
+							engine.evaluate($dimension.data('key'));
+						}
+						collect($dimensionWrap);
+					}, 650));
+					return;
+				}
+				clampDimensionInput($dimension, true);
+			}
 			if ($(this).hasClass('wcs-choice-select')) {
 				refreshPositionSelect($(this));
 				refreshCustomerFields($(this));

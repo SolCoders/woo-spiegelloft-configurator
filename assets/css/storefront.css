@@ -230,7 +230,7 @@
 	flex: 0 0 auto;
 	margin-top: 0;
 	padding: 12px 18px;
-	background: #fcfbf7 !important;
+	background: #ffffff !important;
 	border: 1px solid #f1efed !important;
 	border-radius: 6px !important;
 	color: #0a878c !important;
@@ -584,11 +584,6 @@
 	background: transparent;
 	border: 0;
 	border-radius: 0;
-}
-
-.wcs-size-side-row:nth-child(2n) {
-	padding-left: 32px;
-	border-left: 1px solid #f1efed;
 }
 
 .wcs-size-box {
@@ -1460,11 +1455,6 @@
 		padding: 18px;
 	}
 
-	.wcs-size-side-row:nth-child(2n) {
-		padding-left: 0;
-		border-left: 0;
-	}
-
 	.wcs-size-side-row .wcs-size-box__times {
 		display: none;
 	}
@@ -1804,6 +1794,13 @@
 	line-height: 1.25 !important;
 }
 
+.wcs-configurator--compact-dropdown .wcs-size-box label > span:first-child,
+.wcs-configurator--compact-dropdown .wcs-size-side-row label > span:first-child {
+	display: grid !important;
+	grid-template-columns: 18px minmax(0, 1fr);
+	column-gap: 16px;
+}
+
 .wcs-configurator--compact-dropdown .wcs-size-box label > span:first-child::before,
 .wcs-configurator--compact-dropdown .wcs-size-side-row label > span:first-child::before,
 .wcs-configurator--compact-dropdown .wcs-customer-field__label::before,
@@ -1839,7 +1836,8 @@
 .wcs-configurator--compact-dropdown .wcs-size-box small,
 .wcs-configurator--compact-dropdown .wcs-size-side-row small {
 	display: block;
-	margin: 2px 0 0 34px;
+	grid-column: 2;
+	margin: 2px 0 0;
 	font-size: 11px !important;
 }
 
@@ -1857,6 +1855,7 @@
 .wcs-configurator--compact-dropdown .wcs-size-control {
 	display: grid;
 	grid-template-columns: 44px minmax(0, 1fr) 44px;
+	position: relative;
 }
 
 .wcs-configurator--compact-dropdown .wcs-size-control em {
@@ -1884,6 +1883,36 @@
 	background: #0a878c !important;
 	color: #ffffff !important;
 	font-size: 16px;
+}
+
+.wcs-configurator--compact-dropdown .wcs-range-popup {
+	position: absolute;
+	right: 44px;
+	bottom: calc(100% + 8px);
+	z-index: 20;
+	max-width: min(320px, 100%);
+	padding: 10px 12px;
+	border: 1px solid #fecaca;
+	border-radius: 8px;
+	background: #fff7f7;
+	color: #dc2626;
+	font-size: 12px;
+	font-weight: 700;
+	line-height: 1.35;
+	box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
+}
+
+.wcs-configurator--compact-dropdown .wcs-range-popup::after {
+	content: "";
+	position: absolute;
+	right: 18px;
+	top: 100%;
+	border: 7px solid transparent;
+	border-top-color: #fff7f7;
+}
+
+.wcs-configurator--compact-dropdown .wcs-range-popup[hidden] {
+	display: none !important;
 }
 
 .wcs-configurator--compact-dropdown .wcs-custom-select__button {
