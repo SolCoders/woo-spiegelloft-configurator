@@ -1784,7 +1784,7 @@
 .wcs-configurator--compact-dropdown .wcs-position-select,
 .wcs-configurator--compact-dropdown .wcs-customer-field {
 	display: grid;
-	grid-template-columns: minmax(0, .8fr) minmax(250px, 1fr);
+	grid-template-columns: minmax(0, 1fr) minmax(250px, 1fr);
 	align-items: center;
 	column-gap: 20px;
 	margin: 0;
