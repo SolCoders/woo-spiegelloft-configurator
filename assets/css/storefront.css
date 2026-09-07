@@ -1543,7 +1543,6 @@
 .wcs-configurator [type="button"].wcs-step-next,
 .wcs-configurator [type="submit"].wcs-add-to-cart {
 	font-family: inherit !important;
-	text-align: inherit !important;
 	text-decoration: none !important;
 	text-transform: none !important;
 	letter-spacing: 0 !important;
@@ -1649,7 +1648,7 @@
 .wcs-configurator .wcs-step-option-group > h3,
 .wcs-configurator .wcs-customer-field__label {
 	color: #161616 !important;
-	font-weight: 700 !important;
+	font-weight: 600 !important;
 	letter-spacing: 0 !important;
 	text-transform: none !important;
 }
@@ -1820,7 +1819,7 @@
 	margin: 0;
 	color: #111827 !important;
 	font-size: 14px !important;
-	font-weight: 800 !important;
+	font-weight: 600 !important;
 	line-height: 1.25 !important;
 }
 
