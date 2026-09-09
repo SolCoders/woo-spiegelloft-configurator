@@ -246,7 +246,29 @@ class WCS_Template_Admin {
 				$field_key = ! empty( $choice_step_map )
 					? $group_slug . '__choice_' . (int) ( $option['id'] ?? 0 )
 					: $group_slug;
-				$template_field_choices[ $field_key ] = $label;
+				$template_field_choices[ $field_key ] = array(
+					'label'       => $label,
+					'source'      => 'category',
+					'type'        => 'selection',
+					'target_type' => 'category',
+					'options'     => $this->get_rule_choice_values_for_field(
+						array_merge(
+							(array) ( $option_choices[ $group_slug ] ?? array() ),
+							array(
+								array(
+									'value' => $value,
+									'label' => $label,
+								),
+							)
+						)
+					),
+				);
+				$template_field_choices = $this->append_customer_field_rule_choices(
+					$template_field_choices,
+					(array) ( $option_data['customer_fields'] ?? array() ),
+					$field_key . '.' . $value,
+					array( $label )
+				);
 				$option_choices[ $group_slug ][] = array(
 					'value' => $value,
 					'label' => $label,
@@ -268,7 +290,29 @@ class WCS_Template_Admin {
 				$field_key = '' !== $group_slug
 					? ( ! empty( $choice_step_map ) ? $group_slug . '__choice_' . (int) ( $option['id'] ?? 0 ) : $group_slug )
 					: $value;
-				$template_field_choices[ $field_key ] = $label;
+				$template_field_choices[ $field_key ] = array(
+					'label'       => $label,
+					'source'      => 'category',
+					'type'        => 'selection',
+					'target_type' => 'category',
+					'options'     => $this->get_rule_choice_values_for_field(
+						array_merge(
+							(array) ( $option_choices[ $group_slug ?: 'choices' ] ?? array() ),
+							array(
+								array(
+									'value' => $value,
+									'label' => $label,
+								),
+							)
+						)
+					),
+				);
+				$template_field_choices = $this->append_customer_field_rule_choices(
+					$template_field_choices,
+					(array) ( $option_data['customer_fields'] ?? array() ),
+					$field_key . '.' . $value,
+					array( $label )
+				);
 				$option_choices[ $group_slug ?: 'choices' ][] = array(
 					'value' => $value,
 					'label' => $label,
@@ -278,6 +322,111 @@ class WCS_Template_Admin {
 		}
 
 		include WCS_PLUGIN_DIR . 'templates/admin/template-restrictions-meta.php';
+	}
+
+	/**
+	 * Add nested customer fields to the rule field dropdown.
+	 *
+	 * @param array<string, array<string,string>> $choices Existing choices.
+	 * @param array<int, mixed>                   $fields  Customer field rows.
+	 * @param string                              $base_path Parent selection path.
+	 * @param array<int, string>                  $parents Parent labels.
+	 * @return array<string, array<string,string>>
+	 */
+	private function append_customer_field_rule_choices( array $choices, array $fields, string $base_path, array $parents ): array {
+		foreach ( $fields as $field ) {
+			if ( ! is_array( $field ) ) {
+				continue;
+			}
+
+			$label = (string) ( $field['label'] ?? '' );
+			$key   = sanitize_title( (string) ( $field['key'] ?? $label ) );
+			if ( '' === $label || '' === $key ) {
+				continue;
+			}
+
+			$field_path = $base_path . '.' . $key;
+			$type       = $this->rule_type_for_customer_field( (string) ( $field['type'] ?? 'dropdown' ) );
+			$choices[ $field_path ] = array(
+				'label'       => implode( ' / ', array_merge( $parents, array( $label ) ) ),
+				'source'      => 'nested',
+				'type'        => $type,
+				'target_type' => 'nested',
+				'options'     => 'dropdown' === (string) ( $field['type'] ?? 'dropdown' )
+					? $this->get_rule_choice_values_for_field( (array) ( $field['options'] ?? array() ) )
+					: array(),
+			);
+
+			if ( 'dropdown' !== (string) ( $field['type'] ?? 'dropdown' ) || empty( $field['options'] ) || ! is_array( $field['options'] ) ) {
+				continue;
+			}
+
+			foreach ( $field['options'] as $field_option ) {
+				if ( ! is_array( $field_option ) || empty( $field_option['customer_fields'] ) || ! is_array( $field_option['customer_fields'] ) ) {
+					continue;
+				}
+
+				$option_label = (string) ( $field_option['label'] ?? '' );
+				$option_value = sanitize_title( (string) ( $field_option['value'] ?? $option_label ) );
+				if ( '' === $option_label || '' === $option_value ) {
+					continue;
+				}
+
+				$choices = $this->append_customer_field_rule_choices(
+					$choices,
+					(array) $field_option['customer_fields'],
+					$field_path . '.' . $option_value,
+					array_merge( $parents, array( $label, $option_label ) )
+				);
+			}
+		}
+
+		return $choices;
+	}
+
+	/**
+	 * Normalize possible rule values for one selectable field.
+	 *
+	 * @param array<int, mixed> $options Raw options.
+	 * @return array<int, array<string,string>>
+	 */
+	private function get_rule_choice_values_for_field( array $options ): array {
+		$values = array();
+		foreach ( $options as $option ) {
+			if ( ! is_array( $option ) ) {
+				continue;
+			}
+
+			$value = (string) ( $option['value'] ?? '' );
+			$label = (string) ( $option['label'] ?? $value );
+			if ( '' === $value || '' === $label ) {
+				continue;
+			}
+
+			$values[] = array(
+				'value' => $value,
+				'label' => $label,
+			);
+		}
+
+		return $values;
+	}
+
+	/**
+	 * Map customer field types to rule condition types.
+	 *
+	 * @param string $field_type Customer field type.
+	 */
+	private function rule_type_for_customer_field( string $field_type ): string {
+		if ( 'number' === $field_type ) {
+			return 'number';
+		}
+
+		if ( 'text' === $field_type ) {
+			return 'string';
+		}
+
+		return 'selection';
 	}
 
 	/**

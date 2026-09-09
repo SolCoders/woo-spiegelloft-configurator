@@ -150,6 +150,250 @@
 				$select.val(current);
 			}
 		});
+		initRuleFieldPickers();
+	}
+
+	function escapeHtml(value) {
+		return String(value || '')
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#039;');
+	}
+
+	function makeRuleTreeNode(label) {
+		return {
+			label: label,
+			option: null,
+			children: [],
+			childMap: {},
+			id: ''
+		};
+	}
+
+	function getRuleOptionParts($option) {
+		var label = String($option.text() || '').trim();
+		var parts = label.split('/').map(function (part) {
+			return String(part || '').trim();
+		}).filter(Boolean);
+
+		return parts.length ? parts : [label];
+	}
+
+	function buildRuleFieldTree($select) {
+		var root = makeRuleTreeNode('');
+
+		$select.children('optgroup, option').each(function () {
+			var $item = $(this);
+			var groupLabel = $item.is('optgroup') ? String($item.attr('label') || '').trim() : '';
+			var $options = $item.is('optgroup') ? $item.children('option') : $item;
+
+			if (groupLabel) {
+				root.childMap[groupLabel] = root.childMap[groupLabel] || makeRuleTreeNode(groupLabel);
+				if (root.children.indexOf(root.childMap[groupLabel]) === -1) {
+					root.children.push(root.childMap[groupLabel]);
+				}
+			}
+
+			$options.each(function () {
+				var $option = $(this);
+				var value = String($option.val() || '');
+				var label = String($option.text() || '').trim();
+				if (!value || !label) {
+					return;
+				}
+
+				var parent = groupLabel ? root.childMap[groupLabel] : root;
+				getRuleOptionParts($option).forEach(function (part, index, parts) {
+					parent.childMap[part] = parent.childMap[part] || makeRuleTreeNode(part);
+					if (parent.children.indexOf(parent.childMap[part]) === -1) {
+						parent.children.push(parent.childMap[part]);
+					}
+					parent = parent.childMap[part];
+					parent.id = (parent.id || (groupLabel ? groupLabel + '/' : '') + parts.slice(0, index + 1).join('/'));
+					if (index === parts.length - 1) {
+						parent.option = {
+							value: value,
+							label: label,
+							type: $option.data('type') || '',
+							source: $option.data('source') || '',
+							targetType: $option.data('target-type') || ''
+						};
+					}
+				});
+			});
+		});
+
+		return root;
+	}
+
+	function findRuleTreeNodeByValue(node, value, trail) {
+		var nextTrail = trail || [];
+		if (node.option && node.option.value === value) {
+			return { node: node, trail: nextTrail };
+		}
+
+		for (var i = 0; i < node.children.length; i++) {
+			var child = node.children[i];
+			var result = findRuleTreeNodeByValue(child, value, nextTrail.concat(child.label));
+			if (result) {
+				return result;
+			}
+		}
+
+		return null;
+	}
+
+	function ruleTreeMatchesSearch(node, query) {
+		if (!query) {
+			return true;
+		}
+
+		if (String(node.label || '').toLowerCase().indexOf(query) !== -1) {
+			return true;
+		}
+
+		return node.children.some(function (child) {
+			return ruleTreeMatchesSearch(child, query);
+		});
+	}
+
+	function renderRuleTreeRows($picker, node, depth, query) {
+		var selectedValue = String($picker.find('select').val() || '');
+		var expanded = $picker.data('expanded') || {};
+		var rows = [];
+
+		node.children.forEach(function (child) {
+			var hasChildren = child.children.length > 0;
+			var isExpanded = !!expanded[child.id] || !!query || depth < 1;
+			var isSelected = !!child.option && child.option.value === selectedValue;
+			var matches = ruleTreeMatchesSearch(child, query);
+
+			if (!matches) {
+				return;
+			}
+
+			rows.push('<button type="button" class="wcs-rule-field-picker__tree-row' + (hasChildren ? ' has-children' : '') + (depth === 0 ? ' is-root-row' : '') + (isExpanded ? ' is-expanded' : '') + (isSelected ? ' is-selected' : '') + '" data-node-id="' + escapeHtml(child.id) + '" data-value="' + escapeHtml(child.option ? child.option.value : '') + '" style="--wcs-rule-depth:' + depth + ';">' +
+				'<span class="wcs-rule-field-picker__toggle" aria-hidden="true">' + (hasChildren ? (isExpanded ? '-' : '+') : '') + '</span>' +
+				'<span class="wcs-rule-field-picker__check" aria-hidden="true"></span>' +
+				'<span class="wcs-rule-field-picker__label">' + escapeHtml(child.label) + '</span>' +
+			'</button>');
+
+			if (hasChildren && isExpanded) {
+				rows = rows.concat(renderRuleTreeRows($picker, child, depth + 1, query));
+			}
+		});
+
+		return rows;
+	}
+
+	function renderRuleFieldPane($picker) {
+		var $tree = $picker.find('.wcs-rule-field-picker__tree');
+		var query = String($picker.find('.wcs-rule-field-picker__search').val() || '').toLowerCase().trim();
+		var rows = renderRuleTreeRows($picker, $picker.data('tree'), 0, query);
+
+		$tree.html(rows.length ? rows.join('') : '<div class="wcs-rule-field-picker__empty">No fields found</div>');
+	}
+
+	function getSelectedRuleFieldValues($condition) {
+		var raw = $condition.find('.wcs-rule-when-group option:selected').attr('data-values') || '[]';
+		try {
+			var values = JSON.parse(raw);
+			return Array.isArray(values) ? values : [];
+		} catch (error) {
+			return [];
+		}
+	}
+
+	function refreshRuleConditionValueOptions($condition) {
+		var $select = $condition.find('.wcs-rule-option-value');
+		var $input = $condition.find('.wcs-rule-value-field input[type="text"]');
+		var current = String($input.val() || $select.val() || '');
+		var values = getSelectedRuleFieldValues($condition);
+
+		$select.empty().append($('<option>', {
+			value: '',
+			text: 'Choose option value'
+		}));
+
+		values.forEach(function (item) {
+			if (!item || !item.value) {
+				return;
+			}
+			$select.append($('<option>', {
+				value: item.value,
+				text: item.label || item.value
+			}));
+		});
+
+		if (current) {
+			$select.val(current);
+		}
+	}
+
+	function expandRuleFieldPickerToCurrent($picker) {
+		var tree = $picker.data('tree');
+		var selectedValue = String($picker.find('select').val() || '');
+		var found = selectedValue ? findRuleTreeNodeByValue(tree, selectedValue, []) : null;
+		var expanded = $picker.data('expanded') || {};
+		var node = tree;
+
+		if (found && found.trail.length) {
+			found.trail.slice(0, -1).forEach(function (label) {
+				node = node.childMap[label] || node;
+				if (node.id) {
+					expanded[node.id] = true;
+				}
+			});
+		}
+
+		$picker.data('expanded', expanded);
+	}
+
+	function openRuleFieldPicker($picker) {
+		$('.wcs-rule-field-picker.is-open').not($picker).removeClass('is-open');
+		$picker.addClass('is-open');
+		$picker.find('.wcs-rule-field-picker__button').attr('aria-expanded', 'true');
+		expandRuleFieldPickerToCurrent($picker);
+		renderRuleFieldPane($picker);
+		$picker.find('.wcs-rule-field-picker__search').trigger('focus');
+	}
+
+	function updateRuleFieldPickerButton($picker) {
+		var $select = $picker.find('select');
+		var selectedValue = String($select.val() || '');
+		var found = selectedValue ? findRuleTreeNodeByValue($picker.data('tree'), selectedValue, []) : null;
+		var parts = found && found.trail.length ? found.trail : [];
+
+		$picker.toggleClass('has-selection', parts.length > 0);
+		$picker.find('.wcs-rule-field-picker__button-text').text(parts.length ? parts[parts.length - 1] : 'Choose field');
+		$picker.find('.wcs-rule-field-picker__button-path').text(parts.length > 1 ? parts.slice(0, -1).join(' > ') : '');
+	}
+
+	function initRuleFieldPickers() {
+		$('.wcs-rule-when-group, .wcs-rule-target-group').each(function () {
+			var $select = $(this);
+			var existingValue = $select.val();
+			var $oldPicker = $select.closest('.wcs-rule-field-picker');
+			if ($oldPicker.length) {
+				$select.insertBefore($oldPicker);
+				$oldPicker.remove();
+			}
+
+			var $picker = $('<div class="wcs-rule-field-picker"></div>');
+			var $button = $('<button type="button" class="wcs-rule-field-picker__button" aria-expanded="false"><span><strong class="wcs-rule-field-picker__button-text">Choose field</strong><small class="wcs-rule-field-picker__button-path"></small></span><i aria-hidden="true">v</i></button>');
+			var $panel = $('<div class="wcs-rule-field-picker__panel"><input type="search" class="wcs-rule-field-picker__search" placeholder="Search fields..."><div class="wcs-rule-field-picker__tree"></div></div>');
+
+			$select.after($picker);
+			$picker.append($button, $panel);
+			$picker.prepend($select);
+			$select.addClass('wcs-rule-field-picker__select').val(existingValue);
+			$picker.data('tree', buildRuleFieldTree($select));
+			$picker.data('expanded', {});
+			updateRuleFieldPickerButton($picker);
+			renderRuleFieldPane($picker);
+		});
 	}
 
 	function refreshChoicePagination($table) {
@@ -291,9 +535,10 @@
 			var valueType = $(this).find('.wcs-rule-value-type').val();
 			var rowOperator = $(this).find('.wcs-rule-operator').val();
 			var needsValue = ['is_empty', 'is_not_empty', 'is_true', 'is_false', 'selected', 'empty'].indexOf(rowOperator) === -1;
+			refreshRuleConditionValueOptions($(this));
 			$(this).find('.wcs-rule-value-field').toggle(needsValue);
-			$(this).find('.wcs-rule-option-value').toggle(needsValue && valueType === 'selection');
-			$(this).find('.wcs-rule-value-field input[type="text"]').toggle(valueType !== 'selection' || !needsValue);
+			$(this).find('.wcs-rule-option-value').toggle(needsValue && valueType === 'selection' && getSelectedRuleFieldValues($(this)).length > 0);
+			$(this).find('.wcs-rule-value-field input[type="text"]').toggle(valueType !== 'selection' || !needsValue || getSelectedRuleFieldValues($(this)).length === 0);
 		});
 
 		$row.find('.wcs-rule-action-row').each(function () {
@@ -324,6 +569,7 @@
 			$row.find('.wcs-rule-action-row').not(':first').remove();
 			$('#wcs-rules-list').append($row);
 			reindexRules();
+			initRuleFieldPickers();
 			setRuleDefaults($row);
 			toggleRuleFields($row);
 		});
@@ -332,12 +578,13 @@
 			var value = $(this).val();
 			var $selected = $(this).find(':selected');
 			if (value) {
-				$(this).siblings('input[type="hidden"]').val(value);
+				$(this).closest('.wcs-rule-category-field').children('input[type="hidden"]').val(value);
 				$(this).closest('.wcs-rule-condition-row').find('.wcs-rule-source').val($selected.data('source') || 'category');
 				if ($selected.data('type')) {
 					$(this).closest('.wcs-rule-condition-row').find('.wcs-rule-value-type').val($selected.data('type'));
 				}
 			}
+			updateRuleFieldPickerButton($(this).closest('.wcs-rule-field-picker'));
 			toggleRuleFields($(this).closest('.wcs-rule-row'));
 		});
 
@@ -345,9 +592,70 @@
 			var value = $(this).val();
 			var $selected = $(this).find(':selected');
 			if (value) {
-				$(this).siblings('input[type="hidden"]').val(value);
+				$(this).closest('.wcs-rule-field').children('input[type="hidden"]').val(value);
 				$(this).closest('.wcs-rule-action-row').find('input[name$="[target_type]"]').val($selected.data('target-type') || 'category');
 			}
+			updateRuleFieldPickerButton($(this).closest('.wcs-rule-field-picker'));
+		});
+
+		$(document).on('click', '.wcs-rule-field-picker__button', function (e) {
+			e.preventDefault();
+			var $picker = $(this).closest('.wcs-rule-field-picker');
+			if ($picker.hasClass('is-open')) {
+				$picker.removeClass('is-open');
+				$(this).attr('aria-expanded', 'false');
+				return;
+			}
+			openRuleFieldPicker($picker);
+		});
+
+		$(document).on('input', '.wcs-rule-field-picker__search', function () {
+			renderRuleFieldPane($(this).closest('.wcs-rule-field-picker'));
+		});
+
+		$(document).on('click', '.wcs-rule-field-picker__tree-row', function (e) {
+			e.preventDefault();
+			var $row = $(this);
+			var $picker = $row.closest('.wcs-rule-field-picker');
+			var nodeId = String($row.data('node-id') || '');
+			var value = String($row.data('value') || '');
+			var expanded = $picker.data('expanded') || {};
+
+			if ($row.hasClass('has-children') && !value) {
+				expanded[nodeId] = !expanded[nodeId];
+				$picker.data('expanded', expanded);
+				renderRuleFieldPane($picker);
+				return;
+			}
+
+			if (value) {
+				$picker.find('select').val(value).trigger('change');
+				updateRuleFieldPickerButton($picker);
+				$picker.removeClass('is-open');
+				$picker.find('.wcs-rule-field-picker__button').attr('aria-expanded', 'false');
+			}
+		});
+
+		$(document).on('click', '.wcs-rule-field-picker__toggle', function (e) {
+			e.preventDefault();
+			e.stopPropagation();
+			var $row = $(this).closest('.wcs-rule-field-picker__tree-row');
+			var $picker = $row.closest('.wcs-rule-field-picker');
+			var nodeId = String($row.data('node-id') || '');
+			var expanded = $picker.data('expanded') || {};
+			if (!nodeId || !$row.hasClass('has-children')) {
+				return;
+			}
+			expanded[nodeId] = !expanded[nodeId];
+			$picker.data('expanded', expanded);
+			renderRuleFieldPane($picker);
+		});
+
+		$(document).on('click', function (e) {
+			if ($(e.target).closest('.wcs-rule-field-picker').length) {
+				return;
+			}
+			$('.wcs-rule-field-picker.is-open').removeClass('is-open').find('.wcs-rule-field-picker__button').attr('aria-expanded', 'false');
 		});
 
 		$(document).on('change', '.wcs-rule-option-value', function () {
@@ -364,6 +672,7 @@
 			});
 			$row.find('.wcs-rule-condition-list').append($condition);
 			reindexRules();
+			initRuleFieldPickers();
 			toggleRuleFields($row);
 		});
 
@@ -388,6 +697,7 @@
 			});
 			$row.find('.wcs-rule-action-list').append($action);
 			reindexRules();
+			initRuleFieldPickers();
 			toggleRuleFields($row);
 		});
 
@@ -426,6 +736,7 @@
 
 		refreshRuleBuilder();
 		refreshRuleMeasurementOptions();
+		initRuleFieldPickers();
 	}
 
 	function bindDeleteChoice() {

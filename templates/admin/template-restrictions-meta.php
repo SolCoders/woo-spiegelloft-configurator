@@ -7,7 +7,7 @@
  * @var array<int, array<string,mixed>>     $rules  Validation rules.
  * @var array<string, array<string,mixed>>  $groups         Group definitions.
  * @var array<string, array<int,array<string,string>>> $option_choices         Template option choices.
- * @var array<string, string>                          $template_field_choices    Template choice field keys.
+ * @var array<string, array<string,string>>            $template_field_choices    Template choice field keys.
  * @var array<string, string>                          $measurement_field_choices Measurement field keys.
  */
 
@@ -186,8 +186,15 @@ function wcs_rule_action_rows( array $rule ): array {
 										</optgroup>
 										<?php if ( ! empty( $template_field_choices ) ) : ?>
 											<optgroup label="<?php esc_attr_e( 'Choices', 'woo-spiegelloft-configurator' ); ?>">
-												<?php foreach ( $template_field_choices as $field_key => $field_label ) : ?>
-													<option value="<?php echo esc_attr( $field_key ); ?>" data-source="category" data-type="selection" <?php selected( (string) ( $condition['path'] ?? '' ), $field_key ); ?>>
+												<?php foreach ( $template_field_choices as $field_key => $field_choice ) : ?>
+													<?php
+													$field_choice = is_array( $field_choice ) ? $field_choice : array( 'label' => (string) $field_choice );
+													$field_label  = (string) ( $field_choice['label'] ?? $field_key );
+													$field_source = (string) ( $field_choice['source'] ?? 'category' );
+													$field_type   = (string) ( $field_choice['type'] ?? 'selection' );
+													$field_values = wp_json_encode( (array) ( $field_choice['options'] ?? array() ) );
+													?>
+													<option value="<?php echo esc_attr( $field_key ); ?>" data-source="<?php echo esc_attr( $field_source ); ?>" data-type="<?php echo esc_attr( $field_type ); ?>" data-values="<?php echo esc_attr( (string) $field_values ); ?>" <?php selected( (string) ( $condition['path'] ?? '' ), $field_key ); ?>>
 														<?php echo esc_html( $field_label ); ?>
 													</option>
 												<?php endforeach; ?>
@@ -265,8 +272,13 @@ function wcs_rule_action_rows( array $rule ): array {
 										</optgroup>
 										<?php if ( ! empty( $template_field_choices ) ) : ?>
 											<optgroup label="<?php esc_attr_e( 'Choices', 'woo-spiegelloft-configurator' ); ?>">
-												<?php foreach ( $template_field_choices as $field_key => $field_label ) : ?>
-													<option value="<?php echo esc_attr( $field_key ); ?>" data-target-type="category" <?php selected( (string) ( $action['target'] ?? '' ), $field_key ); ?>>
+												<?php foreach ( $template_field_choices as $field_key => $field_choice ) : ?>
+													<?php
+													$field_choice = is_array( $field_choice ) ? $field_choice : array( 'label' => (string) $field_choice );
+													$field_label  = (string) ( $field_choice['label'] ?? $field_key );
+													$target_type  = (string) ( $field_choice['target_type'] ?? 'category' );
+													?>
+													<option value="<?php echo esc_attr( $field_key ); ?>" data-target-type="<?php echo esc_attr( $target_type ); ?>" <?php selected( (string) ( $action['target'] ?? '' ), $field_key ); ?>>
 														<?php echo esc_html( $field_label ); ?>
 													</option>
 												<?php endforeach; ?>
