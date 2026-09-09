@@ -39,6 +39,23 @@ class WCS_Cart {
 		add_filter( 'woocommerce_add_to_cart_validation', array( $this, 'validate_add_to_cart' ), 10, 3 );
 		add_action( 'woocommerce_before_calculate_totals', array( $this, 'adjust_cart_prices' ), 20 );
 		add_filter( 'woocommerce_get_item_data', array( $this, 'display_cart_item_data' ), 10, 2 );
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_cart_meta_styles' ) );
+	}
+
+	/**
+	 * Keep configured cart item data readable when themes flatten WooCommerce meta rows.
+	 */
+	public function enqueue_cart_meta_styles(): void {
+		if ( ! is_cart() && ! is_checkout() ) {
+			return;
+		}
+
+		wp_register_style( 'wcs-cart-item-meta', false, array(), WCS_VERSION );
+		wp_enqueue_style( 'wcs-cart-item-meta' );
+		wp_add_inline_style(
+			'wcs-cart-item-meta',
+			'.woocommerce-cart-form .variation dt,.woocommerce-cart-form .variation dd,.woocommerce-checkout-review-order .variation dt,.woocommerce-checkout-review-order .variation dd{display:block;float:none;margin:0 0 3px;padding:0}.woocommerce-cart-form .variation dd p,.woocommerce-checkout-review-order .variation dd p{display:inline;margin:0}.wcs-cart-item-meta__value{display:block}'
+		);
 	}
 
 	/**
@@ -195,8 +212,9 @@ class WCS_Cart {
 				$value .= ' (' . wp_strip_all_tags( wc_price( $price ) ) . ')';
 			}
 			$item_data[] = array(
-				'key'   => esc_html( $label ),
-				'value' => esc_html( $value ),
+				'key'     => esc_html( $label ),
+				'value'   => esc_html( $value ),
+				'display' => '<span class="wcs-cart-item-meta__value">' . esc_html( $value ) . '</span>',
 			);
 		}
 

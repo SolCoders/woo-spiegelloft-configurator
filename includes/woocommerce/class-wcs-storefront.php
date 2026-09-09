@@ -36,6 +36,13 @@ class WCS_Storefront {
 	private bool $block_configurator_rendered = false;
 
 	/**
+	 * Whether the configurator has been rendered by shortcode.
+	 *
+	 * @var bool
+	 */
+	private bool $shortcode_configurator_rendered = false;
+
+	/**
 	 * Whether this product render is using a block template path.
 	 *
 	 * @var bool
@@ -76,6 +83,7 @@ class WCS_Storefront {
 		add_action( 'woocommerce_single_product_summary', array( $this, 'render_configurator' ), 1 );
 		add_action( 'woocommerce_single_product_summary', array( $this, 'render_configure_button' ), 61 );
 		add_filter( 'render_block', array( $this, 'filter_product_blocks' ), 10, 2 );
+		add_shortcode( 'wcs_configurator', array( $this, 'render_configurator_shortcode' ) );
 	}
 
 	/**
@@ -88,6 +96,10 @@ class WCS_Storefront {
 
 		$product_id = get_queried_object_id();
 		if ( 'yes' !== get_post_meta( $product_id, '_wcs_configurator_enabled', true ) ) {
+			return;
+		}
+
+		if ( $this->queried_content_has_configurator_shortcode() ) {
 			return;
 		}
 
@@ -142,7 +154,7 @@ class WCS_Storefront {
 	 * @return string
 	 */
 	public function filter_product_blocks( string $block_content, array $block ): string {
-		if ( ! $this->is_configured_product_page() || ! $this->is_main_product_block_context( $block ) ) {
+		if ( $this->shortcode_configurator_rendered || ! $this->is_configured_product_page() || ! $this->is_main_product_block_context( $block ) ) {
 			return $block_content;
 		}
 
@@ -212,17 +224,24 @@ class WCS_Storefront {
 		}
 
 		$this->block_configurator_rendered = true;
-		return $this->get_configurator_html();
+		return $this->get_configurator_html( get_queried_object_id() );
 	}
 
 	/**
 	 * Enqueue storefront assets.
 	 */
 	public function enqueue_assets(): void {
-		if ( ! $this->is_configured_product_page() ) {
+		if ( ! $this->is_configured_product_page() && ! $this->queried_content_has_configurator_shortcode() ) {
 			return;
 		}
 
+		$this->enqueue_storefront_assets();
+	}
+
+	/**
+	 * Enqueue assets needed by the configurator markup.
+	 */
+	private function enqueue_storefront_assets(): void {
 		wp_enqueue_style(
 			'wcs-storefront',
 			WCS_PLUGIN_URL . 'assets/css/storefront.css',
@@ -245,6 +264,28 @@ class WCS_Storefront {
 			WCS_VERSION,
 			true
 		);
+	}
+
+	/**
+	 * Check whether the queried post content contains the configurator shortcode.
+	 */
+	private function queried_content_has_configurator_shortcode(): bool {
+		if ( ! is_singular() ) {
+			return false;
+		}
+
+		$post_id = get_queried_object_id();
+		if ( $post_id <= 0 ) {
+			return false;
+		}
+
+		$content = get_post_field( 'post_content', $post_id );
+		if ( is_string( $content ) && has_shortcode( $content, 'wcs_configurator' ) ) {
+			return true;
+		}
+
+		$elementor_data = get_post_meta( $post_id, '_elementor_data', true );
+		return is_string( $elementor_data ) && false !== strpos( $elementor_data, '[wcs_configurator' );
 	}
 
 	/**
@@ -321,19 +362,27 @@ class WCS_Storefront {
 	/**
 	 * Build configurator HTML.
 	 */
-	private function get_configurator_html(): string {
+	private function get_configurator_html( int $product_id = 0 ): string {
 		global $product;
 
-		if ( ! $product instanceof WC_Product ) {
-			$product = wc_get_product( get_queried_object_id() );
+		$previous_product = $product;
+		$resolved_product = $product_id > 0 ? wc_get_product( $product_id ) : null;
+		if ( ! $resolved_product instanceof WC_Product && $product instanceof WC_Product ) {
+			$resolved_product = $product;
 		}
 
-		if ( ! $product instanceof WC_Product || 'yes' !== get_post_meta( $product->get_id(), '_wcs_configurator_enabled', true ) ) {
+		if ( ! $resolved_product instanceof WC_Product ) {
+			$resolved_product = wc_get_product( get_queried_object_id() );
+		}
+
+		if ( ! $resolved_product instanceof WC_Product || 'yes' !== get_post_meta( $resolved_product->get_id(), '_wcs_configurator_enabled', true ) ) {
 			return '';
 		}
 
-		$config = $this->config_builder->build_for_product( $product->get_id() );
+		$product = $resolved_product;
+		$config  = $this->config_builder->build_for_product( $product->get_id() );
 		if ( is_wp_error( $config ) ) {
+			$product = $previous_product;
 			return '';
 		}
 
@@ -341,18 +390,55 @@ class WCS_Storefront {
 
 		ob_start();
 		include WCS_PLUGIN_DIR . 'templates/storefront/configurator.php';
-		return (string) ob_get_clean();
+		$html    = (string) ob_get_clean();
+		$product = $previous_product;
+
+		return $html;
+	}
+
+	/**
+	 * Render configurator markup from a shortcode.
+	 *
+	 * @param array<string, mixed>|string $atts Shortcode attributes.
+	 */
+	public function render_configurator_shortcode( $atts = array() ): string {
+		$atts = shortcode_atts(
+			array(
+				'product_id' => 0,
+			),
+			is_array( $atts ) ? $atts : array(),
+			'wcs_configurator'
+		);
+
+		$product_id = absint( $atts['product_id'] );
+		if ( $product_id <= 0 && is_product() ) {
+			$product_id = get_queried_object_id();
+		}
+
+		if ( $product_id <= 0 ) {
+			return '';
+		}
+
+		$this->enqueue_storefront_assets();
+
+		$html = $this->get_configurator_html( $product_id );
+		if ( '' === $html ) {
+			return '';
+		}
+
+		$this->shortcode_configurator_rendered = true;
+		return $html;
 	}
 
 	/**
 	 * Render configurator markup.
 	 */
 	public function render_configurator(): void {
-		if ( ! $this->is_configurator_view() || $this->block_template_active || $this->block_configurator_rendered ) {
+		if ( ! $this->is_configurator_view() || $this->block_template_active || $this->block_configurator_rendered || $this->shortcode_configurator_rendered || $this->queried_content_has_configurator_shortcode() ) {
 			return;
 		}
 
-		echo $this->get_configurator_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo $this->get_configurator_html( get_queried_object_id() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 
 	/**
