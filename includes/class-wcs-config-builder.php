@@ -529,6 +529,9 @@ class WCS_Config_Builder {
 				$row['min'] = (string) ( $field['min'] ?? '' );
 				$row['max'] = (string) ( $field['max'] ?? '' );
 				$row['step'] = (string) ( $field['step'] ?? '' );
+			} elseif ( 'text' === $type ) {
+				$row['min'] = (string) ( $field['min'] ?? '' );
+				$row['max'] = (string) ( $field['max'] ?? '' );
 			}
 			if ( ! empty( $row['price_enabled'] ) ) {
 				$row['price'] = (float) ( $field['price'] ?? 0 );
@@ -643,6 +646,21 @@ class WCS_Config_Builder {
 							/* translators: %s: customer field label */
 							__( 'Invalid value entered for %s.', 'woo-spiegelloft-configurator' ),
 							(string) $field['label']
+						)
+					);
+				}
+			}
+			if ( 'text' === (string) $field['type'] && '' !== (string) $value ) {
+				$word_count = str_word_count( wp_strip_all_tags( (string) $value ) );
+				$min_words  = '' !== (string) ( $field['min'] ?? '' ) ? (int) $field['min'] : null;
+				$max_words  = '' !== (string) ( $field['max'] ?? '' ) ? (int) $field['max'] : null;
+				if ( ( null !== $min_words && $word_count < $min_words ) || ( null !== $max_words && $word_count > $max_words ) ) {
+					return new WP_Error(
+						'wcs_invalid_customer_field_words',
+						sprintf(
+							/* translators: %s: field label */
+							__( 'Invalid word count entered for %s.', 'woo-spiegelloft-configurator' ),
+							(string) ( $field['label'] ?? $key )
 						)
 					);
 				}

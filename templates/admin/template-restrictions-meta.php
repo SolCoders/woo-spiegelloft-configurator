@@ -277,8 +277,10 @@ function wcs_rule_action_rows( array $rule ): array {
 													$field_choice = is_array( $field_choice ) ? $field_choice : array( 'label' => (string) $field_choice );
 													$field_label  = (string) ( $field_choice['label'] ?? $field_key );
 													$target_type  = (string) ( $field_choice['target_type'] ?? 'category' );
+													$field_type   = (string) ( $field_choice['type'] ?? 'selection' );
+													$field_values = wp_json_encode( (array) ( $field_choice['options'] ?? array() ) );
 													?>
-													<option value="<?php echo esc_attr( $field_key ); ?>" data-target-type="<?php echo esc_attr( $target_type ); ?>" <?php selected( (string) ( $action['target'] ?? '' ), $field_key ); ?>>
+													<option value="<?php echo esc_attr( $field_key ); ?>" data-target-type="<?php echo esc_attr( $target_type ); ?>" data-type="<?php echo esc_attr( $field_type ); ?>" data-values="<?php echo esc_attr( (string) $field_values ); ?>" <?php selected( (string) ( $action['target'] ?? '' ), $field_key ); ?>>
 														<?php echo esc_html( $field_label ); ?>
 													</option>
 												<?php endforeach; ?>

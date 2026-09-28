@@ -246,33 +246,37 @@ class WCS_Template_Admin {
 				$field_key = ! empty( $choice_step_map )
 					? $group_slug . '__choice_' . (int) ( $option['id'] ?? 0 )
 					: $group_slug;
-				$template_field_choices[ $field_key ] = array(
-					'label'       => $label,
-					'source'      => 'category',
-					'type'        => 'selection',
-					'target_type' => 'category',
-					'options'     => $this->get_rule_choice_values_for_field(
-						array_merge(
-							(array) ( $option_choices[ $group_slug ] ?? array() ),
-							array(
+				if ( empty( $option_data['customer_fields'] ) ) {
+					$template_field_choices[ $field_key ] = array(
+						'label'       => $label,
+						'source'      => 'category',
+						'type'        => 'selection',
+						'target_type' => 'category',
+						'options'     => $this->get_rule_choice_values_for_field(
+							array_merge(
+								(array) ( $option_choices[ $group_slug ] ?? array() ),
 								array(
-									'value' => $value,
-									'label' => $label,
-								),
-							)
-						)
-					),
-				);
+									array(
+										'value' => $value,
+										'label' => $label,
+									),
+								)
+							),
+							$field_key
+						),
+					);
+				}
 				$template_field_choices = $this->append_customer_field_rule_choices(
 					$template_field_choices,
 					(array) ( $option_data['customer_fields'] ?? array() ),
 					$field_key . '.' . $value,
-					array( $label )
+					array()
 				);
 				$option_choices[ $group_slug ][] = array(
-					'value' => $value,
-					'label' => $label,
-					'group' => (string) ( $group['label'] ?? $group_slug ),
+					'value'           => $value,
+					'label'           => $label,
+					'group'           => (string) ( $group['label'] ?? $group_slug ),
+					'children'        => $this->get_rule_choice_values_from_customer_fields( (array) ( $option_data['customer_fields'] ?? array() ), $field_key . '.' . $value ),
 				);
 			}
 		}
@@ -290,33 +294,37 @@ class WCS_Template_Admin {
 				$field_key = '' !== $group_slug
 					? ( ! empty( $choice_step_map ) ? $group_slug . '__choice_' . (int) ( $option['id'] ?? 0 ) : $group_slug )
 					: $value;
-				$template_field_choices[ $field_key ] = array(
-					'label'       => $label,
-					'source'      => 'category',
-					'type'        => 'selection',
-					'target_type' => 'category',
-					'options'     => $this->get_rule_choice_values_for_field(
-						array_merge(
-							(array) ( $option_choices[ $group_slug ?: 'choices' ] ?? array() ),
-							array(
+				if ( empty( $option_data['customer_fields'] ) ) {
+					$template_field_choices[ $field_key ] = array(
+						'label'       => $label,
+						'source'      => 'category',
+						'type'        => 'selection',
+						'target_type' => 'category',
+						'options'     => $this->get_rule_choice_values_for_field(
+							array_merge(
+								(array) ( $option_choices[ $group_slug ?: 'choices' ] ?? array() ),
 								array(
-									'value' => $value,
-									'label' => $label,
-								),
-							)
-						)
-					),
-				);
+									array(
+										'value' => $value,
+										'label' => $label,
+									),
+								)
+							),
+							$field_key
+						),
+					);
+				}
 				$template_field_choices = $this->append_customer_field_rule_choices(
 					$template_field_choices,
 					(array) ( $option_data['customer_fields'] ?? array() ),
 					$field_key . '.' . $value,
-					array( $label )
+					array()
 				);
 				$option_choices[ $group_slug ?: 'choices' ][] = array(
-					'value' => $value,
-					'label' => $label,
-					'group' => __( 'Choices', 'woo-spiegelloft-configurator' ),
+					'value'           => $value,
+					'label'           => $label,
+					'group'           => __( 'Choices', 'woo-spiegelloft-configurator' ),
+					'children'        => $this->get_rule_choice_values_from_customer_fields( (array) ( $option_data['customer_fields'] ?? array() ), $field_key . '.' . $value ),
 				);
 			}
 		}
@@ -353,7 +361,7 @@ class WCS_Template_Admin {
 				'type'        => $type,
 				'target_type' => 'nested',
 				'options'     => 'dropdown' === (string) ( $field['type'] ?? 'dropdown' )
-					? $this->get_rule_choice_values_for_field( (array) ( $field['options'] ?? array() ) )
+					? $this->get_rule_choice_values_for_field( (array) ( $field['options'] ?? array() ), $field_path )
 					: array(),
 			);
 
@@ -390,23 +398,98 @@ class WCS_Template_Admin {
 	 * @param array<int, mixed> $options Raw options.
 	 * @return array<int, array<string,string>>
 	 */
-	private function get_rule_choice_values_for_field( array $options ): array {
+	private function get_rule_choice_values_for_field( array $options, string $field_path = '' ): array {
 		$values = array();
 		foreach ( $options as $option ) {
 			if ( ! is_array( $option ) ) {
 				continue;
 			}
 
-			$value = (string) ( $option['value'] ?? '' );
+			$value = sanitize_title( (string) ( $option['value'] ?? $option['label'] ?? '' ) );
 			$label = (string) ( $option['label'] ?? $value );
 			if ( '' === $value || '' === $label ) {
 				continue;
 			}
 
-			$values[] = array(
+			if ( ! empty( $option['children'] ) && is_array( $option['children'] ) ) {
+				$values = array_merge( $values, (array) $option['children'] );
+				continue;
+			}
+
+			$row = array(
 				'value' => $value,
 				'label' => $label,
 			);
+
+			if ( ! empty( $option['customer_fields'] ) && is_array( $option['customer_fields'] ) ) {
+				$row['children'] = $this->get_rule_choice_values_from_customer_fields( (array) $option['customer_fields'], '' !== $field_path ? $field_path . '.' . $value : '' );
+			}
+
+			$values[] = $row;
+		}
+
+		return $values;
+	}
+
+	/**
+	 * Build nested value metadata from customer fields under one dropdown value.
+	 *
+	 * @param array<int, mixed> $fields Customer field rows.
+	 * @return array<int, array<string,mixed>>
+	 */
+	private function get_rule_choice_values_from_customer_fields( array $fields, string $base_path ): array {
+		$values = array();
+		foreach ( $fields as $field ) {
+			if ( ! is_array( $field ) ) {
+				continue;
+			}
+
+			$label = (string) ( $field['label'] ?? '' );
+			$key   = sanitize_title( (string) ( $field['key'] ?? $label ) );
+			if ( '' === $label || '' === $key ) {
+				continue;
+			}
+
+			$field_path = '' !== $base_path ? $base_path . '.' . $key : $key;
+			$row        = array(
+				'value'  => $field_path,
+				'label'  => $label,
+				'path'   => $field_path,
+				'type'   => $this->rule_type_for_customer_field( (string) ( $field['type'] ?? 'dropdown' ) ),
+				'source' => 'nested',
+			);
+
+			if ( 'dropdown' !== (string) ( $field['type'] ?? 'dropdown' ) ) {
+				$values[] = $row;
+				continue;
+			}
+
+			$children = array();
+			foreach ( (array) ( $field['options'] ?? array() ) as $option ) {
+				if ( ! is_array( $option ) ) {
+					continue;
+				}
+
+				$value = sanitize_title( (string) ( $option['value'] ?? $option['label'] ?? '' ) );
+				$label = (string) ( $option['label'] ?? $value );
+				if ( '' === $value || '' === $label ) {
+					continue;
+				}
+
+				$option_row = array(
+					'value' => $value,
+					'label' => $label,
+				);
+
+				if ( ! empty( $option['customer_fields'] ) && is_array( $option['customer_fields'] ) ) {
+					$option_row['children'] = $this->get_rule_choice_values_from_customer_fields( (array) $option['customer_fields'], $field_path . '.' . $value );
+				}
+
+				$children[] = $option_row;
+			}
+
+			$row['children'] = $children;
+			$values[]        = $row;
 		}
 
 		return $values;

@@ -309,6 +309,9 @@ class WCS_Choice_Meta {
 					$row['min'] = sanitize_text_field( (string) ( $field['min'] ?? '' ) );
 					$row['max'] = sanitize_text_field( (string) ( $field['max'] ?? '' ) );
 					$row['step'] = sanitize_text_field( (string) ( $field['step'] ?? '' ) );
+				} elseif ( 'text' === $type ) {
+					$row['min'] = sanitize_text_field( (string) ( $field['min'] ?? '' ) );
+					$row['max'] = sanitize_text_field( (string) ( $field['max'] ?? '' ) );
 				}
 			}
 

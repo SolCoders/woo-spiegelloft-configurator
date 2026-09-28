@@ -206,7 +206,7 @@
 		}
 		if (['greater_than', 'greater_than_or_equal', 'less_than', 'less_than_or_equal'].indexOf(operator) !== -1) {
 			if (isNaN(a) || isNaN(e)) {
-				return false;
+				return String(actual || '') === String(expected || '');
 			}
 			return operator === 'greater_than' ? a > e : operator === 'greater_than_or_equal' ? a >= e : operator === 'less_than' ? a < e : a <= e;
 		}

@@ -84,17 +84,17 @@ if ( ! function_exists( 'wcs_render_customer_field_rows' ) ) {
 										<i aria-hidden="true"></i>
 									</label>
 								</div>
-								<div class="wcs-field-settings-section wcs-field-settings-validation" <?php echo 'number' === $field_type ? '' : 'hidden'; ?>>
+								<div class="wcs-field-settings-section wcs-field-settings-validation" <?php echo in_array( $field_type, array( 'number', 'text' ), true ) ? '' : 'hidden'; ?>>
 									<h4><?php esc_html_e( 'Validation', 'woo-spiegelloft-configurator' ); ?></h4>
-									<label class="wcs-field-settings-value">
-										<span><?php esc_html_e( 'Minimum', 'woo-spiegelloft-configurator' ); ?></span>
+									<label class="wcs-field-settings-value wcs-field-settings-min">
+										<span class="wcs-field-settings-min-label"><?php echo 'text' === $field_type ? esc_html__( 'Minimum word count', 'woo-spiegelloft-configurator' ) : esc_html__( 'Minimum', 'woo-spiegelloft-configurator' ); ?></span>
 										<input type="number" class="input wcs-customer-field-min" name="<?php echo esc_attr( $field_name ); ?>[min]" value="<?php echo esc_attr( (string) ( $field['min'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'Min', 'woo-spiegelloft-configurator' ); ?>">
 									</label>
-									<label class="wcs-field-settings-value">
-										<span><?php esc_html_e( 'Maximum', 'woo-spiegelloft-configurator' ); ?></span>
+									<label class="wcs-field-settings-value wcs-field-settings-max">
+										<span class="wcs-field-settings-max-label"><?php echo 'text' === $field_type ? esc_html__( 'Maximum word count', 'woo-spiegelloft-configurator' ) : esc_html__( 'Maximum', 'woo-spiegelloft-configurator' ); ?></span>
 										<input type="number" class="input wcs-customer-field-max" name="<?php echo esc_attr( $field_name ); ?>[max]" value="<?php echo esc_attr( (string) ( $field['max'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'Max', 'woo-spiegelloft-configurator' ); ?>">
 									</label>
-									<label class="wcs-field-settings-value">
+									<label class="wcs-field-settings-value wcs-field-settings-step" <?php echo 'text' === $field_type ? 'hidden' : ''; ?>>
 										<span><?php esc_html_e( 'Step', 'woo-spiegelloft-configurator' ); ?></span>
 										<input type="number" class="input wcs-customer-field-step" name="<?php echo esc_attr( $field_name ); ?>[step]" value="<?php echo esc_attr( (string) ( $field['step'] ?? '' ) ); ?>" placeholder="1">
 									</label>

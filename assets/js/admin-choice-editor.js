@@ -246,7 +246,10 @@
 			.attr('data-field-type', fieldType);
 		$row.addClass('has-prices');
 		$options.prop('hidden', false).css('display', isDropdown ? 'grid' : 'none');
-		$grid.find('.wcs-field-settings-validation').prop('hidden', !isNumber);
+		$grid.find('.wcs-field-settings-validation').prop('hidden', !(isNumber || isText));
+		$grid.find('.wcs-field-settings-step').prop('hidden', !isNumber);
+		$grid.find('.wcs-field-settings-min-label').text(isText ? 'Minimum word count' : 'Minimum');
+		$grid.find('.wcs-field-settings-max-label').text(isText ? 'Maximum word count' : 'Maximum');
 		$grid.find('.wcs-customer-field-readonly').closest('.wcs-field-settings-toggle').prop('hidden', isDropdown);
 		$options.children('.wcs-customer-field-option').children('.wcs-customer-field-option-price').toggle(isDropdown);
 		$options.children('.wcs-customer-field-option').children('.wcs-customer-option-position').each(function () {
@@ -263,9 +266,11 @@
 		if ($grid.find('.wcs-customer-field-required').first().is(':checked')) count++;
 		if (fieldType !== 'dropdown' && $grid.find('.wcs-customer-field-readonly').first().is(':checked')) count++;
 		if ($grid.find('.wcs-customer-field-disabled').first().is(':checked')) count++;
-		if (fieldType === 'number') {
+		if (fieldType === 'number' || fieldType === 'text') {
 			if ($grid.find('.wcs-customer-field-min').first().val() !== '') count++;
 			if ($grid.find('.wcs-customer-field-max').first().val() !== '') count++;
+		}
+		if (fieldType === 'number') {
 			if ($grid.find('.wcs-customer-field-step').first().val() !== '') count++;
 		}
 
@@ -382,6 +387,7 @@
 
 	function duplicateCustomerOption($option) {
 		var $clone = $option.clone();
+		var fieldTypes = [];
 		$clone.removeClass('wcs-row-actions-active').css({
 			'--wcs-row-action-x': '',
 			'--wcs-row-action-y': ''
@@ -394,8 +400,19 @@
 		$clone.find('.wcs-image-url').each(function () {
 			updateImagePreview($(this));
 		});
+		$clone.find('.wcs-customer-field-type').each(function () {
+			fieldTypes.push($(this).val());
+		});
 		$option.after($clone);
 		reindexCustomerFields();
+		$clone.find('.wcs-customer-field-type').each(function (index) {
+			if (fieldTypes[index]) {
+				$(this).val(fieldTypes[index]);
+			}
+		});
+		$clone.find('.wcs-customer-field-row').each(function () {
+			refreshCustomerFieldRow($(this));
+		});
 		bindCustomerFieldSorting();
 		bindCustomerOptionSorting();
 	}

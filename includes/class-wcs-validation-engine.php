@@ -374,7 +374,7 @@ class WCS_Validation_Engine {
 
 		if ( in_array( $operator, array( 'greater_than', 'greater_than_or_equal', 'less_than', 'less_than_or_equal' ), true ) ) {
 			if ( ! is_numeric( $actual ) || ! is_numeric( $expected ) ) {
-				return false;
+				return $this->selection_contains( $actual, $expected );
 			}
 
 			if ( 'greater_than' === $operator ) {
