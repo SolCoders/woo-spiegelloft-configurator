@@ -142,6 +142,9 @@
 				max: rule.max || ''
 			}];
 		}
+		actions = actions.map(function (action) {
+			return $.extend({}, action, { message: action.message || rule.message || '' });
+		});
 		return $.extend({}, rule, { conditions: conditions, actions: actions, match: rule.match === 'any' ? 'any' : 'all' });
 	}
 
@@ -161,18 +164,145 @@
 	}
 
 	function findField($wrap, path) {
-		var escaped = String(path || '').replace(/"/g, '\\"');
-		var $field = $wrap.find('[data-key="' + escaped + '"], [data-group="' + escaped + '"]').first();
+		var raw = String(path || '');
+		var variants = [raw, raw.replace(/-/g, '_'), raw.replace(/_/g, '-')];
+		var $field = $();
+		var escaped;
+		var i;
+
+		for (i = 0; i < variants.length; i += 1) {
+			escaped = variants[i].replace(/"/g, '\\"');
+			$field = $wrap.find('[data-key="' + escaped + '"], [data-group="' + escaped + '"]').first();
+			if ($field.length) {
+				return $field;
+			}
+		}
+
+		raw.split('.').some(function (part, index, parts) {
+			var prefix = parts.slice(0, parts.length - index).join('.');
+			var prefixVariants = [prefix, prefix.replace(/-/g, '_'), prefix.replace(/_/g, '-')];
+			return prefixVariants.some(function (candidate) {
+				escaped = candidate.replace(/"/g, '\\"');
+				$field = $wrap.find('[data-key="' + escaped + '"], [data-group="' + escaped + '"]').first();
+				return $field.length > 0;
+			});
+		});
 		if ($field.length) {
 			return $field;
 		}
-		var normalized = String(path || '').trim().toLowerCase();
+		var normalized = raw.trim().toLowerCase();
 		if (!normalized) {
 			return $field;
 		}
 		return $wrap.find('.wcs-step-option-group').filter(function () {
 			return String($(this).find('.wcs-option-heading h3, > h3').first().text() || '').trim().toLowerCase() === normalized;
 		}).find('.wcs-choice-select').first();
+	}
+
+	function findFieldByOptionValue($wrap, value) {
+		var targetValue = String(value || '');
+		var $field = $();
+		var candidates = targetValue ? [targetValue].concat(targetValue.split('.')) : [];
+
+		if (!targetValue) {
+			return $field;
+		}
+
+		$wrap.find('.wcs-choice-select, .wcs-customer-field-select').each(function () {
+			var $select = $(this);
+			if ($select.find('option').filter(function () {
+				var $option = $(this);
+				return candidates.some(function (candidate) {
+					return tokenMatches($option.val(), candidate) || tokenMatches($option.text(), candidate);
+				});
+			}).length) {
+				$field = $select;
+				return false;
+			}
+		});
+
+		return $field;
+	}
+
+	function findOptionTarget($wrap, target, targetValue) {
+		var candidates = [];
+		var result = {
+			field: $(),
+			value: ''
+		};
+		var $targetField = findField($wrap, target);
+
+		[targetValue, target].forEach(function (value) {
+			String(value || '').split('.').forEach(function (part) {
+				if (part && candidates.indexOf(part) === -1) {
+					candidates.push(part);
+				}
+			});
+			if (value && candidates.indexOf(String(value)) === -1) {
+				candidates.unshift(String(value));
+			}
+		});
+
+		if (!candidates.length) {
+			return result;
+		}
+
+		($targetField.length ? $targetField : $wrap.find('.wcs-choice-select, .wcs-customer-field-select')).each(function () {
+			var $select = $(this);
+			var $option = $select.find('option').filter(function () {
+				var $candidate = $(this);
+				return candidates.some(function (candidate) {
+					return tokenMatches($candidate.val(), candidate) || tokenMatches($candidate.text(), candidate);
+				});
+			}).first();
+
+			if ($option.length) {
+				result.field = $select;
+				result.value = String($option.val() || '');
+				return false;
+			}
+		});
+
+		return result;
+	}
+
+	function inferTargetValue($field, target, targetValue) {
+		var value = String(targetValue || '');
+
+		if (value || !$field.length) {
+			return value;
+		}
+
+		String(target || '').split('.').some(function (part) {
+			if ($field.find('option').filter(function () {
+				var $option = $(this);
+				return tokenMatches($option.val(), part) || tokenMatches($option.text(), part);
+			}).length) {
+				value = part;
+				return true;
+			}
+			return false;
+		});
+
+		return value;
+	}
+
+	function optionSelector(value) {
+		return '[data-value="' + String(value || '').replace(/"/g, '\\"') + '"]';
+	}
+
+	function normalizeToken(value) {
+		return String(value || '')
+			.toLowerCase()
+			.trim()
+			.replace(/[_\s]+/g, '-')
+			.replace(/[^a-z0-9.-]+/g, '')
+			.replace(/-+/g, '-')
+			.replace(/^-+|-+$/g, '');
+	}
+
+	function tokenMatches(actual, expected) {
+		return String(actual || '') === String(expected || '') || normalizeToken(actual) === normalizeToken(expected);
 	}
 
 	function isEmpty(value) {
@@ -197,7 +327,9 @@
 			return isEmpty(actual) || actual === false || actual === '0' || actual === 'false' || actual === 'no';
 		}
 		if (operator === 'one_of' || operator === 'not_one_of') {
-			var hit = list.indexOf(String(actual || '')) !== -1;
+			var hit = list.some(function (item) {
+				return tokenMatches(actual, item);
+			});
 			return operator === 'one_of' ? hit : !hit;
 		}
 		if (operator === 'contains' || operator === 'not_contains') {
@@ -210,7 +342,33 @@
 			}
 			return operator === 'greater_than' ? a > e : operator === 'greater_than_or_equal' ? a >= e : operator === 'less_than' ? a < e : a <= e;
 		}
-		return operator === 'not_equals' ? String(actual || '') !== String(expected || '') : String(actual || '') === String(expected || '');
+		return operator === 'not_equals' ? !tokenMatches(actual, expected) : tokenMatches(actual, expected);
+	}
+
+	function resolveCondition(condition, values) {
+		var path = String(condition.path || '');
+		var expected = condition.value;
+		var actual = values[path];
+
+		if (actual !== undefined) {
+			return { actual: actual, expected: expected };
+		}
+
+		path.split('.').some(function (part, index, parts) {
+			var prefix = parts.slice(0, parts.length - index).join('.');
+			var candidate = values[prefix];
+			var next = parts[parts.length - index];
+			if (candidate !== undefined && next !== undefined) {
+				actual = candidate;
+				if (expected === undefined || expected === null || expected === '') {
+					expected = next;
+				}
+				return true;
+			}
+			return false;
+		});
+
+		return { actual: actual, expected: expected };
 	}
 
 	function setDisabled($field, disabled) {
@@ -231,6 +389,48 @@
 		}
 	}
 
+	function setOptionDisabled($field, value, disabled) {
+		var targetValue = String(value || '');
+		var $option;
+		var candidates = targetValue ? [targetValue].concat(targetValue.split('.')) : [];
+		var selectedValue = String($field.val() || '');
+
+		if (!targetValue) {
+			setDisabled($field, disabled);
+			return;
+		}
+
+		$option = $field.find('option').filter(function () {
+			var $candidate = $(this);
+			return candidates.some(function (candidate) {
+				return tokenMatches($candidate.val(), candidate) || tokenMatches($candidate.text(), candidate);
+			});
+		}).first();
+		if (!$option.length) {
+			return;
+		}
+
+		targetValue = String($option.val() || targetValue);
+		$option.prop('disabled', disabled);
+		$field.next('.wcs-custom-select').find('.wcs-custom-select__option' + optionSelector(targetValue))
+			.toggleClass('is-disabled', disabled)
+			.prop('disabled', disabled);
+		$field.next('.wcs-image-choice-list').find('.wcs-image-choice-card' + optionSelector(targetValue))
+			.toggleClass('is-disabled', disabled)
+			.prop('disabled', disabled)
+			.attr('aria-disabled', disabled ? 'true' : 'false');
+
+		if (disabled && tokenMatches(selectedValue, targetValue)) {
+			$field.val('').trigger('change');
+			$field.next('.wcs-custom-select').find('.wcs-custom-select__value').text('Please select');
+			$field.next('.wcs-custom-select').find('.wcs-custom-select__option').removeClass('is-selected');
+			$field.next('.wcs-image-choice-list').find('.wcs-image-choice-card').removeClass('is-selected').attr('aria-checked', 'false');
+			$field.closest('.wcs-step-option-group').children('[data-wcs-nested-parent="' + String($field.data('key') || '').replace(/"/g, '\\"') + '"]').remove();
+			$field.closest('.wcs-customer-field').find('.wcs-customer-nested-target').prop('hidden', true).empty();
+			$field.closest('.wcs-customer-field').find('.wcs-customer-nested-box').remove();
+		}
+	}
+
 	function setVisible($field, visible) {
 		$field.closest('.wcs-step-option-group, .wcs-customer-field, .wcs-size-side-row, .wcs-size-box label').prop('hidden', !visible).toggle(visible);
 		if (!visible) {
@@ -238,32 +438,79 @@
 		}
 	}
 
+	function setRequired($field, required, message) {
+		var $group = $field.closest('.wcs-step-option-group, .wcs-customer-field');
+		var nativeRequired = $field.data('required') === 1 || $field.data('required') === '1';
+		var label = $group.data('required-label') || $.trim($group.find('.wcs-option-heading h3, > h3, > .wcs-customer-field__label').first().text()) || 'This field';
+
+		$field.data('wcs-rule-required', required ? '1' : '');
+		$group.data('wcs-rule-message', required ? String(message || '') : '');
+		$group.toggleClass('is-required', required || nativeRequired);
+		$field.attr('aria-required', required || nativeRequired ? 'true' : null);
+		if (!$group.attr('data-required-label')) {
+			$group.attr('data-required-label', label);
+		}
+		if (!required && !nativeRequired) {
+			$group.removeClass('is-empty');
+		}
+	}
+
+	function applyNumericConstraint($field, attr, value, message) {
+		var current = parseFloat($field.val());
+		var changed = false;
+
+		$field.attr(attr, value);
+		if (message) {
+			$field.data('wcs-rule-range-message', String(message));
+		}
+		if (isNaN(current)) {
+			return;
+		}
+		if (attr === 'max' && current > value) {
+			$field.val(value);
+			changed = true;
+		}
+		if (attr === 'min' && current < value) {
+			$field.val(value);
+			changed = true;
+		}
+		if (changed) {
+			$field.triggerHandler('change');
+		}
+	}
+
 	function executeAction($wrap, action, matched, values) {
 		var name = action.action || action.then || '';
 		var target = ['require_value', 'disallow_value'].indexOf(name) !== -1 ? (action.target || '') : (action.target || action.target_value || '');
-		var $field = findField($wrap, target);
+		var isDisableAction = name === 'disable' || name === 'disable_option' || name === 'enable';
+		var optionTarget = isDisableAction ? findOptionTarget($wrap, target, action.target_value || '') : { field: $(), value: '' };
+		var $field = optionTarget.field.length ? optionTarget.field : findField($wrap, target);
+		var targetValue = optionTarget.value || inferTargetValue($field, target, action.target_value || '');
 		var value = action.value || action.max || '';
 		var computed = String(value).indexOf('{') !== -1 || /^[\d\s+\-*/().,a-z]+$/i.test(String(value)) ? parseFormula(value, values) : null;
 
+		if (!$field.length && targetValue) {
+			$field = findFieldByOptionValue($wrap, targetValue);
+		}
 		if (!$field.length) {
 			return;
 		}
-		if (name === 'disable' || name === 'disable_option' || name === 'enable') {
-			setDisabled($field, name === 'enable' ? !matched : matched);
+		if (isDisableAction) {
+			if (targetValue) {
+				setOptionDisabled($field, targetValue, name === 'enable' ? !matched : matched);
+			} else {
+				setDisabled($field, name === 'enable' ? !matched : matched);
+			}
+		} else if (name === 'require') {
+			setRequired($field, matched, action.message || '');
 		} else if (name === 'show' || name === 'hide') {
 			setVisible($field, name === 'show' ? matched : !matched);
 		} else if (name === 'clear' && matched) {
 			$field.val('').triggerHandler('change');
-		} else if ((name === 'set_max' || name === 'validate_range') && matched && computed !== null) {
-			$field.attr('max', computed);
-			if (parseFloat($field.val()) > computed) {
-				$field.val(computed).triggerHandler('change');
-			}
-		} else if (name === 'set_min' && matched && computed !== null) {
-			$field.attr('min', computed);
-			if (parseFloat($field.val()) < computed) {
-				$field.val(computed).triggerHandler('change');
-			}
+		} else if (matched && computed !== null && (name === 'set_max' || name === 'validate_range')) {
+			applyNumericConstraint($field, 'max', computed, action.message || '');
+		} else if (matched && computed !== null && name === 'set_min') {
+			applyNumericConstraint($field, 'min', computed, action.message || '');
 		}
 	}
 
@@ -274,11 +521,19 @@
 		this.rules.forEach(function (rule, index) {
 			rule.conditions.forEach(function (condition) {
 				var key = condition.path || '';
+				var keys = key ? [String(key)] : [];
 				if (!key) {
 					return;
 				}
-				this.dependents[key] = this.dependents[key] || [];
-				this.dependents[key].push(index);
+				if (String(key).indexOf('side_') === 0) {
+					keys.push(String(key).replace(/^side_/, ''));
+				} else if (['width', 'height'].indexOf(String(key)) !== -1) {
+					keys.push('side_' + String(key));
+				}
+				keys.forEach(function (dependentKey) {
+					this.dependents[dependentKey] = this.dependents[dependentKey] || [];
+					this.dependents[dependentKey].push(index);
+				}, this);
 			}, this);
 		}, this);
 	}
@@ -288,6 +543,8 @@
 		var changedKeys = changedKey ? [String(changedKey)] : [];
 		if (changedKey && String(changedKey).indexOf('side_') === 0) {
 			changedKeys.push(String(changedKey).replace(/^side_/, ''));
+		} else if (changedKey && ['width', 'height'].indexOf(String(changedKey)) !== -1) {
+			changedKeys.push('side_' + String(changedKey));
 		}
 		var indexes = [];
 		changedKeys.forEach(function (key) {
@@ -306,8 +563,8 @@
 			seen[index] = true;
 			var rule = this.rules[index];
 			var results = rule.conditions.map(function (condition) {
-				var actual = values[condition.path];
-				return compare(actual, condition.value, condition.operator, condition.type);
+				var resolved = resolveCondition(condition, values);
+				return compare(resolved.actual, resolved.expected, condition.operator, condition.type);
 			});
 			var matched = rule.match === 'any' ? results.indexOf(true) !== -1 : results.indexOf(false) === -1;
 			rule.actions.forEach(function (action) {

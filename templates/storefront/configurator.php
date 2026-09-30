@@ -140,13 +140,13 @@ foreach ( $steps as $step ) {
 					? (string) ( $first_customer_field['label'] ?? $single_option['name'] ?? $single_option['value'] ?? $group['title'] ?? $group_slug )
 					: (string) ( $group['title'] ?? $group_slug );
 				?>
-				<div class="wcs-step-option-group">
+				<div class="wcs-step-option-group" data-required="<?php echo esc_attr( ! empty( $group['required'] ) ? '1' : '0' ); ?>">
 					<div class="wcs-option-heading">
 						<h3><?php echo esc_html( $heading ); ?></h3>
 						<span class="wcs-option-info" aria-hidden="true">i</span>
 					</div>
 					<label class="wcs-option-select <?php echo $hide_parent_select ? 'wcs-option-select--hidden-parent' : ''; ?>">
-						<select class="wcs-choice-select" data-group="<?php echo esc_attr( $group_slug ); ?>">
+						<select class="wcs-choice-select" data-group="<?php echo esc_attr( $group_slug ); ?>" <?php echo ! empty( $group['required'] ) ? 'data-required="1" aria-required="true"' : ''; ?>>
 							<?php if ( ! $hide_parent_select ) : ?>
 								<option value=""><?php esc_html_e( 'Please select', 'woo-spiegelloft-configurator' ); ?></option>
 							<?php endif; ?>
@@ -201,13 +201,13 @@ foreach ( $steps as $step ) {
 						? (string) ( $first_customer_field['label'] ?? $single_option['name'] ?? $single_option['value'] ?? $group['title'] ?? $group_slug )
 						: (string) ( $group['title'] ?? $group_slug );
 					?>
-					<div class="wcs-step-option-group">
+					<div class="wcs-step-option-group" data-required="<?php echo esc_attr( ! empty( $group['required'] ) ? '1' : '0' ); ?>">
 						<div class="wcs-option-heading">
 							<h3><?php echo esc_html( $heading ); ?></h3>
 							<span class="wcs-option-info" aria-hidden="true">i</span>
 						</div>
 						<label class="wcs-option-select <?php echo $hide_parent_select ? 'wcs-option-select--hidden-parent' : ''; ?>">
-							<select class="wcs-choice-select" data-group="<?php echo esc_attr( $group_slug ); ?>">
+							<select class="wcs-choice-select" data-group="<?php echo esc_attr( $group_slug ); ?>" <?php echo ! empty( $group['required'] ) ? 'data-required="1" aria-required="true"' : ''; ?>>
 								<?php if ( ! $hide_parent_select ) : ?>
 									<option value=""><?php esc_html_e( 'Please select', 'woo-spiegelloft-configurator' ); ?></option>
 								<?php endif; ?>

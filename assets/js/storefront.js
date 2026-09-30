@@ -185,7 +185,7 @@
 		if (clamped !== value) {
 			$input.val(clamped);
 			if (showError && !isNaN(min) && !isNaN(max)) {
-				showDimensionRangeError($input, rangeMessage($input, min, max));
+				showDimensionRangeError($input, $input.data('wcs-rule-range-message') || rangeMessage($input, min, max));
 			}
 		}
 	}
@@ -282,12 +282,32 @@
 		}
 	}
 
+	function removeNestedRowsCascade($scope, $rows) {
+		$rows.each(function () {
+			$(this).find('.wcs-customer-field-input').each(function () {
+				var childKey = String($(this).data('key') || '');
+				var escapedChild = childKey.replace(/"/g, '\\"');
+				var $childRows;
+
+				if (!childKey) {
+					return;
+				}
+
+				$childRows = $scope.find('[data-wcs-nested-parent="' + escapedChild + '"]');
+				removeNestedRowsCascade($scope, $childRows);
+			});
+		});
+		$rows.remove();
+	}
+
 	function clearNestedCustomerFields($field) {
 		if ($field.closest('.wcs-configurator').data('layout') === 'compact_dropdown') {
 			var escapedParent = String($field.data('key') || '').replace(/"/g, '\\"');
-			$field.closest('.wcs-customer-field').nextAll('[data-wcs-nested-parent="' + escapedParent + '"]').remove();
-			$field.closest('.wcs-customer-field-target').nextAll('[data-wcs-nested-parent="' + escapedParent + '"]').remove();
-			$field.closest('.wcs-step-option-group').nextAll('[data-wcs-nested-parent="' + escapedParent + '"]').remove();
+			var $scope = $field.closest('.wcs-configurator');
+			var $rows = $field.closest('.wcs-customer-field').nextAll('[data-wcs-nested-parent="' + escapedParent + '"]')
+				.add($field.closest('.wcs-customer-field-target').nextAll('[data-wcs-nested-parent="' + escapedParent + '"]'))
+				.add($field.closest('.wcs-step-option-group').nextAll('[data-wcs-nested-parent="' + escapedParent + '"]'));
+			removeNestedRowsCascade($scope, $rows);
 		}
 		getNestedTarget($field).prop('hidden', true).empty();
 	}
@@ -529,6 +549,8 @@
 			return;
 		}
 		var text = cleanOptionText($select.find(':selected').text()) || 'Please select';
+		var price = optionDisplayPrice($select.find(':selected').data('price'));
+		$custom.find('.wcs-custom-select__selected-price').text(price).prop('hidden', !price);
 		$custom.find('.wcs-custom-select__value').text(text);
 		$custom.find('.wcs-custom-select__option').removeClass('is-selected');
 		$custom.find('.wcs-custom-select__option[data-value="' + String($select.val()).replace(/"/g, '\\"') + '"]').addClass('is-selected');
@@ -571,23 +593,55 @@
 
 	function validateCustomerFields($scope, showErrors) {
 		var hasErrors = false;
-		($scope || $('.wcs-configurator')).find('.wcs-customer-field.is-required').each(function () {
+		var $scope = $scope || $('.wcs-configurator');
+		$scope.find('.wcs-step-option-group').each(function () {
+			var $group = $(this);
+			var $select = $group.find('> .wcs-option-select .wcs-choice-select').first();
+			var required = $group.hasClass('is-required') || $group.data('required') === 1 || $group.data('required') === '1' || $select.data('required') === 1 || $select.data('required') === '1' || $select.data('wcs-rule-required') === '1' || $select.prop('required');
+			var empty;
+			var label;
+			var message;
+
+			if (!required || $group.is('[hidden]') || $group.closest('[hidden], .is-wcs-rule-disabled').length || $select.prop('disabled')) {
+				return;
+			}
+
+			empty = !$select.val();
+			label = $group.find('.wcs-option-heading h3, > h3').first().text() || 'This field';
+			message = $group.data('wcs-rule-message') || label + ' darf nicht leer sein.';
+			$group.toggleClass('is-empty', empty);
+			if (empty) {
+				hasErrors = true;
+				if (showErrors) {
+					showFieldPopup($group, message);
+				}
+			} else {
+				hideFieldPopup($group);
+			}
+		});
+		$scope.find('.wcs-customer-field.is-required').each(function () {
 			var $field = $(this);
 			var $input = $field.children('.wcs-customer-field-input, .wcs-size-control').find('.wcs-customer-field-input').add($field.children('.wcs-customer-field-input')).first();
 			var empty = !$input.val();
 			var label = $field.data('required-label') || 'This field';
+			var message = $field.data('wcs-rule-message') || label + ' darf nicht leer sein.';
+			if ($field.is('[hidden]') || $field.closest('[hidden], .is-wcs-rule-disabled').length || $input.prop('disabled')) {
+				$field.removeClass('is-empty');
+				hideFieldPopup($field);
+				return;
+			}
 			$field.toggleClass('is-empty', empty);
 			$field.find('> .wcs-customer-field__error').prop('hidden', true);
 			if (empty) {
 				hasErrors = true;
 				if (showErrors) {
-					showFieldPopup($field, label + ' darf nicht leer sein.');
+					showFieldPopup($field, message);
 				}
 			} else {
 				hideFieldPopup($field);
 			}
 		});
-		($scope || $('.wcs-configurator')).find('.wcs-customer-nested-box').each(function () {
+		$scope.find('.wcs-customer-nested-box').each(function () {
 			$(this).toggleClass('has-required-empty', $(this).find('.wcs-customer-field.is-required.is-empty').length > 0);
 		});
 		return !hasErrors;
@@ -616,14 +670,16 @@
 				var disabled = $option.is(':disabled') || $option.data('required-message');
 				var message = $option.data('required-message') || $option.attr('title') || 'This option requires additional conditions.';
 				var image = $option.data('image') || '';
+				var price = optionDisplayPrice($option.data('price'));
 				optionsHtml += '<button type="button" class="wcs-custom-select__option' + (image ? ' wcs-custom-select__option--has-image' : ' wcs-custom-select__option--no-image') + (disabled ? ' is-disabled' : '') + '" data-value="' + escapeHtml($option.val()) + '">' +
 					(image ? '<img src="' + escapeHtml(image) + '" alt="">' : '') +
 					'<span>' + escapeHtml(cleanOptionText($option.text()) || '---') + '</span>' +
-					'<b aria-hidden="true">&#10003;</b>' +
+					(price ? '<small class="wcs-custom-select__price">' + escapeHtml(price) + '</small>' : '') +
 					'</button>';
 			});
 			$select.addClass('wcs-native-select').after(
 				'<div class="wcs-custom-select">' +
+				'<small class="wcs-custom-select__selected-price" hidden></small>' +
 				'<button type="button" class="wcs-custom-select__button"><span class="wcs-custom-select__value"></span><i aria-hidden="true"></i></button>' +
 				'<div class="wcs-custom-select__menu">' + optionsHtml + '</div>' +
 				'</div>'

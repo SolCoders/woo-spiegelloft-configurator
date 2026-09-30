@@ -212,8 +212,8 @@ class WCS_Validation_Engine {
 			if ( $this->is_superseded_by_customer_field( $selections, $target, $option_lookup ) ) {
 				return true;
 			}
-			return new WP_Error(
-				'wcs_rule_failed',
+			return $this->rule_error(
+				$rule,
 				sprintf(
 					/* translators: %s: target group */
 					__( 'Required selection missing for %s.', 'woo-spiegelloft-configurator' ),
@@ -223,8 +223,8 @@ class WCS_Validation_Engine {
 		}
 
 		if ( 'disallow' === $then && $target && ! $this->is_empty_selection( $target_actual ) ) {
-			return new WP_Error(
-				'wcs_rule_failed',
+			return $this->rule_error(
+				$rule,
 				sprintf(
 					/* translators: %s: target group */
 					__( 'Selection is not allowed for %s.', 'woo-spiegelloft-configurator' ),
@@ -234,8 +234,8 @@ class WCS_Validation_Engine {
 		}
 
 		if ( 'require_value' === $then && $target && $target_value && ! $this->selection_contains( $target_actual, $target_value ) ) {
-			return new WP_Error(
-				'wcs_rule_failed',
+			return $this->rule_error(
+				$rule,
 				sprintf(
 					/* translators: 1: target value, 2: target group */
 					__( 'Selection "%1$s" is required for %2$s.', 'woo-spiegelloft-configurator' ),
@@ -246,8 +246,8 @@ class WCS_Validation_Engine {
 		}
 
 		if ( 'disallow_value' === $then && $target && $target_value && $this->selection_contains( $target_actual, $target_value ) ) {
-			return new WP_Error(
-				'wcs_rule_failed',
+			return $this->rule_error(
+				$rule,
 				sprintf(
 					/* translators: 1: target value, 2: target group */
 					__( 'Selection "%1$s" is not allowed for %2$s.', 'woo-spiegelloft-configurator' ),
@@ -258,6 +258,11 @@ class WCS_Validation_Engine {
 		}
 
 		return true;
+	}
+
+	private function rule_error( array $rule, string $fallback ): WP_Error {
+		$message = (string) ( $rule['message'] ?? '' );
+		return new WP_Error( 'wcs_rule_failed', '' !== $message ? $message : $fallback );
 	}
 
 	/**

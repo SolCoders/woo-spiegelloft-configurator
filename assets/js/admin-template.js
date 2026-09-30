@@ -333,6 +333,22 @@
 		return null;
 	}
 
+	function findRuleTreeNodeById(node, nodeId) {
+		if (!node || !nodeId) {
+			return null;
+		}
+		if (String(node.id || '') === String(nodeId)) {
+			return node;
+		}
+		for (var i = 0; i < node.children.length; i++) {
+			var found = findRuleTreeNodeById(node.children[i], nodeId);
+			if (found) {
+				return found;
+			}
+		}
+		return null;
+	}
+
 	function getRulePickerPresetValue($picker) {
 		if ($picker.hasClass('wcs-rule-value-picker')) {
 			return null;
@@ -342,6 +358,9 @@
 		}
 		if ($picker.find('select').hasClass('wcs-rule-when-group')) {
 			if (String($picker.find('select option:selected').data('source') || '') === 'nested') {
+				return null;
+			}
+			if (String($picker.find('select option:selected').data('type') || '') !== 'selection') {
 				return null;
 			}
 			return String($picker.closest('.wcs-rule-condition-row').find('.wcs-rule-value-field input[type="text"]').val() || '');
@@ -438,6 +457,7 @@
 		var $input = $condition.find('.wcs-rule-value-field input[type="text"]');
 		var current = String($input.val() || $select.val() || '');
 		var values = getSelectedRuleFieldValues($condition);
+		var hasChoiceValues = values.length > 0;
 
 		$select.empty().append($('<option>', {
 			value: '',
@@ -449,7 +469,7 @@
 		if (current) {
 			$select.val(current);
 		}
-		if (current && $select.val() !== current && !$condition.data('field-preset-value')) {
+		if (hasChoiceValues && current && $select.val() !== current && !$condition.data('field-preset-value')) {
 			current = '';
 			$input.val('');
 		}
@@ -510,6 +530,13 @@
 			if ($oldPicker.length) {
 				$select.insertBefore($oldPicker);
 				$oldPicker.remove();
+			}
+			if (!existingValue) {
+				if ($select.hasClass('wcs-rule-when-group')) {
+					existingValue = $select.closest('.wcs-rule-category-field').children('input[type="hidden"]').val();
+				} else {
+					existingValue = $select.closest('.wcs-rule-field').children('input[type="hidden"]').val();
+				}
 			}
 
 			var $picker = $('<div class="wcs-rule-field-picker"></div>');
@@ -713,7 +740,7 @@
 
 		$row.find('.wcs-rule-action-row').each(function () {
 			var rowAction = $(this).find('.wcs-rule-action').val();
-			var usesTargetValue = ['require_value', 'disallow_value'].indexOf(rowAction) !== -1;
+			var usesTargetValue = ['require_value', 'disallow_value', 'disable', 'enable'].indexOf(rowAction) !== -1;
 			var usesFormula = ['set_min', 'set_max', 'validate_range'].indexOf(rowAction) !== -1;
 			$(this).find('.wcs-rule-target-value-field').toggle(usesTargetValue);
 			$(this).find('.wcs-rule-action-value').toggle(usesFormula);
@@ -792,6 +819,13 @@
 			var presetValue = String($row.data('preset-value') || '');
 			var fieldPath = String($row.data('field-path') || '');
 			var expanded = $picker.data('expanded') || {};
+			var node = findRuleTreeNodeById($picker.data('tree'), nodeId);
+
+			if (!value && node && node.option) {
+				value = String(node.option.value || '');
+				presetValue = String(node.option.presetValue || presetValue || '');
+				fieldPath = String(node.option.fieldPath || fieldPath || '');
+			}
 
 			if ($row.hasClass('has-children') && !value) {
 				expanded[nodeId] = !expanded[nodeId];
@@ -823,8 +857,6 @@
 		});
 
 		$(document).on('click', '.wcs-rule-field-picker__toggle', function (e) {
-			e.preventDefault();
-			e.stopPropagation();
 			var $row = $(this).closest('.wcs-rule-field-picker__tree-row');
 			var $picker = $row.closest('.wcs-rule-field-picker');
 			var nodeId = String($row.data('node-id') || '');
@@ -832,6 +864,8 @@
 			if (!nodeId || !$row.hasClass('has-children')) {
 				return;
 			}
+			e.preventDefault();
+			e.stopPropagation();
 			expanded[nodeId] = !expanded[nodeId];
 			$picker.data('expanded', expanded);
 			renderRuleFieldPane($picker);
