@@ -3381,6 +3381,13 @@
 	font-size: 12px;
 }
 
+.wcs-rule-header-actions {
+	display: inline-flex;
+	align-items: center;
+	gap: 12px;
+	white-space: nowrap;
+}
+
 .wcs-rule-section {
 	display: grid;
 	gap: 8px;
@@ -3425,7 +3432,7 @@
 .wcs-rule-condition-row,
 .wcs-rule-action-row {
 	display: grid;
-	grid-template-columns: minmax(220px, 1.5fr) 120px minmax(170px, 1fr) minmax(170px, 1fr) 148px;
+	grid-template-columns: minmax(220px, 1.5fr) 120px minmax(170px, 1fr) minmax(170px, 1fr) 186px;
 	gap: 8px;
 	align-items: end;
 	padding: 10px 12px;
@@ -3435,7 +3442,7 @@
 }
 
 .wcs-rule-action-row {
-	grid-template-columns: minmax(150px, 1fr) minmax(220px, 1.3fr) minmax(190px, 1fr) minmax(170px, 1fr) 148px;
+	grid-template-columns: minmax(150px, 1fr) minmax(220px, 1.3fr) minmax(190px, 1fr) minmax(170px, 1fr) 186px;
 }
 
 .wcs-rule-category-field,
@@ -3459,8 +3466,8 @@
 	grid-column: -2 / -1;
 	align-items: center;
 	justify-content: flex-end;
-	gap: 8px;
-	min-width: 148px;
+	gap: 6px;
+	min-width: 186px;
 }
 
 .wcs-rule-row-actions .button {
@@ -3730,15 +3737,24 @@
 }
 
 .wcs-rule-builder .wcs-add-condition,
-.wcs-rule-builder .wcs-add-action {
-	width: 48px;
-	min-height: 34px;
-	padding: 0 10px;
+.wcs-rule-builder .wcs-add-action,
+.wcs-rule-builder .wcs-duplicate-condition,
+.wcs-rule-builder .wcs-duplicate-action {
+	width: auto;
+	min-height: 30px;
+	padding: 0 9px;
 	border: 1px solid #3158ff;
-	border-radius: 6px;
+	border-radius: 5px;
 	background: #fff;
 	color: #3158ff;
+	font-size: 12px;
+	line-height: 28px;
 	box-shadow: none;
+}
+
+.wcs-rule-builder .wcs-duplicate-condition,
+.wcs-rule-builder .wcs-duplicate-action {
+	min-width: 70px;
 }
 
 .wcs-rule-builder #wcs-add-rule,
@@ -3754,7 +3770,13 @@
 
 .wcs-rule-builder .wcs-remove-condition,
 .wcs-rule-builder .wcs-remove-action {
-	width: 76px;
+	width: auto;
+	min-width: 62px;
+	min-height: 30px;
+	padding: 0 9px;
+	border-radius: 5px;
+	font-size: 12px;
+	line-height: 28px;
 }
 
 .wcs-rule-builder .wcs-rule-checkbox {

@@ -137,7 +137,10 @@ function wcs_rule_action_rows( array $rule ): array {
 						<strong><?php esc_html_e( 'Rule', 'woo-spiegelloft-configurator' ); ?></strong>
 						<span><?php esc_html_e( 'When this matches, apply the result below.', 'woo-spiegelloft-configurator' ); ?></span>
 					</div>
-					<button type="button" class="button-link wcs-remove-rule"><?php esc_html_e( 'Remove', 'woo-spiegelloft-configurator' ); ?></button>
+					<div class="wcs-rule-header-actions">
+						<button type="button" class="button-link wcs-duplicate-rule"><?php esc_html_e( 'Duplicate', 'woo-spiegelloft-configurator' ); ?></button>
+						<button type="button" class="button-link wcs-remove-rule"><?php esc_html_e( 'Remove', 'woo-spiegelloft-configurator' ); ?></button>
+					</div>
 				</div>
 
 				<div class="wcs-rule-section wcs-rule-section--type">
@@ -238,6 +241,7 @@ function wcs_rule_action_rows( array $rule ): array {
 								<input type="hidden" name="wcs_validation_rules[<?php echo esc_attr( (string) $index ); ?>][conditions][<?php echo esc_attr( (string) $condition_index ); ?>][field]" value="<?php echo esc_attr( (string) ( $condition['field'] ?? 'value' ) ); ?>">
 								<div class="wcs-rule-row-actions">
 									<button type="button" class="button wcs-add-condition"><?php esc_html_e( 'Add', 'woo-spiegelloft-configurator' ); ?></button>
+									<button type="button" class="button wcs-duplicate-condition"><?php esc_html_e( 'Duplicate', 'woo-spiegelloft-configurator' ); ?></button>
 									<button type="button" class="button wcs-remove-condition"><?php esc_html_e( 'Remove', 'woo-spiegelloft-configurator' ); ?></button>
 								</div>
 							</div>
@@ -299,6 +303,7 @@ function wcs_rule_action_rows( array $rule ): array {
 								</label>
 								<div class="wcs-rule-row-actions">
 									<button type="button" class="button wcs-add-action"><?php esc_html_e( 'Add', 'woo-spiegelloft-configurator' ); ?></button>
+									<button type="button" class="button wcs-duplicate-action"><?php esc_html_e( 'Duplicate', 'woo-spiegelloft-configurator' ); ?></button>
 									<button type="button" class="button wcs-remove-action"><?php esc_html_e( 'Remove', 'woo-spiegelloft-configurator' ); ?></button>
 								</div>
 							</div>

@@ -314,17 +314,20 @@
 		return found;
 	}
 
-	function findRuleTreeNodeByValue(node, value, trail, presetValue) {
+	function findRuleTreeNodeByValue(node, value, trail, presetValue, ancestors) {
 		var nextTrail = trail || [];
+		var nextAncestors = ancestors || [];
 		var nodePreset = node.option && node.option.presetValue ? String(node.option.presetValue) : '';
 		var expectedPreset = presetValue === undefined || presetValue === null ? null : String(presetValue);
-		if (node.option && node.option.value === value && (expectedPreset === null || nodePreset === expectedPreset)) {
-			return { node: node, trail: nextTrail };
+		var optionValue = node.option ? String(node.option.value || '') : '';
+		var optionPath = node.option ? String(node.option.fieldPath || '') : '';
+		if (node.option && (optionValue === value || optionPath === value) && (expectedPreset === null || nodePreset === expectedPreset)) {
+			return { node: node, trail: nextTrail, ancestors: nextAncestors };
 		}
 
 		for (var i = 0; i < node.children.length; i++) {
 			var child = node.children[i];
-			var result = findRuleTreeNodeByValue(child, value, nextTrail.concat(child.label), presetValue);
+			var result = findRuleTreeNodeByValue(child, value, nextTrail.concat(child.label), presetValue, nextAncestors.concat(node.id ? [node.id] : []));
 			if (result) {
 				return result;
 			}
@@ -408,7 +411,9 @@
 			var hasChildren = child.children.length > 0;
 			var isExpanded = !!expanded[child.id] || !!query || (!isValuePicker && depth < 1);
 			var presetValue = child.option && child.option.presetValue ? String(child.option.presetValue) : '';
-			var isSelected = !!child.option && child.option.value === selectedValue && (presetValue ? presetValue === selectedPreset : !selectedPreset);
+			var optionValue = child.option ? String(child.option.value || '') : '';
+			var optionPath = child.option ? String(child.option.fieldPath || '') : '';
+			var isSelected = !!child.option && (optionValue === selectedValue || optionPath === selectedValue) && (presetValue ? presetValue === selectedPreset : !selectedPreset);
 			var matches = ruleTreeMatchesSearch(child, query);
 
 			if (!matches) {
@@ -435,6 +440,16 @@
 		var rows = renderRuleTreeRows($picker, $picker.data('tree'), 0, query);
 
 		$tree.html(rows.length ? rows.join('') : '<div class="wcs-rule-field-picker__empty">No fields found</div>');
+	}
+
+	function scrollRulePickerToSelected($picker) {
+		var $tree = $picker.find('.wcs-rule-field-picker__tree');
+		var $selected = $tree.find('.wcs-rule-field-picker__tree-row.is-selected').first();
+		if (!$tree.length || !$selected.length) {
+			return;
+		}
+
+		$tree.scrollTop($tree.scrollTop() + $selected.position().top - Math.max(0, ($tree.height() - $selected.outerHeight()) / 2));
 	}
 
 	function getSelectedRuleFieldValues($condition) {
@@ -482,15 +497,14 @@
 		var presetValue = getRulePickerPresetValue($picker);
 		var found = selectedValue ? findRuleTreeNodeByValue(tree, selectedValue, [], presetValue || null) : null;
 		var expanded = $picker.data('expanded') || {};
-		var node = tree;
 
-		if (found && found.trail.length) {
-			found.trail.slice(0, $picker.hasClass('wcs-rule-value-picker') ? found.trail.length : -1).forEach(function (label) {
-				node = node.childMap['path:' + label] || node.childMap['value:' + label] || node;
-				if (node.id) {
-					expanded[node.id] = true;
-				}
+		if (found) {
+			(found.ancestors || []).forEach(function (nodeId) {
+				expanded[nodeId] = true;
 			});
+			if ($picker.hasClass('wcs-rule-value-picker') && found.node && found.node.id) {
+				expanded[found.node.id] = true;
+			}
 		}
 
 		$picker.data('expanded', expanded);
@@ -502,6 +516,7 @@
 		$picker.find('.wcs-rule-field-picker__button').attr('aria-expanded', 'true');
 		expandRuleFieldPickerToCurrent($picker);
 		renderRuleFieldPane($picker);
+		scrollRulePickerToSelected($picker);
 		$picker.find('.wcs-rule-field-picker__search').trigger('focus');
 	}
 
@@ -659,6 +674,27 @@
 				});
 			});
 		});
+	}
+
+	function cloneRuleFormRow($source) {
+		var $clone = $source.clone();
+		var $sourceFields = $source.find('input, select, textarea');
+		var $cloneFields = $clone.find('input, select, textarea');
+
+		$sourceFields.each(function (index) {
+			var $sourceField = $(this);
+			var $cloneField = $cloneFields.eq(index);
+			if (!$cloneField.length) {
+				return;
+			}
+			if ($sourceField.is(':checkbox, :radio')) {
+				$cloneField.prop('checked', $sourceField.prop('checked'));
+				return;
+			}
+			$cloneField.val($sourceField.val());
+		});
+
+		return $clone;
 	}
 
 	function setRuleDefaults($row) {
@@ -896,6 +932,17 @@
 			toggleRuleFields($row);
 		});
 
+		$(document).on('click', '.wcs-duplicate-condition', function (e) {
+			e.preventDefault();
+			var $row = $(this).closest('.wcs-rule-row');
+			var $condition = $(this).closest('.wcs-rule-condition-row');
+			var $clone = cloneRuleFormRow($condition);
+			$condition.after($clone);
+			reindexRules();
+			initRuleFieldPickers();
+			toggleRuleFields($row);
+		});
+
 		$(document).on('click', '.wcs-remove-condition', function (e) {
 			e.preventDefault();
 			var $list = $(this).closest('.wcs-rule-condition-list');
@@ -921,6 +968,17 @@
 			toggleRuleFields($row);
 		});
 
+		$(document).on('click', '.wcs-duplicate-action', function (e) {
+			e.preventDefault();
+			var $row = $(this).closest('.wcs-rule-row');
+			var $action = $(this).closest('.wcs-rule-action-row');
+			var $clone = cloneRuleFormRow($action);
+			$action.after($clone);
+			reindexRules();
+			initRuleFieldPickers();
+			toggleRuleFields($row);
+		});
+
 		$(document).on('click', '.wcs-remove-action', function (e) {
 			e.preventDefault();
 			var $list = $(this).closest('.wcs-rule-action-list');
@@ -940,6 +998,16 @@
 
 		$(document).on('change', '.wcs-rule-source, .wcs-rule-operator, .wcs-rule-action, .wcs-rule-value-type', function () {
 			toggleRuleFields($(this).closest('.wcs-rule-row'));
+		});
+
+		$(document).on('click', '.wcs-duplicate-rule', function (e) {
+			e.preventDefault();
+			var $row = $(this).closest('.wcs-rule-row');
+			var $clone = cloneRuleFormRow($row);
+			$row.after($clone);
+			reindexRules();
+			initRuleFieldPickers();
+			toggleRuleFields($clone);
 		});
 
 		$(document).on('click', '.wcs-remove-rule', function (e) {
