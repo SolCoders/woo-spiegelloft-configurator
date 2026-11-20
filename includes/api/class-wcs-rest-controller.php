@@ -152,7 +152,9 @@ class WCS_REST_Controller extends WP_REST_Controller {
 			return new WP_Error( 'wcs_invalid_product', __( 'Invalid product.', 'woo-spiegelloft-configurator' ), array( 'status' => 404 ) );
 		}
 
-		$price = $this->config_builder->calculate_price( (float) $product->get_price(), $selections );
+		$template_service = new WCS_Template( new WCS_Cache() );
+		$template = $template_service->get_template_data( $template_service->get_product_template_id( $product_id ) );
+		$price = $this->config_builder->calculate_price( (float) $product->get_price(), $selections, $template ?? array() );
 
 		return rest_ensure_response(
 			array(

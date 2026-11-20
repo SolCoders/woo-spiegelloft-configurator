@@ -350,6 +350,7 @@
 			else if ($input.hasClass('wcs-customer-field-disabled')) suffix = '[disabled]';
 		} else {
 			if ($input.hasClass('wcs-customer-field-option-label')) suffix = '[label]';
+			else if ($input.hasClass('wcs-customer-field-option-value')) suffix = '[value]';
 			else if ($input.hasClass('wcs-image-url')) suffix = '[image]';
 			else if ($input.hasClass('wcs-customer-field-option-price')) suffix = '[price]';
 			else suffix = '[nested_enabled]';
@@ -365,6 +366,7 @@
 			: $('.wcs-customer-field-row').first();
 		var $template = $source.clone();
 		$template.find('input[type="text"], input[type="number"]').val('');
+		$template.find('.wcs-customer-field-key, .wcs-customer-field-option-value').val('');
 		$template.find('input[type="checkbox"]').prop('checked', false);
 		$template.children('.wcs-customer-field-box').children('.wcs-customer-field-options').children('.wcs-customer-field-option').not(':first').remove();
 		$template.find('.wcs-customer-field-option').removeClass('has-nested-fields');
@@ -377,6 +379,7 @@
 	function buildCustomerOptionRow($field) {
 		var $template = $field.children('.wcs-customer-field-box').children('.wcs-customer-field-options').children('.wcs-customer-field-option').first().clone();
 		$template.find('input[type="text"]').val('');
+		$template.find('.wcs-customer-field-option-value').val('');
 		$template.find('input[type="checkbox"]').prop('checked', false);
 		$template.find('.wcs-image-url').val('').trigger('change');
 		$template.find('.wcs-image-preview').empty();
@@ -452,6 +455,7 @@
 
 	function customerFieldToData($field) {
 		var data = {
+			key: $field.find('> .wcs-customer-field-box > .wcs-customer-field-grid .wcs-customer-field-key').first().val() || undefined,
 			label: $field.find('> .wcs-customer-field-box > .wcs-customer-field-grid .wcs-customer-field-label').first().val() || '',
 			type: $field.find('> .wcs-customer-field-box > .wcs-customer-field-grid .wcs-customer-field-type').first().val() || 'dropdown',
 			placeholder: $field.find('> .wcs-customer-field-box > .wcs-customer-field-grid .wcs-customer-field-placeholder').first().val() || '',
@@ -467,6 +471,7 @@
 		$field.find('> .wcs-customer-field-box > .wcs-customer-field-options > .wcs-customer-field-option').each(function () {
 			var $option = $(this);
 			var option = {
+				value: $option.children('.wcs-customer-field-option-value').val() || undefined,
 				label: $option.children('.wcs-customer-field-option-label').val() || '',
 				image: $option.children('.wcs-customer-field-option-image').find('.wcs-image-url').val() || '',
 				price: $option.children('.wcs-customer-field-option-price').val() || '',
@@ -496,6 +501,7 @@
 		var $grid = $box.children('.wcs-customer-field-grid');
 		var $options = $box.children('.wcs-customer-field-options');
 		$grid.find('.wcs-customer-field-label').first().val(data.label || '');
+		$grid.find('.wcs-customer-field-key').first().val(data.key || '');
 		$grid.find('.wcs-customer-field-type').first().val(['dropdown', 'text', 'number'].indexOf(data.type) !== -1 ? data.type : 'dropdown');
 		$grid.find('.wcs-customer-field-placeholder').first().val(data.placeholder || '');
 		$grid.find('.wcs-customer-field-min').first().val(data.min || '');
@@ -513,6 +519,7 @@
 				$options.append($option);
 			}
 			$option.children('.wcs-customer-field-option-label').val(option.label || '');
+			$option.children('.wcs-customer-field-option-value').val(option.value || '');
 			$option.children('.wcs-customer-field-option-price').val(option.price || '');
 			$option.children('.wcs-customer-field-option-image').find('.wcs-image-url').val(option.image || '').each(function () {
 				updateImagePreview($(this));

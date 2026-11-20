@@ -131,6 +131,7 @@ class WCS_Cart {
 		$selections = (array) ( $config['selections'] ?? array() );
 
 		$cart_item_data['wcs_configuration'] = array(
+			'template_id' => (int) $config['template_id'],
 			'selections' => $selections,
 			'items'      => $this->build_display_items( $product_id, $selections ),
 			'price'      => (float) ( $config['price'] ?? 0 ),
@@ -176,9 +177,11 @@ class WCS_Cart {
 
 			/** @var WC_Product $product */
 			$product = $cart_item['data'];
+			$template_service = new WCS_Template( new WCS_Cache() );
+			$template_id = (int) ( $cart_item['wcs_configuration']['template_id'] ?? $template_service->get_product_template_id( $product->get_id() ) );
 			$price   = isset( $cart_item['wcs_configuration']['price'] )
 				? (float) $cart_item['wcs_configuration']['price']
-				: $builder->calculate_price( (float) $product->get_regular_price(), (array) $cart_item['wcs_configuration']['selections'] );
+				: $builder->calculate_price( (float) $product->get_regular_price(), (array) $cart_item['wcs_configuration']['selections'], $template_service->get_template_data( $template_id ) ?? array() );
 
 			$product->set_price( $price );
 		}

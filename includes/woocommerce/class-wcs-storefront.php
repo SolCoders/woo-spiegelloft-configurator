@@ -257,11 +257,12 @@ class WCS_Storefront {
 			true
 		);
 
+		wp_enqueue_script( 'wcs-pricing', WCS_PLUGIN_URL . 'assets/js/pricing.js', array(), WCS_Loader::asset_version( 'assets/js/pricing.js' ), true );
 		wp_enqueue_script(
 			'wcs-storefront',
 			WCS_PLUGIN_URL . 'assets/js/storefront.js',
-			array( 'jquery', 'wcs-storefront-rules' ),
-			WCS_VERSION,
+			array( 'jquery', 'wcs-storefront-rules', 'wcs-pricing' ),
+			WCS_Loader::asset_version( 'assets/js/storefront.js' ),
 			true
 		);
 	}

@@ -148,6 +148,7 @@ class WCS_Choice_Meta {
 	 * @param WP_Post $post Post object.
 	 */
 	public function render_customer_fields_meta_box( WP_Post $post ): void {
+		$preserve_identity = metadata_exists( 'post', $post->ID, '_wcs_import_group' );
 		$option_data     = $this->get_option_data( (int) $post->ID );
 		$customer_fields = $this->get_customer_fields_for_admin( $option_data );
 
@@ -164,6 +165,11 @@ class WCS_Choice_Meta {
 		$terms       = wp_get_object_terms( $post->ID, 'wcs_extra_group', array( 'fields' => 'slugs' ) );
 		$group       = ( ! is_wp_error( $terms ) && ! empty( $terms ) ) ? (string) $terms[0] : '';
 		$groups      = $this->registry->get_groups();
+		$snapshots   = get_post_meta( $post->ID, '_wcs_group_snapshots', true );
+		if ( is_array( $snapshots ) ) {
+			$group  = (string) get_post_meta( $post->ID, '_wcs_import_group', true );
+			$groups = $snapshots + $groups;
+		}
 		$nested          = $this->extract_nested_data( $option_data );
 		$field_registry  = $this->field_registry;
 
@@ -205,6 +211,11 @@ class WCS_Choice_Meta {
 			'price'    => (float) $price,
 			'required' => $required,
 		);
+		if ( metadata_exists( 'post', $post_id, '_wcs_import_group' ) ) {
+			$stored = $this->get_option_data( $post_id );
+			unset( $stored['customer_fields'] );
+			$option_data = array_replace( $stored, $option_data );
+		}
 
 		$customer_fields_raw = isset( $_POST['wcs_customer_fields'] ) ? wp_unslash( $_POST['wcs_customer_fields'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$customer_fields     = $this->sanitize_customer_fields( $customer_fields_raw );
@@ -215,6 +226,11 @@ class WCS_Choice_Meta {
 		$terms      = wp_get_object_terms( $post_id, 'wcs_extra_group', array( 'fields' => 'slugs' ) );
 		$group_slug = ( ! is_wp_error( $terms ) && ! empty( $terms ) ) ? (string) $terms[0] : '';
 		$group_def  = $group_slug ? $this->registry->get_group( $group_slug ) : null;
+		$snapshots = get_post_meta( $post_id, '_wcs_group_snapshots', true );
+		if ( is_array( $snapshots ) ) {
+			$group_slug = (string) get_post_meta( $post_id, '_wcs_import_group', true );
+			$group_def  = $snapshots[ $group_slug ] ?? $group_def;
+		}
 		if ( $group_def && ! empty( $group_def['optional_fields'] ) && isset( $_POST['wcs_nested'] ) && is_array( $_POST['wcs_nested'] ) ) {
 			$raw_nested = wp_unslash( $_POST['wcs_nested'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 			foreach ( (array) $group_def['optional_fields'] as $field_key => $field_def ) {
@@ -228,7 +244,7 @@ class WCS_Choice_Meta {
 			}
 		}
 
-		update_post_meta( $post_id, '_wcs_option_data', $option_data );
+		update_post_meta( $post_id, '_wcs_option_data', wp_slash( $option_data ) );
 		update_post_meta( $post_id, '_wcs_option_slug', $value );
 		update_post_meta( $post_id, '_wcs_price', $price );
 		update_post_meta( $post_id, '_wcs_legacy_id', $legacy_id );
@@ -281,6 +297,9 @@ class WCS_Choice_Meta {
 
 			$label = sanitize_text_field( (string) ( $field['label'] ?? '' ) );
 			$key   = sanitize_title( (string) ( $field['key'] ?? $label ) );
+			if ( '' === $key ) {
+				$key = sanitize_title( $label );
+			}
 			$type_raw = sanitize_key( (string) ( $field['type'] ?? 'dropdown' ) );
 			$type     = in_array( $type_raw, array( 'dropdown', 'text', 'number' ), true ) ? $type_raw : 'dropdown';
 			if ( '' === $label && '' === $key ) {
@@ -340,7 +359,10 @@ class WCS_Choice_Meta {
 			}
 
 			$label = sanitize_text_field( (string) ( $option['label'] ?? '' ) );
-			$value = sanitize_title( $label );
+			$value = sanitize_title( (string) ( $option['value'] ?? $label ) );
+			if ( '' === $value ) {
+				$value = sanitize_title( $label );
+			}
 			if ( '' === $label && '' === $value ) {
 				continue;
 			}

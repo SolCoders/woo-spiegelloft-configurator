@@ -84,6 +84,18 @@ class WCS_Extras_Registry {
 	}
 
 	/**
+	 * Resolve template-local dependency snapshots before site defaults.
+	 *
+	 * @param int $template_id Template ID.
+	 * @return array<string, array<string, mixed>>
+	 */
+	public function get_groups_for_template( int $template_id ): array {
+		$dependencies = get_post_meta( $template_id, '_wcs_template_dependencies', true );
+		$groups = is_array( $dependencies ) && is_array( $dependencies['groups'] ?? null ) ? $dependencies['groups'] : array();
+		return $groups + $this->get_groups();
+	}
+
+	/**
 	 * Get a single group by slug.
 	 *
 	 * @param string $slug Group slug.

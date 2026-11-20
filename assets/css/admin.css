@@ -3884,7 +3884,7 @@
 
 .post-type-wcs_template .wcs-side-row {
 	display: grid;
-	grid-template-columns: minmax(220px, 1.8fr) minmax(180px, 1.2fr) repeat(2, minmax(110px, 0.7fr)) auto auto;
+	grid-template-columns: minmax(160px, 1.8fr) minmax(120px, 1.2fr) repeat(3, minmax(75px, 0.7fr)) auto auto;
 	align-items: end;
 	gap: 10px;
 	padding: 12px;
@@ -3942,4 +3942,83 @@
 .post-type-wcs_template .wcs-option-table th,
 .post-type-wcs_template .wcs-option-table td {
 	padding: 12px 14px;
+}
+.wcs-pricing-toolbar { grid-column: 1 / -1; display: flex; justify-content: flex-end; margin: 0; }
+body.wcs-pricing-open { overflow: hidden; }
+.wcs-pricing-overlay[hidden] { display: none; }
+.wcs-pricing-overlay { position: fixed; inset: 0; z-index: 100100; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(48, 77, 119, .36); }
+.wcs-pricing-dialog { width: 640px; max-width: 100%; height: 600px; max-height: calc(100dvh - 48px); box-sizing: border-box; display: flex; flex-direction: column; background: #fff; border: 1px solid #d8e5ff; border-radius: 9px; box-shadow: 0 20px 70px rgba(24, 46, 81, .2); color: #10223e; font-size: 14px; }
+.wcs-pricing-dialog.is-shipping { width: 780px; }
+.wcs-pricing-dialog header, .wcs-pricing-dialog footer { display: flex; align-items: center; padding: 16px 24px; gap: 16px; flex-shrink: 0; }
+.wcs-pricing-dialog header { border-bottom: 1px solid #d8e5ff; justify-content: space-between; }
+.wcs-pricing-dialog header h2 { margin: 0; padding: 0; font-size: 17px; }
+.wcs-pricing-close { border: 0; background: transparent; color: #233f70; font-size: 26px; cursor: pointer; width: 32px; height: 32px; }
+.wcs-pricing-tabs { display: flex; gap: 8px; padding: 8px 24px 0; border-bottom: 1px solid #d8e5ff; overflow-x: auto; flex-shrink: 0; }
+.wcs-pricing-tabs button { border: 0; background: transparent; padding: 12px 24px; cursor: pointer; white-space: nowrap; border-bottom: 3px solid transparent; color: #10223e; }
+.wcs-pricing-tabs [aria-selected="true"] { background: #e7f0ff; border-color: #304bff; color: #1738ff; border-radius: 5px 5px 0 0; }
+.wcs-pricing-body { flex: 1; padding: 0 24px 20px; overflow-y: auto; min-height: 0; }
+.wcs-pricing-body p { margin: 16px 0; }
+.wcs-pricing-rulebox, .wcs-pricing-preview { background: #f1f6fd; border: 1px solid #dce8ff; border-radius: 6px; padding: 12px 16px; }
+.wcs-pricing-rule-scroll { max-height: 200px; overflow-y: auto; padding: 0 2px; }
+.wcs-pricing-dimension-head, .wcs-pricing-dimension-row { display: flex; align-items: center; gap: 20px; margin-bottom: 8px; }
+.wcs-pricing-dimension-head > :nth-child(1), .wcs-pricing-dimension-row > :nth-child(1) { flex: 1.1; width: 0; min-width: 0; }
+.wcs-pricing-dimension-head > :nth-child(2), .wcs-pricing-dimension-row > :nth-child(2) { flex: 1; width: 0; min-width: 0; }
+.wcs-pricing-dimension-head > :last-child, .wcs-pricing-actions { flex: 0 0 82px; display: flex; gap: 8px; }
+.wcs-pricing-dialog .button { color: #1738ff; border: 1px solid #304bff; border-radius: 5px; background: #fff; padding: 2px 14px; height: 34px; min-height: 34px; line-height: 28px; box-sizing: border-box; }
+.wcs-pricing-dialog .wcs-pricing-actions .button { width: 36px; height: 32px; min-height: 32px; line-height: 28px; padding: 0; font-size: 19px; }
+.wcs-pricing-dialog input[type="number"], .wcs-pricing-dialog select { border: 1px solid #b8ccee; border-radius: 5px; background-color: #fff; min-height: 32px; color: #10223e; }
+.wcs-pricing-preview { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+.wcs-pricing-preview input { width: 110px; }
+.wcs-pricing-result { margin-left: auto; }
+.wcs-pricing-dialog footer { border-top: 1px solid #d8e5ff; justify-content: flex-end; }
+.wcs-pricing-dialog .wcs-pricing-cancel { color: #294268; border-color: #a9bfdf; }
+.wcs-pricing-shipping-fields { border: 0; margin: 0; padding: 0; }
+.wcs-pricing-shipping-fields:disabled { opacity: .55; }
+.wcs-pricing-group { margin-bottom: 16px; padding: 0; overflow: hidden; background: #fff; border-radius: 8px; }
+.wcs-pricing-group-heading { display: flex; gap: 16px; align-items: center; padding: 14px 16px; border-bottom: 1px solid #dce8f5; background: #f6f9ff; }
+.wcs-pricing-group-title { flex: 1; min-width: 0; }
+.wcs-pricing-group-title strong { display: block; font-size: 14px; color: #172d4d; }
+.wcs-pricing-group-title small { display: inline-block; margin-top: 6px; padding: 3px 8px; border-radius: 12px; background: #e8efff; color: #294c91; font-size: 11px; }
+.wcs-pricing-group-heading label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 500; }
+.wcs-pricing-group-heading input { width: 100px; margin: 0; }
+.wcs-pricing-dialog .wcs-pricing-remove-fee { align-self: flex-end; color: #586980; border-color: #c8d5e7; background: #fff; }
+.wcs-pricing-dialog .wcs-pricing-remove-fee:hover { color: #b42318; border-color: #e3a29d; background: #fff7f6; }
+.wcs-pricing-group-conditions { padding: 16px; }
+.wcs-pricing-condition { display: flex; gap: 12px; align-items: flex-end; }
+.wcs-pricing-condition label { display: flex; flex: 1; flex-direction: column; gap: 6px; min-width: 0; font-size: 12px; font-weight: 500; color: #435672; }
+.wcs-pricing-condition label:nth-child(2) { flex: 0 0 78px; }
+.wcs-pricing-condition input { width: 100%; }
+.wcs-pricing-condition input, .wcs-pricing-condition select { height: 36px; min-height: 36px; margin: 0; box-sizing: border-box; }
+.wcs-pricing-condition .wcs-pricing-actions { padding-bottom: 0; }
+.wcs-pricing-dialog .wcs-pricing-condition .wcs-pricing-actions .button { height: 36px; min-height: 36px; line-height: 32px; }
+.wcs-pricing-shipping-preview label { display: flex; align-items: center; gap: 6px; }
+.wcs-pricing-shipping-preview input { width: 86px; }
+.wcs-pricing-shipping-preview { display: block; padding: 0; overflow: hidden; background: #fff; border-radius: 8px; }
+.wcs-pricing-shipping-preview .wcs-pricing-group-heading { justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.wcs-pricing-shipping-preview .wcs-pricing-matches { padding: 4px 9px; border: 1px solid #dce6f5; border-radius: 12px; background: #fff; color: #526783; font-size: 11px; }
+.wcs-pricing-preview-fields { display: flex; flex-wrap: wrap; gap: 16px; padding: 16px; }
+.wcs-pricing-preview-fields label { flex: 1 1 140px; min-width: 0; flex-direction: column; align-items: stretch; gap: 6px; color: #435672; font-size: 12px; font-weight: 500; }
+.wcs-pricing-preview-fields input { width: 100%; height: 36px; min-height: 36px; margin: 0; box-sizing: border-box; }
+.wcs-pricing-unit { display: flex; align-items: center; gap: 8px; }
+.wcs-pricing-unit input { flex: 1; width: 0; min-width: 0; }
+.wcs-pricing-unit > span { color: #60718a; font-size: 12px; }
+.wcs-pricing-preview-summary { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 14px 16px; border-top: 1px solid #dce8f5; background: #f6f9ff; color: #435672; font-size: 12px; }
+.wcs-pricing-preview-summary .wcs-pricing-result { color: #172d4d; font-size: 17px; }
+.wcs-pricing-or { display: flex; align-items: center; gap: 10px; margin: 14px 0; color: #60718a; font-size: 11px; font-weight: 600; letter-spacing: .04em; }
+.wcs-pricing-or::before, .wcs-pricing-or::after { content: ''; height: 1px; flex: 1; background: #e1e8f2; }
+.wcs-pricing-or span { padding: 2px 8px; border: 1px solid #e1e8f2; border-radius: 10px; background: #f8faff; }
+.wcs-pricing-dialog :focus-visible { outline: 2px solid #1738ff; outline-offset: 2px; }
+@media (max-width: 600px) {
+	.wcs-pricing-overlay { padding: 10px; }
+	.wcs-pricing-dialog { max-height: calc(100dvh - 20px); }
+	.wcs-pricing-dialog header, .wcs-pricing-dialog footer, .wcs-pricing-body { padding-left: 12px; padding-right: 12px; }
+	.wcs-pricing-tabs { padding-left: 12px; padding-right: 12px; }
+	.wcs-pricing-rulebox { padding: 10px; }
+	.wcs-pricing-dimension-head, .wcs-pricing-dimension-row { gap: 8px; }
+	.wcs-pricing-condition { flex-wrap: wrap; }
+	.wcs-pricing-condition label { flex-basis: 35%; }
+	.wcs-pricing-condition .wcs-pricing-actions { margin-left: auto; }
+	.wcs-pricing-group-heading { flex-wrap: wrap; }
+	.wcs-pricing-group-title { flex: 1 0 100%; }
+	.wcs-pricing-dialog .wcs-pricing-remove-fee { margin-left: auto; }
 }

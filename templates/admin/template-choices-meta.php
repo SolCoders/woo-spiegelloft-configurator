@@ -108,7 +108,7 @@ if ( ! empty( $choice_order ) && ! empty( $flat_options ) ) {
 										<input type="hidden" name="wcs_choice_order[]" value="<?php echo esc_attr( (string) $option_id ); ?>">
 									</td>
 									<td class="wcs-option-table-check">
-										<input type="checkbox" name="wcs_extra_option_map[<?php echo esc_attr( $flat_group_slug ); ?>][]" value="<?php echo esc_attr( (string) $option_id ); ?>" <?php checked( in_array( $option_id, $flat_selected_ids, true ) || empty( $flat_selected_ids ) ); ?>>
+										<input type="checkbox" name="wcs_extra_option_map[<?php echo esc_attr( $flat_group_slug ); ?>][]" value="<?php echo esc_attr( (string) $option_id ); ?>" <?php checked( in_array( $option_id, $flat_selected_ids, true ) ); ?>>
 									</td>
 									<td>
 										<div class="wcs-option-choice">

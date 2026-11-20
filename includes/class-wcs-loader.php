@@ -20,6 +20,11 @@ class WCS_Loader {
 	 * @var array<string, string>
 	 */
 	private array $class_map = array(
+		'WCS_Pricing'                 => 'includes/class-wcs-pricing.php',
+		'WCS_Layout_Package'          => 'includes/transfer/class-wcs-layout-package.php',
+		'WCS_Layout_Exporter'         => 'includes/transfer/class-wcs-layout-exporter.php',
+		'WCS_Layout_Importer'         => 'includes/transfer/class-wcs-layout-importer.php',
+		'WCS_Layout_Transfer_Admin'   => 'includes/admin/class-wcs-layout-transfer-admin.php',
 		'WCS_I18n'                    => 'includes/class-wcs-i18n.php',
 		'WCS_Plugin'                  => 'includes/class-wcs-plugin.php',
 		'WCS_Activator'               => 'includes/class-wcs-activator.php',
@@ -133,6 +138,14 @@ class WCS_Loader {
 		);
 
 		$screen_id        = (string) $screen->id;
+		add_action( 'admin_notices', static function () {
+			$key = 'wcs_pricing_error_' . get_current_user_id();
+			$error = get_transient( $key );
+			if ( $error ) {
+				delete_transient( $key );
+				echo '<div class="notice notice-error"><p>' . esc_html( $error ) . '</p></div>';
+			}
+		} );
 		$is_plugin_screen = in_array( $screen_id, $plugin_screens, true )
 			|| 'wcs_extra_group' === ( $screen->taxonomy ?? '' )
 			|| in_array( $screen->post_type ?? '', array( 'wcs_extra_option', 'wcs_template' ), true );
@@ -145,10 +158,11 @@ class WCS_Loader {
 			'wcs-admin',
 			WCS_PLUGIN_URL . 'assets/css/admin.css',
 			array(),
-			WCS_VERSION
+			self::asset_version( 'assets/css/admin.css' )
 		);
 
 		wp_enqueue_media();
+		wp_enqueue_script( 'wcs-pricing', WCS_PLUGIN_URL . 'assets/js/pricing.js', array(), self::asset_version( 'assets/js/pricing.js' ), true );
 
 		wp_enqueue_script(
 			'wcs-admin-validation',
@@ -166,9 +180,12 @@ class WCS_Loader {
 			'wcs-admin-template',
 			WCS_PLUGIN_URL . 'assets/js/admin-template.js',
 			array( 'jquery', 'jquery-ui-sortable' ),
-			WCS_VERSION,
+			self::asset_version( 'assets/js/admin-template.js' ),
 			true
 		);
+		if ( 'wcs_template' === ( $screen->post_type ?? '' ) ) {
+			wp_enqueue_script( 'wcs-admin-pricing', WCS_PLUGIN_URL . 'assets/js/admin-pricing.js', array( 'jquery', 'wcs-pricing', 'wcs-admin-template' ), self::asset_version( 'assets/js/admin-pricing.js' ), true );
+		}
 
 		wp_localize_script(
 			'wcs-admin-template',
@@ -187,5 +204,16 @@ class WCS_Loader {
 				),
 			)
 		);
+	}
+
+	/**
+	 * Invalidate browser caches whenever a shipped asset changes.
+	 *
+	 * @param string $relative_path Asset path relative to the plugin directory.
+	 * @return string
+	 */
+	public static function asset_version( string $relative_path ): string {
+		$path = WCS_PLUGIN_DIR . $relative_path;
+		return WCS_VERSION . '.' . ( is_file( $path ) ? (string) filemtime( $path ) : '0' );
 	}
 }

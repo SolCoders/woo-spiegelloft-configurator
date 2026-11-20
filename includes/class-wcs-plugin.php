@@ -74,6 +74,12 @@ class WCS_Plugin {
 			$template_admin = new WCS_Template_Admin( $template, $extras_registry, $extras_catalog );
 			$template_admin->register();
 
+			$layout_package = new WCS_Layout_Package();
+			$layout_export  = new WCS_Layout_Exporter( $template, $extras_registry, $extras_catalog, $layout_package );
+			$layout_import  = new WCS_Layout_Importer( $layout_package, $cache );
+			$layout_admin   = new WCS_Layout_Transfer_Admin( $layout_export, $layout_import );
+			$layout_admin->register();
+
 			$product_meta = new WCS_Product_Meta( $template );
 			$product_meta->register();
 		}

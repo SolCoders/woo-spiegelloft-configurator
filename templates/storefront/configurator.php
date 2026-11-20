@@ -17,6 +17,7 @@ $steps      = (array) ( $config['steps'] ?? array() );
 $layout     = get_option( 'wcs_configurator_layout', 'compact_dropdown' );
 $layout     = in_array( $layout, array( 'compact_dropdown', 'visual_cards' ), true ) ? $layout : 'compact_dropdown';
 $side_measurements = array_values( (array) ( $config['side_measurements'] ?? array() ) );
+$pricing_fields = array_map( static function ( $field ) { return array( 'selection_key' => WCS_Pricing::field_key( $field ) ); }, $side_measurements );
 $sidewise_measurements = ! empty( $side_measurements ) || 'sidewise' === (string) ( $config['measurement_mode'] ?? 'standard' );
 $step_one_groups = array();
 foreach ( $steps as $step ) {
@@ -27,6 +28,7 @@ foreach ( $steps as $step ) {
 }
 ?>
 <form class="cart wcs-configurator wcs-configurator--<?php echo esc_attr( str_replace( '_', '-', $layout ) ); ?>" method="post" enctype="multipart/form-data" data-layout="<?php echo esc_attr( $layout ); ?>" data-base-price="<?php echo esc_attr( (string) $base_price ); ?>" data-rules="<?php echo esc_attr( wp_json_encode( (array) ( $config['behavior_rules'] ?? $config['validation_rules'] ?? array() ) ) ); ?>">
+	<script type="application/json" class="wcs-pricing-payload"><?php echo wp_json_encode( array( 'pricing' => $config['pricing'] ?? WCS_Pricing::defaults( $side_measurements ), 'fields' => $pricing_fields, 'decimals' => wc_get_price_decimals() ), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?></script>
 	<input type="hidden" name="wcs_selections" class="wcs-selections-input" value="">
 	<input type="hidden" name="quantity" value="1">
 
@@ -68,6 +70,7 @@ foreach ( $steps as $step ) {
 						$side_key   = sanitize_title( (string) ( $side['key'] ?? $side_label ) );
 						$side_min   = (int) ( $side['min'] ?? $side['min_width'] ?? $side['min_height'] ?? 400 );
 						$side_max   = (int) ( $side['max'] ?? $side['max_width'] ?? $side['max_height'] ?? 2500 );
+						$side_step  = WCS_Template::measurement_step( $side['step'] ?? 1 );
 						if ( '' === $side_label || '' === $side_key ) {
 							continue;
 						}
@@ -81,7 +84,7 @@ foreach ( $steps as $step ) {
 							</span>
 							<span class="wcs-size-control">
 								<button type="button" class="wcs-size-step wcs-size-step--minus" data-step="-1" aria-label="<?php esc_attr_e( 'Decrease value', 'woo-spiegelloft-configurator' ); ?>">-</button>
-								<input type="number" class="wcs-dimension-input" data-key="<?php echo esc_attr( 'side_' . str_replace( '-', '_', $side_key ) ); ?>" data-label="<?php echo esc_attr( $side_label ); ?>" min="<?php echo esc_attr( (string) $side_min ); ?>" max="<?php echo esc_attr( (string) $side_max ); ?>" value="<?php echo esc_attr( (string) $side_min ); ?>">
+								<input type="number" class="wcs-dimension-input" data-key="<?php echo esc_attr( 'side_' . str_replace( '-', '_', $side_key ) ); ?>" data-label="<?php echo esc_attr( $side_label ); ?>" min="<?php echo esc_attr( (string) $side_min ); ?>" max="<?php echo esc_attr( (string) $side_max ); ?>" step="<?php echo esc_attr( (string) $side_step ); ?>" value="<?php echo esc_attr( (string) $side_min ); ?>">
 								<em><?php esc_html_e( 'mm', 'woo-spiegelloft-configurator' ); ?></em>
 								<button type="button" class="wcs-size-step wcs-size-step--plus" data-step="1" aria-label="<?php esc_attr_e( 'Increase value', 'woo-spiegelloft-configurator' ); ?>">+</button>
 							</span>

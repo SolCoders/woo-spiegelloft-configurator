@@ -16,6 +16,13 @@
 	}
 
 	function collect($wrap) {
+		if (!$wrap.data('pricing')) {
+			var payload = $wrap.find('.wcs-pricing-payload').text();
+			if (payload) {
+				var parsed = JSON.parse(payload);
+				$wrap.data('pricing', parsed.pricing).data('pricingFields', parsed.fields).data('priceDecimals', parsed.decimals);
+			}
+		}
 		var selections = {};
 		var total = parseFloat($wrap.data('base-price')) || 0;
 
@@ -69,6 +76,12 @@
 			}
 		});
 
+		var pricing = $wrap.data('pricing');
+		if (pricing && window.WCSPricing) {
+			total += window.WCSPricing.calculate(pricing, $wrap.data('pricingFields') || [], selections, parseFloat($wrap.data('base-price')) || 0).total;
+			var precision = Math.pow(10, Number($wrap.data('priceDecimals')) || 0);
+			total = Math.round((total + 1e-9) * precision) / precision;
+		}
 		$wrap.find('.wcs-selections-input').val(JSON.stringify(selections));
 		setPrice($wrap, total);
 		renderReview($wrap, total);
@@ -97,6 +110,8 @@
 		}
 		if (start === total) {
 			$prices.text(money(total));
+			$prices.removeClass('is-counting');
+			$wrap.removeData('priceFrame');
 			return;
 		}
 
@@ -823,6 +838,11 @@
 			var value = parseFloat($input.val());
 
 			if (!$input.length || !direction || $button.prop('disabled') || $input.prop('disabled') || $input.prop('readonly')) {
+				return;
+			}
+			if ($input.hasClass('wcs-dimension-input') && inputStep > 0) {
+				$input[0].stepUp(direction);
+				$input.trigger('change');
 				return;
 			}
 

@@ -95,15 +95,15 @@ class WCS_Config_Builder {
 	 * @return array<string, mixed>
 	 */
 	public function build_payload( WC_Product $product, array $template_data ): array {
-		$groups         = $this->extras_registry->get_groups();
+		$groups         = $this->extras_registry->get_groups_for_template( (int) ( $template_data['id'] ?? 0 ) );
 		$enabled        = (array) ( $template_data['enabled_groups'] ?? $template_data['groups'] ?? array() );
-		$option_map     = (array) ( $template_data['extra_option_map'] ?? array() );
+		$option_map     = $this->extras_catalog->get_template_option_map( $template_data, $groups );
 		$dimensions     = (array) ( $template_data['dimensions'] ?? array() );
 		$edge_override  = (array) ( $template_data['edge_override'] ?? array() );
 		$extras_output  = array();
 		$step_map       = (array) ( $template_data['step_map'] ?? array() );
 		$choice_step_map = (array) ( $template_data['choice_step_map'] ?? array() );
-		$group_positions = get_option( 'wcs_group_position_settings', array() );
+		$group_positions = $this->template->get_position_settings( (int) ( $template_data['id'] ?? 0 ) );
 		$group_positions = is_array( $group_positions ) ? $group_positions : array();
 		$steps_output   = array(
 			1 => array(
@@ -129,7 +129,9 @@ class WCS_Config_Builder {
 			}
 
 			$allowed_ids    = (array) ( $option_map[ $group_slug ] ?? array() );
-			$all_options    = $this->extras_catalog->get_options_for_template_group( $group_slug, $allowed_ids );
+			$all_options    = empty( $allowed_ids )
+				? array()
+				: $this->extras_catalog->get_options_for_template_group( $group_slug, $allowed_ids );
 			$filtered       = array();
 			$allowed_lookup = array_flip( array_map( 'intval', $allowed_ids ) );
 
@@ -244,6 +246,7 @@ class WCS_Config_Builder {
 			'right_min_height' => (int) ( $dimensions['right_min_height'] ?? $dimensions['min_height'] ?? 0 ),
 			'right_max_height' => (int) ( $dimensions['right_max_height'] ?? $dimensions['max_height'] ?? 2000 ),
 			'side_measurements' => array_values( (array) ( $dimensions['side_measurements'] ?? array() ) ),
+			'pricing'          => WCS_Pricing::normalize( (array) ( $template_data['pricing'] ?? array() ), (array) ( $dimensions['side_measurements'] ?? array() ) ),
 			'extras'           => $extras_output,
 			'steps'            => array_values( $steps_output ),
 			'step_map'         => $step_map,
@@ -311,9 +314,10 @@ class WCS_Config_Builder {
 	 *
 	 * @param float                $base_price Base product price.
 	 * @param array<string, mixed> $selections User selections (group => option slug or array).
+	 * @param array<string, mixed> $template   Trusted template settings, when available.
 	 * @return float
 	 */
-	public function calculate_price( float $base_price, array $selections ): float {
+	public function calculate_price( float $base_price, array $selections, array $template = array() ): float {
 		$total = $base_price;
 
 		foreach ( $selections as $group_slug => $selected ) {
@@ -341,7 +345,10 @@ class WCS_Config_Builder {
 			}
 		}
 
-		return (float) apply_filters( 'wcs_calculate_configured_price', $total, $base_price, $selections );
+		if ( $template ) {
+			$total += WCS_Pricing::calculate( $template, $selections, $base_price )['total'];
+		}
+		return round( (float) apply_filters( 'wcs_calculate_configured_price', $total, $base_price, $selections ), wc_get_price_decimals() );
 	}
 
 	/**
@@ -387,6 +394,10 @@ class WCS_Config_Builder {
 		}
 
 		$selections = $this->validation->sanitize_selections( $selections );
+		$dimension_valid = WCS_Pricing::validate_selections( $template, $selections );
+		if ( is_wp_error( $dimension_valid ) ) {
+			return $dimension_valid;
+		}
 		$template['_option_lookup'] = $this->build_option_lookup( $template );
 		$valid      = $this->validation->validate( $selections, $template, $this->extras_registry->get_groups() );
 		if ( is_wp_error( $valid ) ) {
@@ -403,7 +414,7 @@ class WCS_Config_Builder {
 			return new WP_Error( 'wcs_invalid_product', __( 'Invalid product.', 'woo-spiegelloft-configurator' ) );
 		}
 
-		$price = $this->calculate_price( (float) $product->get_price(), $selections );
+		$price = $this->calculate_price( (float) $product->get_price(), $selections, $template );
 
 		return array(
 			'selections'  => $selections,
@@ -421,9 +432,9 @@ class WCS_Config_Builder {
 	private function build_option_lookup( array $template ): array {
 		$lookup     = array();
 		$enabled    = (array) ( $template['enabled_groups'] ?? $template['groups'] ?? array() );
-		$option_map = (array) ( $template['extra_option_map'] ?? array() );
 		$choice_step_map = (array) ( $template['choice_step_map'] ?? array() );
-		$groups     = $this->extras_registry->get_groups();
+		$groups     = $this->extras_registry->get_groups_for_template( (int) ( $template['id'] ?? 0 ) );
+		$option_map = $this->extras_catalog->get_template_option_map( $template, $groups );
 
 		foreach ( $enabled as $group_slug ) {
 			$group_slug = (string) $group_slug;
@@ -432,6 +443,9 @@ class WCS_Config_Builder {
 			}
 
 			$allowed_ids = (array) ( $option_map[ $group_slug ] ?? array() );
+			if ( empty( $allowed_ids ) ) {
+				continue;
+			}
 			foreach ( $this->extras_catalog->get_options_for_template_group( $group_slug, $allowed_ids ) as $option ) {
 				$option_id = (int) ( $option['id'] ?? 0 );
 				if ( ! empty( $allowed_ids ) && ! in_array( $option_id, $allowed_ids, true ) ) {

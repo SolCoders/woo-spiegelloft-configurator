@@ -124,7 +124,8 @@ class WCS_Template_Admin {
 		$data           = $this->template->get_template_data( (int) $post->ID ) ?? array();
 		$enabled_groups = (array) ( $data['enabled_groups'] ?? $data['groups'] ?? array() );
 		$option_map     = (array) ( $data['extra_option_map'] ?? array() );
-		$all_groups     = $this->registry->get_groups();
+		$all_groups     = $this->registry->get_groups_for_template( (int) $post->ID );
+		$option_map     = $this->catalog->get_template_option_map( $data, $all_groups );
 		$group_order    = (array) ( $data['group_order'] ?? array() );
 		$step_map       = (array) ( $data['step_map'] ?? array() );
 		$group_options  = array();
@@ -193,8 +194,8 @@ class WCS_Template_Admin {
 	public function render_restrictions_meta_box( WP_Post $post ): void {
 		$data  = $this->template->get_template_data( (int) $post->ID ) ?? array();
 		$rules = (array) ( $data['validation_rules'] ?? $data['rules'] ?? array() );
-		$groups = $this->registry->get_groups();
-		$option_map = (array) ( $data['extra_option_map'] ?? array() );
+		$groups = $this->registry->get_groups_for_template( (int) $post->ID );
+		$option_map = $this->catalog->get_template_option_map( $data, $groups );
 		$choice_step_map = (array) ( $data['choice_step_map'] ?? array() );
 		$dimensions = (array) ( $data['dimensions'] ?? array() );
 		$side_measurements = ! empty( $dimensions['side_measurements'] ) && is_array( $dimensions['side_measurements'] )
@@ -528,6 +529,7 @@ class WCS_Template_Admin {
 		if ( ! current_user_can( 'edit_post', $post_id ) ) {
 			return;
 		}
+		$imported_data = $this->template->has_dependencies( $post_id ) ? $this->template->get_template_data( $post_id ) : null;
 
 		$enabled_groups_raw = isset( $_POST['wcs_enabled_groups'] ) ? (array) wp_unslash( $_POST['wcs_enabled_groups'] ) : array();
 		$group_order_raw    = isset( $_POST['wcs_group_order'] ) ? (array) wp_unslash( $_POST['wcs_group_order'] ) : array();
@@ -573,10 +575,21 @@ class WCS_Template_Admin {
 					'key'   => $key,
 					'min'   => absint( $side['min'] ?? $side['min_width'] ?? $side['min_height'] ?? 400 ),
 					'max'   => absint( $side['max'] ?? $side['max_width'] ?? $side['max_height'] ?? 2500 ),
+					'step'  => WCS_Template::measurement_step( $side['step'] ?? 1 ),
 				);
 			}
 		}
 		$primary_side = $side_measurements[0] ?? array();
+		$pricing_keys = array_map( array( 'WCS_Pricing', 'field_key' ), $side_measurements );
+		if ( ! $side_measurements || count( $pricing_keys ) !== count( array_unique( $pricing_keys ) ) ) {
+			set_transient( 'wcs_pricing_error_' . get_current_user_id(), __( 'Template settings were not saved. Enter at least one size field and use unique field keys.', 'woo-spiegelloft-configurator' ), 60 );
+			return;
+		}
+		$pricing_raw = isset( $_POST['wcs_pricing'] ) ? json_decode( wp_unslash( (string) $_POST['wcs_pricing'] ), true ) : ( $this->template->get_template_data( $post_id )['pricing'] ?? array() );
+		if ( ! is_array( $pricing_raw ) ) {
+			set_transient( 'wcs_pricing_error_' . get_current_user_id(), __( 'Template settings were not saved because pricing settings are invalid. Reload the editor and try again.', 'woo-spiegelloft-configurator' ), 60 );
+			return;
+		}
 		if ( ! empty( $group_order ) ) {
 			$enabled_lookup = array_flip( $enabled_groups );
 			$enabled_groups = array_values(
@@ -612,6 +625,39 @@ class WCS_Template_Admin {
 		}
 
 		$rules = array();
+		if ( is_array( $imported_data ) ) {
+			// The editor is flat; retain original group membership for selected imported choices.
+			$selected = array_values( array_unique( array_merge( array(), ...array_values( $option_map ) ) ) );
+			$original_map = (array) $imported_data['extra_option_map'];
+			$assigned = array();
+			foreach ( $original_map as $slug => $original_ids ) {
+				$original_map[ $slug ] = array_values( array_intersect( $selected, (array) $original_ids ) );
+				$assigned = array_merge( $assigned, $original_map[ $slug ] );
+			}
+			$new_ids = array_values( array_diff( $selected, $assigned ) );
+			$flat_slug = (string) ( array_key_first( $option_map ) ?? '' );
+			if ( $new_ids && '' !== $flat_slug ) {
+				$original_map[ $flat_slug ] = array_merge( $original_map[ $flat_slug ] ?? array(), $new_ids );
+			}
+			$option_map = $original_map;
+			$enabled_groups = array_values( array_unique( array_merge( $imported_data['enabled_groups'], $new_ids ? array( $flat_slug ) : array() ) ) );
+			$group_order = array_values( array_unique( array_merge( $imported_data['group_order'], $enabled_groups ) ) );
+			$step_map = $imported_data['step_map'] + $step_map;
+			$choice_order = array_values( array_intersect( $choice_order, $selected ) );
+			$choice_step_map = array_intersect_key( $choice_step_map, array_flip( $selected ) );
+			$steps_unchanged = true;
+			foreach ( $option_map as $slug => $ids ) {
+				foreach ( $ids as $id ) {
+					if ( ( $choice_step_map[ $id ] ?? 2 ) !== (int) ( $imported_data['step_map'][ $slug ] ?? 2 ) ) {
+						$steps_unchanged = false;
+					}
+				}
+			}
+			if ( empty( $imported_data['choice_step_map'] ) && $steps_unchanged ) {
+				// Opening and saving a legacy group-based layout must not split its rule paths.
+				$choice_step_map = array();
+			}
+		}
 		if ( isset( $_POST['wcs_validation_rules'] ) && is_array( $_POST['wcs_validation_rules'] ) ) {
 			$raw_rules = wp_unslash( $_POST['wcs_validation_rules'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 			foreach ( $raw_rules as $rule ) {
@@ -732,9 +778,9 @@ class WCS_Template_Admin {
 			$template_slug = sanitize_title( $template_title );
 		}
 
-		$this->template->save_template_data(
-			$post_id,
-			array(
+		$saved_data = array(
+				'pricing'          => WCS_Pricing::normalize( $pricing_raw, $side_measurements ),
+				'option_selection_mode' => 'explicit',
 				'panel_template'    => $template_title,
 				'slug'              => $template_slug,
 				'type'              => sanitize_text_field( wp_unslash( (string) ( $_POST['wcs_template_type'] ?? '' ) ) ),
@@ -763,7 +809,11 @@ class WCS_Template_Admin {
 				'validation_rules'  => $rules,
 				'behavior_rules'    => $rules,
 				'edge_override'     => $edge_override,
-			)
 		);
+		if ( is_array( $imported_data ) ) {
+			$saved_data['panel_template'] = $imported_data['panel_template'];
+			$saved_data['dimensions'] = array_replace( $imported_data['dimensions'], array( 'side_measurements' => $side_measurements ) );
+		}
+		$this->template->save_template_data( $post_id, $saved_data );
 	}
 }

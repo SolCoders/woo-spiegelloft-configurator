@@ -54,6 +54,8 @@
 				$(this).attr('name', $(this).attr('name').replace(/wcs_side_measurements\[\d+\]/, 'wcs_side_measurements[' + index + ']'));
 			});
 		});
+		$('.wcs-side-remove').prop('disabled', $('.wcs-side-row').length <= 1);
+		$(document).trigger('wcs:measurements-changed');
 	}
 
 	function buildSideMeasurementRow($source) {
@@ -62,6 +64,7 @@
 			'<label>Key<input type="text" class="wcs-side-key" name="wcs_side_measurements[0][key]" placeholder="mirror-size"></label>' +
 			'<label>Min<input type="number" name="wcs_side_measurements[0][min]" value="400" min="0"></label>' +
 			'<label>Max<input type="number" name="wcs_side_measurements[0][max]" value="2500" min="0"></label>' +
+			'<label>Step<input type="number" name="wcs_side_measurements[0][step]" value="1" min="0" step="any" required></label>' +
 			'<button type="button" class="button wcs-side-add">Add</button>' +
 			'<button type="button" class="button wcs-side-remove">Remove</button>' +
 			'</div>');
@@ -72,12 +75,16 @@
 			});
 			$row.find('.wcs-side-label').val('');
 			$row.find('.wcs-side-key').val('');
+			$row.find('input[name$="[step]"]').val('1');
+			$row.removeAttr('data-pricing-id');
+			$row.find('.wcs-side-remove').prop('disabled', false);
 		}
 
 		return $row;
 	}
 
 	function bindSideMeasurements() {
+		reindexSideMeasurements();
 		$(document).on('click', '.wcs-side-add', function (e) {
 			e.preventDefault();
 			var $row = $(this).closest('.wcs-side-row');
@@ -90,10 +97,6 @@
 			e.preventDefault();
 			var $list = $(this).closest('.wcs-side-list');
 			if ($list.find('.wcs-side-row').length <= 1) {
-				$(this).closest('.wcs-side-row').find('input[type="text"]').val('');
-				$(this).closest('.wcs-side-row').find('input[name$="[min]"]').val('400');
-				$(this).closest('.wcs-side-row').find('input[name$="[max]"]').val('2500');
-				refreshRuleMeasurementOptions();
 				return;
 			}
 			$(this).closest('.wcs-side-row').remove();

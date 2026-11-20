@@ -27,7 +27,7 @@ class WCS_Cache {
 	 * Bump cache version to invalidate cached data.
 	 */
 	public function bump_version(): void {
-		update_option( 'wcs_cache_version', (string) time() );
+		update_option( 'wcs_cache_version', wp_generate_uuid4() );
 	}
 
 	/**

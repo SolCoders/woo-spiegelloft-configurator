@@ -16,8 +16,9 @@ if ( ! function_exists( 'wcs_render_customer_field_rows' ) ) {
 	 * @param array<int, array<string, mixed>> $field_rows Field rows.
 	 * @param string                           $base_name  Input name prefix.
 	 * @param int                              $depth      Current nested depth.
+	 * @param bool                             $preserve_identity Preserve imported keys and values across editor saves.
 	 */
-	function wcs_render_customer_field_rows( array $field_rows, string $base_name, int $depth = 0 ): void {
+	function wcs_render_customer_field_rows( array $field_rows, string $base_name, int $depth = 0, bool $preserve_identity = false ): void {
 		if ( $depth > 8 ) {
 			return;
 		}
@@ -34,6 +35,9 @@ if ( ! function_exists( 'wcs_render_customer_field_rows' ) ) {
 				<div class="wcs-customer-field-box builder-field__body">
 					<div class="wcs-customer-field-grid top-config">
 						<div class="field-group">
+							<?php if ( $preserve_identity ) : ?>
+								<input type="hidden" class="wcs-customer-field-key" name="<?php echo esc_attr( $field_name ); ?>[key]" value="<?php echo esc_attr( (string) ( $field['key'] ?? '' ) ); ?>">
+							<?php endif; ?>
 							<label><?php esc_html_e( 'Field Name', 'woo-spiegelloft-configurator' ); ?></label>
 							<input type="text" class="input wcs-customer-field-label" name="<?php echo esc_attr( $field_name ); ?>[label]" value="<?php echo esc_attr( (string) ( $field['label'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'Field label', 'woo-spiegelloft-configurator' ); ?>">
 						</div>
@@ -125,6 +129,9 @@ if ( ! function_exists( 'wcs_render_customer_field_rows' ) ) {
 								</label>
 							</div>
 							<span class="dashicons dashicons-menu wcs-customer-drag-handle" title="<?php esc_attr_e( 'Drag to move', 'woo-spiegelloft-configurator' ); ?>"></span>
+							<?php if ( $preserve_identity ) : ?>
+								<input type="hidden" class="wcs-customer-field-option-value" name="<?php echo esc_attr( $option_name ); ?>[value]" value="<?php echo esc_attr( (string) ( $field_option['value'] ?? '' ) ); ?>">
+							<?php endif; ?>
 							<input type="text" class="wcs-customer-field-option-label" name="<?php echo esc_attr( $option_name ); ?>[label]" value="<?php echo esc_attr( (string) ( $field_option['label'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'Option label', 'woo-spiegelloft-configurator' ); ?>">
 							<div class="wcs-customer-field-option-image wcs-image-field">
 								<input type="hidden" class="wcs-image-url" name="<?php echo esc_attr( $option_name ); ?>[image]" value="<?php echo esc_attr( (string) ( $field_option['image'] ?? '' ) ); ?>">
@@ -157,7 +164,7 @@ if ( ! function_exists( 'wcs_render_customer_field_rows' ) ) {
 							</div>
 							<div class="wcs-customer-option-position-fields">
 								<div class="wcs-customer-field-list">
-									<?php wcs_render_customer_field_rows( $nested_fields, $option_name . '[customer_fields]', $depth + 1 ); ?>
+									<?php wcs_render_customer_field_rows( $nested_fields, $option_name . '[customer_fields]', $depth + 1, $preserve_identity ); ?>
 								</div>
 							</div>
 						</div>
@@ -205,7 +212,7 @@ $field_rows = ! empty( $customer_fields ) ? $customer_fields : array(
 		<button type="button" class="button wcs-customer-export"><?php esc_html_e( 'Export all', 'woo-spiegelloft-configurator' ); ?></button>
 	</div>
 	<div class="wcs-customer-field-list">
-		<?php wcs_render_customer_field_rows( $field_rows, 'wcs_customer_fields' ); ?>
+		<?php wcs_render_customer_field_rows( $field_rows, 'wcs_customer_fields', 0, $preserve_identity ?? false ); ?>
 	</div>
 	<div class="wcs-customer-template-modal" hidden>
 		<div class="wcs-customer-template-modal__panel" role="dialog" aria-modal="true">

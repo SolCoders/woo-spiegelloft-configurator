@@ -48,6 +48,9 @@ if ( '' === $template_slug || 'auto-draft' === $template_slug ) {
 
 	<fieldset class="wcs-dimensions-grid">
 		<legend><strong><?php esc_html_e( 'Size limits (mm)', 'woo-spiegelloft-configurator' ); ?></strong></legend>
+		<div class="wcs-pricing-toolbar"><button type="button" class="button wcs-configure-pricing"><?php esc_html_e( 'Configure pricing', 'woo-spiegelloft-configurator' ); ?></button></div>
+		<input type="hidden" name="wcs_pricing" id="wcs-pricing-settings" value="<?php echo esc_attr( wp_json_encode( WCS_Pricing::normalize( (array) ( $data['pricing'] ?? array() ), $side_measurements ) ) ); ?>">
+		<script type="application/json" id="wcs-pricing-defaults"><?php echo wp_json_encode( WCS_Pricing::defaults( $side_measurements ), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?></script>
 		<div class="wcs-side-dimensions">
 			<div class="wcs-side-list">
 				<?php foreach ( $side_measurements as $index => $side ) : ?>
@@ -63,6 +66,9 @@ if ( '' === $template_slug || 'auto-draft' === $template_slug ) {
 						</label>
 						<label><?php esc_html_e( 'Max', 'woo-spiegelloft-configurator' ); ?>
 							<input type="number" name="wcs_side_measurements[<?php echo esc_attr( (string) $index ); ?>][max]" value="<?php echo esc_attr( (string) ( $side['max'] ?? $side['max_width'] ?? $side['max_height'] ?? 2500 ) ); ?>" min="0">
+						</label>
+						<label><?php esc_html_e( 'Step', 'woo-spiegelloft-configurator' ); ?>
+							<input type="number" name="wcs_side_measurements[<?php echo esc_attr( (string) $index ); ?>][step]" value="<?php echo esc_attr( (string) WCS_Template::measurement_step( $side['step'] ?? 1 ) ); ?>" min="0" step="any" required>
 						</label>
 						<button type="button" class="button wcs-side-add"><?php esc_html_e( 'Add', 'woo-spiegelloft-configurator' ); ?></button>
 						<button type="button" class="button wcs-side-remove"><?php esc_html_e( 'Remove', 'woo-spiegelloft-configurator' ); ?></button>

@@ -121,22 +121,40 @@ class WCS_Template {
 				'right_max_height'  => (int) ( $dimensions['right_max_height'] ?? $dimensions['max_height'] ?? 2000 ),
 				'side_measurements' => $side_measurements,
 			),
+			'pricing'           => WCS_Pricing::normalize( (array) ( $data['pricing'] ?? array() ), $side_measurements ),
 			'enabled_groups'    => (array) ( $data['enabled_groups'] ?? $data['groups'] ?? array() ),
 			'group_order'       => (array) ( $data['group_order'] ?? array() ),
 			'choice_order'      => (array) ( $data['choice_order'] ?? array() ),
 			'step_map'          => (array) ( $data['step_map'] ?? array() ),
 			'choice_step_map'   => (array) ( $data['choice_step_map'] ?? array() ),
 			'extra_option_map'  => (array) ( $data['extra_option_map'] ?? array() ),
+			'option_selection_mode' => 'explicit' === ( $data['option_selection_mode'] ?? 'legacy' ) ? 'explicit' : 'legacy',
 			'validation_rules'  => (array) ( $data['validation_rules'] ?? $data['rules'] ?? array() ),
 			'behavior_rules'    => (array) ( $data['behavior_rules'] ?? $data['validation_rules'] ?? $data['rules'] ?? array() ),
 			'edge_override'     => (array) ( $data['edge_override'] ?? array() ),
 			'groups'            => (array) ( $data['enabled_groups'] ?? $data['groups'] ?? array() ),
 			'rules'             => (array) ( $data['validation_rules'] ?? $data['rules'] ?? array() ),
 			'meta'              => (array) ( $data['meta'] ?? array() ),
+			'dependencies'      => $this->has_dependencies( $template_id ),
 		);
 
 		$this->cache->set( $cache_key, $formatted );
 		return $formatted;
+	}
+
+	/** Whether this layout has an isolated imported dependency set. */
+	public function has_dependencies( int $template_id ): bool {
+		return metadata_exists( 'post', $template_id, '_wcs_template_dependencies' );
+	}
+
+	/** Resolve position settings without changing shared site options. */
+	public function get_position_settings( int $template_id ): array {
+		$dependencies = get_post_meta( $template_id, '_wcs_template_dependencies', true );
+		if ( is_array( $dependencies ) && is_array( $dependencies['positions'] ?? null ) ) {
+			return $dependencies['positions'];
+		}
+		$settings = get_option( 'wcs_group_position_settings', array() );
+		return is_array( $settings ) ? $settings : array();
 	}
 
 	/**
@@ -149,6 +167,10 @@ class WCS_Template {
 	public function save_template_data( int $template_id, array $data ): bool {
 		$dimensions = (array) ( $data['dimensions'] ?? array() );
 		$side_measurements = $this->normalize_side_measurements( $dimensions );
+		$keys = array_map( array( 'WCS_Pricing', 'field_key' ), $side_measurements );
+		if ( count( $keys ) !== count( array_unique( $keys ) ) ) {
+			return false;
+		}
 
 		$sanitized = array(
 			'panel_template'   => sanitize_text_field( (string) ( $data['panel_template'] ?? 'bathroomMirror' ) ),
@@ -170,18 +192,24 @@ class WCS_Template {
 				'right_max_height'  => absint( $dimensions['right_max_height'] ?? $dimensions['max_height'] ?? 2000 ),
 				'side_measurements' => $side_measurements,
 			),
+			'pricing'          => WCS_Pricing::normalize( (array) ( $data['pricing'] ?? array() ), $side_measurements ),
 			'enabled_groups'   => array_values( array_map( 'sanitize_text_field', (array) ( $data['enabled_groups'] ?? array() ) ) ),
 			'group_order'      => array_values( array_map( 'sanitize_text_field', (array) ( $data['group_order'] ?? array() ) ) ),
 			'choice_order'     => array_values( array_unique( array_filter( array_map( 'absint', (array) ( $data['choice_order'] ?? array() ) ) ) ) ),
 			'step_map'         => is_array( $data['step_map'] ?? null ) ? array_map( static fn( $step ): int => max( 1, absint( $step ) ), $data['step_map'] ) : array(),
 			'choice_step_map'  => is_array( $data['choice_step_map'] ?? null ) ? array_map( static fn( $step ): int => max( 1, absint( $step ) ), $data['choice_step_map'] ) : array(),
 			'extra_option_map' => is_array( $data['extra_option_map'] ?? null ) ? $data['extra_option_map'] : array(),
+			'option_selection_mode' => 'explicit' === ( $data['option_selection_mode'] ?? 'legacy' ) ? 'explicit' : 'legacy',
 			'validation_rules' => is_array( $data['validation_rules'] ?? null ) ? $data['validation_rules'] : array(),
 			'behavior_rules'   => is_array( $data['behavior_rules'] ?? null ) ? $data['behavior_rules'] : array(),
 			'edge_override'    => is_array( $data['edge_override'] ?? null ) ? $data['edge_override'] : array(),
 		);
 
-		update_post_meta( $template_id, '_wcs_template_data', $sanitized );
+		if ( $this->has_dependencies( $template_id ) ) {
+			$stored = get_post_meta( $template_id, '_wcs_template_data', true );
+			$sanitized = array_replace( is_array( $stored ) ? $stored : array(), $sanitized );
+		}
+		update_post_meta( $template_id, '_wcs_template_data', wp_slash( $sanitized ) );
 		$this->cache->delete( 'template_' . $template_id );
 		return true;
 	}
@@ -209,6 +237,7 @@ class WCS_Template {
 					'key'   => $key,
 					'min'   => absint( $side['min'] ?? $side['min_width'] ?? $side['min_height'] ?? 400 ),
 					'max'   => absint( $side['max'] ?? $side['max_width'] ?? $side['max_height'] ?? 2500 ),
+					'step'  => self::measurement_step( $side['step'] ?? 1 ),
 				);
 			}
 		}
@@ -223,14 +252,26 @@ class WCS_Template {
 				'key'   => 'width',
 				'min'   => absint( $dimensions['min_width'] ?? 400 ),
 				'max'   => absint( $dimensions['max_width'] ?? 2500 ),
+				'step'  => 1,
 			),
 			array(
 				'label' => __( 'Height', 'woo-spiegelloft-configurator' ),
 				'key'   => 'height',
 				'min'   => absint( $dimensions['min_height'] ?? 400 ),
 				'max'   => absint( $dimensions['max_height'] ?? 2500 ),
+				'step'  => 1,
 			),
 		);
+	}
+
+	/**
+	 * Normalize a positive measurement increment, with backwards-compatible defaults.
+	 *
+	 * @param mixed $value Configured increment.
+	 * @return float
+	 */
+	public static function measurement_step( $value ): float {
+		return is_numeric( $value ) && is_finite( (float) $value ) && (float) $value > 0 ? (float) $value : 1.0;
 	}
 
 	/**

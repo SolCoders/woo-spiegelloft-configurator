@@ -129,6 +129,46 @@ class WCS_Extras_Catalog {
 	}
 
 	/**
+	 * Resolve the same effective selection for the editor, transfer and storefront.
+	 *
+	 * Older flat-editor layouts stored order/steps but no selection when every row
+	 * was checked by default. Their choices need not have taxonomy memberships.
+	 * Explicit selections (including empty selections) never use that fallback.
+	 *
+	 * @param array $data   Template settings.
+	 * @param array $groups Available group definitions.
+	 * @return array<string, int[]>
+	 */
+	public function get_template_option_map( array $data, array $groups ): array {
+		$stored   = (array) ( $data['extra_option_map'] ?? array() );
+		$explicit = ! empty( $data['dependencies'] ) || 'explicit' === ( $data['option_selection_mode'] ?? 'legacy' );
+		$selected = false;
+		foreach ( $stored as $ids ) {
+			if ( ! empty( $ids ) ) {
+				$selected = true;
+				break;
+			}
+		}
+		$legacy_flat = ! $explicit && ! $selected && ( ! empty( $data['choice_order'] ) || ! empty( $data['choice_step_map'] ) );
+		$resolved    = array();
+		foreach ( (array) ( $data['enabled_groups'] ?? $data['groups'] ?? array() ) as $slug ) {
+			$ids = array_values( array_unique( array_filter( array_map( 'absint', (array) ( $stored[ $slug ] ?? array() ) ) ) ) );
+			if ( isset( $groups[ $slug ] ) && 'static' !== ( $groups[ $slug ]['type'] ?? 'selectable' ) && ! $ids && ! $explicit ) {
+				$options = $legacy_flat ? $this->get_all_options() : $this->get_options_by_group( $slug );
+				$ids     = array_map( 'intval', array_column( $options, 'id' ) );
+				if ( $legacy_flat ) {
+					$order = array_map( 'absint', (array) ( $data['choice_order'] ?? array() ) );
+					$ids   = array_values( array_unique( array_merge( array_intersect( $order, $ids ), $ids ) ) );
+					// The flat editor places its checked choices in one selectable group.
+					$explicit = true;
+				}
+			}
+			$resolved[ $slug ] = $ids;
+		}
+		return $resolved;
+	}
+
+	/**
 	 * Get all options for a group slug.
 	 *
 	 * @param string $group_slug Group slug.
@@ -273,6 +313,9 @@ class WCS_Extras_Catalog {
 
 		$terms = wp_get_object_terms( $post->ID, 'wcs_extra_group', array( 'fields' => 'slugs' ) );
 		$group = ( ! is_wp_error( $terms ) && ! empty( $terms ) ) ? (string) $terms[0] : '';
+		if ( isset( $flat['_wcs_import_group'] ) ) {
+			$group = (string) $flat['_wcs_import_group'];
+		}
 
 		return array(
 			'id'    => (int) $post->ID,
