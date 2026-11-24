@@ -42,10 +42,10 @@ class WCS_Order {
 
 		if ( ! empty( $config['items'] ) && is_array( $config['items'] ) ) {
 			foreach ( $config['items'] as $config_item ) {
-				$label = (string) ( $config_item['label'] ?? '' );
+				$label = WCS_Storefront_Text::label( (string) ( $config_item['label'] ?? '' ) );
 				$value = (string) ( $config_item['value'] ?? '' );
 				$price = (float) ( $config_item['price'] ?? 0 );
-				if ( '' === $label || '' === $value ) {
+				if ( '' === trim( $label ) || ! WCS_Storefront_Text::filled( $value, empty( $config_item['customer_text'] ) ) ) {
 					continue;
 				}
 				if ( $price > 0 ) {
@@ -82,10 +82,10 @@ class WCS_Order {
 
 		echo '<dl class="wcs-order-configuration">';
 		foreach ( (array) ( $config['items'] ?? array() ) as $config_item ) {
-			$label = (string) ( $config_item['label'] ?? '' );
+			$label = WCS_Storefront_Text::label( (string) ( $config_item['label'] ?? '' ) );
 			$value = (string) ( $config_item['value'] ?? '' );
 			$price = (float) ( $config_item['price'] ?? 0 );
-			if ( '' === $label || '' === $value ) {
+			if ( '' === trim( $label ) || ! WCS_Storefront_Text::filled( $value, empty( $config_item['customer_text'] ) ) ) {
 				continue;
 			}
 			if ( $price > 0 ) {

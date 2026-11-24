@@ -246,7 +246,7 @@ class WCS_Storefront {
 			'wcs-storefront',
 			WCS_PLUGIN_URL . 'assets/css/storefront.css',
 			array(),
-			WCS_VERSION
+			WCS_Loader::asset_version( 'assets/css/storefront.css' )
 		);
 
 		wp_enqueue_script(

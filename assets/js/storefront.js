@@ -35,12 +35,12 @@
 		});
 
 		$wrap.find('.wcs-customer-field-input').each(function () {
-			if ($(this).closest('.is-wcs-rule-disabled').length) {
+			if (this.disabled || $(this).closest('[hidden], .is-wcs-rule-disabled').length) {
 				return;
 			}
 			var key = $(this).data('key');
 			var value = $(this).val();
-			if (key && value !== '') {
+			if (key && String(value || '').trim() !== '' && !inputIsPlaceholder($(this))) {
 				selections[key] = value;
 				if ($(this).is('select')) {
 					total += parseFloat($(this).find(':selected').data('price')) || 0;
@@ -52,21 +52,21 @@
 
 		$wrap.find('.wcs-choice-select').each(function () {
 			var $select = $(this);
-			if ($select.closest('.is-wcs-rule-disabled').length) {
+			if ($select.prop('disabled') || $select.closest('[hidden], .is-wcs-rule-disabled').length) {
 				return;
 			}
 			var group = $select.data('group');
 			var value = $select.val();
 			var price = parseFloat($select.find(':selected').data('price')) || 0;
 
-			if (group && value) {
+			if (group && value && !inputIsPlaceholder($select)) {
 				selections[group] = value;
 				total += price;
 			}
 		});
 
 		$wrap.find('.wcs-position-choice').each(function () {
-			if ($(this).closest('.is-wcs-rule-disabled').length) {
+			if (this.disabled || $(this).closest('[hidden], .is-wcs-rule-disabled').length) {
 				return;
 			}
 			var group = $(this).data('group');
@@ -85,6 +85,18 @@
 		$wrap.find('.wcs-selections-input').val(JSON.stringify(selections));
 		setPrice($wrap, total);
 		renderReview($wrap, total);
+	}
+
+	function inputIsPlaceholder($input) {
+		return $input.is('select') && ['none', '---'].indexOf(String($input.val() || '').trim().toLowerCase()) !== -1;
+	}
+
+	function validationMessage(input) {
+		if (input.validity.valueMissing) { return 'Bitte füllen Sie dieses Feld aus.'; }
+		if (input.validity.rangeUnderflow) { return 'Bitte geben Sie einen Wert von mindestens ' + input.min + ' ein.'; }
+		if (input.validity.rangeOverflow) { return 'Bitte geben Sie einen Wert von höchstens ' + input.max + ' ein.'; }
+		if (input.validity.stepMismatch) { return 'Bitte geben Sie einen Wert in Schritten von ' + input.step + ' ein.'; }
+		return 'Bitte geben Sie einen gültigen Wert ein.';
 	}
 
 	function cleanOptionText(text) {
@@ -137,8 +149,8 @@
 	}
 
 	function rangeMessage($input, min, max) {
-		var label = $input.data('label') || $input.closest('label').find('> span:first-child').clone().children().remove().end().text() || 'value';
-		return 'You can only enter ' + String(label).trim() + ' between ' + min + 'mm - ' + max + 'mm';
+		var label = $input.data('label') || $input.closest('label').find('> span:first-child').clone().children().remove().end().text() || 'dieses Ma?';
+		return 'Bitte geben Sie für ' + String(label).trim() + ' einen Wert zwischen ' + min + ' und ' + max + ' mm ein.';
 	}
 
 	function showDimensionRangeError($input, message) {
@@ -168,6 +180,7 @@
 		if (!$anchor.length) {
 			$anchor = $field;
 		}
+		$anchor.addClass('wcs-popup-anchor');
 
 		$error = $anchor.children('.wcs-range-popup').first();
 		if (!$error.length) {
@@ -180,6 +193,26 @@
 		$field.data('wcsPopupTimer', window.setTimeout(function () {
 			$error.prop('hidden', true);
 		}, 3200));
+	}
+
+	function scrollToFirstIssue($wrap) {
+		var $issue = $wrap.find('.is-empty, [aria-invalid="true"]').first();
+		if (!$issue.length) {
+			return;
+		}
+		var index = $wrap.find('.wcs-configurator__section').index($issue.closest('.wcs-configurator__section'));
+		if (index >= 0 && $wrap.data('layout') !== 'compact_dropdown') {
+			activateStep($wrap, index, false);
+		}
+		$issue[0].scrollIntoView({ block: 'center', behavior: 'smooth' });
+		$issue.find('input:not(.wcs-native-select), .wcs-custom-select__button, select:not(.wcs-native-select)').addBack('input').first().trigger('focus');
+	}
+
+	function showCartMessages($wrap, messages) {
+		var text = (messages || []).filter(Boolean).join('\n');
+		if (text) {
+			showFieldPopup($wrap.find('.wcs-configurator__footer'), text);
+		}
 	}
 
 	function clampDimensionInput($input, showError) {
@@ -231,12 +264,12 @@
 		});
 
 		if (width || height) {
-			rows.push(reviewRow('Size selection', [
-				{ label: 'Width', value: width ? width + ' mm' : '' },
-				{ label: 'Height', value: height ? height + ' mm' : '' }
+			rows.push(reviewRow('Maßauswahl', [
+				{ label: 'Breite', value: width ? width + ' mm' : '' },
+				{ label: 'Höhe', value: height ? height + ' mm' : '' }
 			]));
 		} else if (sideLines.length) {
-			rows.push(reviewRow('Size selection', sideLines));
+			rows.push(reviewRow('Maßauswahl', sideLines));
 		}
 
 		$wrap.find('.wcs-choice-select').each(function () {
@@ -272,8 +305,8 @@
 		});
 
 		$wrap.find('.wcs-review').html(
-			'<div class="wcs-review-total"><div><h3>In total</h3><p>' + escapeHtml($wrap.find('.wcs-configurator__header h2').text()) + '</p></div><strong>' + escapeHtml(money(total)) + '</strong></div>' +
-			(rows.length ? rows.join('') : '<p class="wcs-review-empty">No selections yet.</p>')
+			'<div class="wcs-review-total"><div><h3>Gesamtpreis</h3><p>' + escapeHtml($wrap.find('.wcs-configurator__header h2').text()) + '</p></div><strong>' + escapeHtml(money(total)) + '</strong></div>' +
+			(rows.length ? rows.join('') : '<p class="wcs-review-empty">Noch keine Auswahl getroffen.</p>')
 		);
 	}
 
@@ -374,6 +407,7 @@
 		}
 
 		var html = '<h3>' + escapeHtml(label) + '</h3><label class="wcs-option-select"><select class="wcs-position-choice" data-group="' + escapeHtml(group) + '">';
+		html += '<option value="">' + escapeHtml($select.closest('.wcs-configurator').attr('data-none-label') || 'Keine Auswahl') + '</option>';
 		positions.forEach(function (position) {
 			var value = position.value || position.label || '';
 			var text = position.label || value;
@@ -460,11 +494,11 @@
 			if (field.type === 'text') {
 				html += '<input id="wcs-field-' + escapeHtml(key) + '" type="text" class="wcs-customer-field-input" data-key="' + escapeHtml(key) + '" data-price="' + escapeHtml(field.price_enabled ? (parseFloat(field.price) || 0) : 0) + '"' + placeholder + requiredAttr + behaviorAttr + '>';
 			} else if (field.type === 'number') {
-				var defaultNumberValue = field.min !== undefined && field.min !== '' ? field.min : '0';
+				var defaultNumberValue = required || field.read_only ? (field.min !== undefined && field.min !== '' ? field.min : '0') : '';
 				var buttonAttr = field.disabled ? ' disabled aria-disabled="true"' : '';
 				html += '<span class="wcs-size-control wcs-customer-number-control' + (field.read_only ? ' is-readonly' : '') + (field.disabled ? ' is-disabled' : '') + '">';
 				if (!field.read_only) {
-					html += '<button type="button" class="wcs-size-step wcs-size-step--minus" data-step="-1" aria-label="' + escapeHtml('Decrease value') + '"' + buttonAttr + '>-</button>';
+					html += '<button type="button" class="wcs-size-step wcs-size-step--minus" data-step="-1" aria-label="' + escapeHtml('Wert verringern') + '"' + buttonAttr + '>-</button>';
 				}
 				html += '<input id="wcs-field-' + escapeHtml(key) + '" type="number" class="wcs-customer-field-input wcs-customer-number-input" data-key="' + escapeHtml(key) + '" data-label="' + escapeHtml(label) + '" data-price="' + escapeHtml(field.price_enabled ? (parseFloat(field.price) || 0) : 0) + '"';
 				if (field.min !== undefined && field.min !== '') {
@@ -478,12 +512,12 @@
 				}
 				html += ' value="' + escapeHtml(defaultNumberValue) + '"' + placeholder + requiredAttr + behaviorAttr + '>';
 				if (!field.read_only) {
-					html += '<button type="button" class="wcs-size-step wcs-size-step--plus" data-step="1" aria-label="' + escapeHtml('Increase value') + '"' + buttonAttr + '>+</button>';
+					html += '<button type="button" class="wcs-size-step wcs-size-step--plus" data-step="1" aria-label="' + escapeHtml('Wert erhöhen') + '"' + buttonAttr + '>+</button>';
 				}
 				html += '</span>';
 			} else {
 				html += '<select id="wcs-field-' + escapeHtml(key) + '" class="wcs-customer-field-input wcs-customer-field-select" data-key="' + escapeHtml(key) + '"' + requiredAttr + (field.disabled ? ' disabled' : '') + '>';
-				html += '<option value="">' + escapeHtml(field.placeholder || 'Please select') + '</option>';
+				html += '<option value="">Keine Auswahl</option>';
 				(field.options || []).forEach(function (option) {
 					var price = parseFloat(option.price) || 0;
 					var nestedFields = option.customer_fields ? JSON.stringify(option.customer_fields || []) : '';
@@ -563,7 +597,7 @@
 		if (!$custom.length) {
 			return;
 		}
-		var text = cleanOptionText($select.find(':selected').text()) || 'Please select';
+		var text = cleanOptionText($select.find(':selected').text()) || 'Keine Auswahl';
 		var price = optionDisplayPrice($select.find(':selected').data('price'));
 		$custom.find('.wcs-custom-select__selected-price').text(price).prop('hidden', !price);
 		$custom.find('.wcs-custom-select__value').text(text);
@@ -622,7 +656,7 @@
 			}
 
 			empty = !$select.val();
-			label = $group.find('.wcs-option-heading h3, > h3').first().text() || 'This field';
+			label = $group.find('.wcs-option-heading h3, > h3').first().text() || 'Dieses Feld';
 			message = $group.data('wcs-rule-message') || label + ' darf nicht leer sein.';
 			$group.toggleClass('is-empty', empty);
 			if (empty) {
@@ -638,7 +672,7 @@
 			var $field = $(this);
 			var $input = $field.children('.wcs-customer-field-input, .wcs-size-control').find('.wcs-customer-field-input').add($field.children('.wcs-customer-field-input')).first();
 			var empty = !$input.val();
-			var label = $field.data('required-label') || 'This field';
+			var label = $field.data('required-label') || 'Dieses Feld';
 			var message = $field.data('wcs-rule-message') || label + ' darf nicht leer sein.';
 			if ($field.is('[hidden]') || $field.closest('[hidden], .is-wcs-rule-disabled').length || $input.prop('disabled')) {
 				$field.removeClass('is-empty');
@@ -667,6 +701,7 @@
 			var $select = $(this);
 			var compactDropdown = $select.closest('.wcs-configurator').data('layout') === 'compact_dropdown';
 			var optionsHtml = '';
+			$select.find('option[value=""]').text($select.closest('.wcs-configurator').attr('data-none-label') || 'Keine Auswahl');
 			if ($select.next('.wcs-custom-select').length) {
 				$select.next('.wcs-custom-select').remove();
 			}
@@ -683,7 +718,7 @@
 			$select.find('option').each(function () {
 				var $option = $(this);
 				var disabled = $option.is(':disabled') || $option.data('required-message');
-				var message = $option.data('required-message') || $option.attr('title') || 'This option requires additional conditions.';
+				var message = $option.data('required-message') || $option.attr('title') || 'Für diese Option müssen weitere Bedingungen erfüllt sein.';
 				var image = $option.data('image') || '';
 				var price = optionDisplayPrice($option.data('price'));
 				optionsHtml += '<button type="button" class="wcs-custom-select__option' + (image ? ' wcs-custom-select__option--has-image' : ' wcs-custom-select__option--no-image') + (disabled ? ' is-disabled' : '') + '" data-value="' + escapeHtml($option.val()) + '">' +
@@ -755,6 +790,8 @@
 	$(function () {
 		$('.wcs-configurator').each(function () {
 			var $wrap = $(this);
+			// Handle native constraints through the same popup as server validation.
+			this.noValidate = true;
 
 			activateStep($wrap, 0, false);
 			buildCustomSelect($wrap.find('.wcs-choice-select'));
@@ -814,12 +851,67 @@
 			collect($(this).closest('.wcs-configurator'));
 		});
 
-		$(document).on('click', '.wcs-add-to-cart', function (e) {
-			var $wrap = $(this).closest('.wcs-configurator');
-			if (!validateCustomerFields($wrap, true)) {
-				e.preventDefault();
-				scrollToFirstIssue($wrap);
+		$(document).on('submit', 'form.wcs-configurator', function (e) {
+			e.preventDefault();
+			var $wrap = $(this);
+			if ($wrap.data('wcsSubmitting')) {
+				return;
 			}
+			var valid = validateCustomerFields($wrap, true);
+			$wrap.find('input, select, textarea').each(function () {
+				var $input = $(this);
+				$input.removeAttr('aria-invalid');
+				if (this.disabled || $input.closest('[hidden], .is-wcs-rule-disabled').length || this.type === 'hidden') {
+					return;
+				}
+				var missingDimension = $input.hasClass('wcs-dimension-input') && !$input.val();
+				if (missingDimension || !this.checkValidity()) {
+					valid = false;
+					$input.attr('aria-invalid', 'true');
+					var message = $input.data('wcs-rule-range-message') || (missingDimension ? 'Bitte geben Sie ein Maß ein.' : validationMessage(this));
+					if ($input.hasClass('wcs-dimension-input')) {
+						showDimensionRangeError($input, message);
+					} else {
+						showFieldPopup($input.closest('.wcs-customer-field, .wcs-step-option-group, .wcs-position-select'), message);
+					}
+				}
+			});
+			if (!valid) {
+				scrollToFirstIssue($wrap);
+				return;
+			}
+			collect($wrap);
+			var $button = $wrap.find('.wcs-add-to-cart');
+			$wrap.data('wcsSubmitting', true).attr('aria-busy', 'true');
+			$button.prop('disabled', true).addClass('loading');
+			hideFieldPopup($wrap.find('.wcs-configurator__footer'));
+			$.ajax({
+				url: $wrap.find('.wcs-cart-endpoint').val(),
+				method: 'POST',
+				dataType: 'json',
+				data: $wrap.serialize(),
+				timeout: 30000
+			}).done(function (response) {
+				if (!response || !response.success) {
+					showCartMessages($wrap, response && response.data && response.data.messages || ['Die Konfiguration konnte nicht hinzugefügt werden. Bitte versuchen Sie es erneut.']);
+					return;
+				}
+				var data = response.data;
+				showCartMessages($wrap, data.messages);
+				$.each(data.fragments || {}, function (selector, html) {
+					$(selector).replaceWith(html);
+				});
+				$(document.body).trigger('added_to_cart', [data.fragments, data.cart_hash, $button]);
+				$button.addClass('added');
+				if (data.redirect && !(data.messages || []).length) {
+					window.location.assign(data.redirect);
+				}
+			}).fail(function (xhr) {
+				showCartMessages($wrap, xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.messages || ['Die Anfrage konnte nicht abgeschlossen werden. Bitte prüfen Sie den Warenkorb, bevor Sie es erneut versuchen.']);
+			}).always(function () {
+				$wrap.removeData('wcsSubmitting').removeAttr('aria-busy');
+				$button.prop('disabled', false).removeClass('loading');
+			});
 		});
 
 		$(document).on('click', '.wcs-size-step', function (e) {

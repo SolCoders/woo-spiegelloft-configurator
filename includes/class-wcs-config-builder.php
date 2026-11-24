@@ -71,17 +71,17 @@ class WCS_Config_Builder {
 	public function build_for_product( int $product_id ) {
 		$product = wc_get_product( $product_id );
 		if ( ! $product ) {
-			return new WP_Error( 'wcs_invalid_product', __( 'Invalid product.', 'woo-spiegelloft-configurator' ), array( 'status' => 404 ) );
+			return new WP_Error( 'wcs_invalid_product', __( 'Ungültiges Produkt.', 'woo-spiegelloft-configurator' ), array( 'status' => 404 ) );
 		}
 
 		$template_id = $this->template->get_product_template_id( $product_id );
 		if ( $template_id <= 0 ) {
-			return new WP_Error( 'wcs_no_template', __( 'No configurator template assigned.', 'woo-spiegelloft-configurator' ), array( 'status' => 404 ) );
+			return new WP_Error( 'wcs_no_template', __( 'Für dieses Produkt wurde keine Konfigurator-Vorlage zugewiesen.', 'woo-spiegelloft-configurator' ), array( 'status' => 404 ) );
 		}
 
 		$template_data = $this->template->get_template_data( $template_id );
 		if ( ! $template_data ) {
-			return new WP_Error( 'wcs_template_not_found', __( 'Template not found.', 'woo-spiegelloft-configurator' ), array( 'status' => 404 ) );
+			return new WP_Error( 'wcs_template_not_found', __( 'Die Konfigurator-Vorlage wurde nicht gefunden.', 'woo-spiegelloft-configurator' ), array( 'status' => 404 ) );
 		}
 
 		return $this->build_payload( $product, $template_data );
@@ -108,7 +108,7 @@ class WCS_Config_Builder {
 		$steps_output   = array(
 			1 => array(
 				'number' => 1,
-				'title'  => __( 'Size selection', 'woo-spiegelloft-configurator' ),
+				'title'  => __( 'Maßauswahl', 'woo-spiegelloft-configurator' ),
 				'groups' => array(),
 			),
 		);
@@ -177,7 +177,7 @@ class WCS_Config_Builder {
 							'number' => $choice_step,
 							'title'  => sprintf(
 								/* translators: %d: step number */
-								__( 'Step %d', 'woo-spiegelloft-configurator' ),
+								__( 'Schritt %d', 'woo-spiegelloft-configurator' ),
 								$choice_step
 							),
 							'groups' => array(),
@@ -195,7 +195,7 @@ class WCS_Config_Builder {
 					'number' => $step_number,
 					'title'  => sprintf(
 						/* translators: %d: step number */
-						__( 'Step %d', 'woo-spiegelloft-configurator' ),
+						__( 'Schritt %d', 'woo-spiegelloft-configurator' ),
 						$step_number
 					),
 					'groups' => array(),
@@ -260,7 +260,7 @@ class WCS_Config_Builder {
 		 * @param array<string, mixed> $data    Config data.
 		 * @param WC_Product           $product Product.
 		 */
-		return apply_filters( 'wcs_build_config_payload', $data, $product );
+		return WCS_Storefront_Text::config( apply_filters( 'wcs_build_config_payload', $data, $product ) );
 	}
 
 	/**
@@ -390,7 +390,7 @@ class WCS_Config_Builder {
 		$template_id = $this->template->get_product_template_id( $product_id );
 		$template    = $this->template->get_template_data( $template_id );
 		if ( ! $template ) {
-			return new WP_Error( 'wcs_no_template', __( 'No template assigned.', 'woo-spiegelloft-configurator' ) );
+			return new WP_Error( 'wcs_no_template', __( 'Keine Konfigurator-Vorlage zugewiesen.', 'woo-spiegelloft-configurator' ) );
 		}
 
 		$selections = $this->validation->sanitize_selections( $selections );
@@ -411,7 +411,7 @@ class WCS_Config_Builder {
 
 		$product = wc_get_product( $product_id );
 		if ( ! $product ) {
-			return new WP_Error( 'wcs_invalid_product', __( 'Invalid product.', 'woo-spiegelloft-configurator' ) );
+			return new WP_Error( 'wcs_invalid_product', __( 'Ungültiges Produkt.', 'woo-spiegelloft-configurator' ) );
 		}
 
 		$price = $this->calculate_price( (float) $product->get_price(), $selections, $template );
@@ -643,7 +643,7 @@ class WCS_Config_Builder {
 					'wcs_required_customer_field',
 					sprintf(
 						/* translators: %s: customer field label */
-						__( 'Required field missing for %s.', 'woo-spiegelloft-configurator' ),
+						__( 'Bitte füllen Sie das Pflichtfeld „%s“ aus.', 'woo-spiegelloft-configurator' ),
 						(string) $field['label']
 					)
 				);
@@ -658,7 +658,7 @@ class WCS_Config_Builder {
 						'wcs_invalid_customer_field_range',
 						sprintf(
 							/* translators: %s: customer field label */
-							__( 'Invalid value entered for %s.', 'woo-spiegelloft-configurator' ),
+							__( 'Ungültiger Wert für „%s“.', 'woo-spiegelloft-configurator' ),
 							(string) $field['label']
 						)
 					);
@@ -673,7 +673,7 @@ class WCS_Config_Builder {
 						'wcs_invalid_customer_field_words',
 						sprintf(
 							/* translators: %s: field label */
-							__( 'Invalid word count entered for %s.', 'woo-spiegelloft-configurator' ),
+							__( 'Ungültige Wortanzahl für „%s“.', 'woo-spiegelloft-configurator' ),
 							(string) ( $field['label'] ?? $key )
 						)
 					);
@@ -690,7 +690,7 @@ class WCS_Config_Builder {
 					'wcs_invalid_customer_field',
 					sprintf(
 						/* translators: %s: customer field label */
-						__( 'Invalid value selected for %s.', 'woo-spiegelloft-configurator' ),
+						__( 'Ungültige Auswahl für „%s“.', 'woo-spiegelloft-configurator' ),
 						(string) $field['label']
 					)
 				);

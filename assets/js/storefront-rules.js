@@ -381,7 +381,7 @@
 			$group.find('.wcs-customer-field-input, .wcs-position-choice').val('');
 			$group.find('.wcs-image-choice-card').removeClass('is-selected').attr('aria-checked', 'false');
 			$group.find('.wcs-custom-select__option').removeClass('is-selected');
-			$group.find('.wcs-custom-select__value').text('Please select');
+			$group.find('.wcs-custom-select__value').text('Bitte auswählen');
 			$group.find('.wcs-customer-nested-target').prop('hidden', true).empty();
 			$group.find('.wcs-customer-nested-box').remove();
 			$group.find('.wcs-customer-field').removeClass('is-empty');
@@ -422,7 +422,7 @@
 
 		if (disabled && tokenMatches(selectedValue, targetValue)) {
 			$field.val('').trigger('change');
-			$field.next('.wcs-custom-select').find('.wcs-custom-select__value').text('Please select');
+			$field.next('.wcs-custom-select').find('.wcs-custom-select__value').text('Bitte auswählen');
 			$field.next('.wcs-custom-select').find('.wcs-custom-select__option').removeClass('is-selected');
 			$field.next('.wcs-image-choice-list').find('.wcs-image-choice-card').removeClass('is-selected').attr('aria-checked', 'false');
 			$field.closest('.wcs-step-option-group').children('[data-wcs-nested-parent="' + String($field.data('key') || '').replace(/"/g, '\\"') + '"]').remove();
@@ -441,7 +441,7 @@
 	function setRequired($field, required, message) {
 		var $group = $field.closest('.wcs-step-option-group, .wcs-customer-field');
 		var nativeRequired = $field.data('required') === 1 || $field.data('required') === '1';
-		var label = $group.data('required-label') || $.trim($group.find('.wcs-option-heading h3, > h3, > .wcs-customer-field__label').first().text()) || 'This field';
+		var label = $group.data('required-label') || $.trim($group.find('.wcs-option-heading h3, > h3, > .wcs-customer-field__label').first().text()) || 'Dieses Feld';
 
 		$field.data('wcs-rule-required', required ? '1' : '');
 		$group.data('wcs-rule-message', required ? String(message || '') : '');

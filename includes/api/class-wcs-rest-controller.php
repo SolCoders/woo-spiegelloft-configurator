@@ -149,7 +149,7 @@ class WCS_REST_Controller extends WP_REST_Controller {
 
 		$product = wc_get_product( $product_id );
 		if ( ! $product ) {
-			return new WP_Error( 'wcs_invalid_product', __( 'Invalid product.', 'woo-spiegelloft-configurator' ), array( 'status' => 404 ) );
+			return new WP_Error( 'wcs_invalid_product', __( 'Ungültiges Produkt.', 'woo-spiegelloft-configurator' ), array( 'status' => 404 ) );
 		}
 
 		$template_service = new WCS_Template( new WCS_Cache() );

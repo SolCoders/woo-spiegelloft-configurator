@@ -182,8 +182,8 @@ class WCS_Pricing {
 					'wcs_invalid_dimension',
 					sprintf(
 					/* translators: 1: field label, 2: minimum, 3: maximum. */
-						__( 'Enter %1$s between %2$s and %3$s mm.', 'woo-spiegelloft-configurator' ),
-						$field['label'],
+						__( 'Bitte geben Sie für %1$s einen Wert zwischen %2$s und %3$s mm ein.', 'woo-spiegelloft-configurator' ),
+						WCS_Storefront_Text::label( $field['label'] ),
 						$field['min'],
 						$field['max']
 					)

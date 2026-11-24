@@ -35,7 +35,7 @@ class WCS_Validation_Engine {
 					'wcs_invalid_group',
 					sprintf(
 						/* translators: %s: group slug */
-						__( 'Group "%s" is not enabled for this product.', 'woo-spiegelloft-configurator' ),
+						__( 'Die Option „%s“ ist für dieses Produkt nicht verfügbar.', 'woo-spiegelloft-configurator' ),
 						$group_slug
 					)
 				);
@@ -103,7 +103,7 @@ class WCS_Validation_Engine {
 					'wcs_required_group',
 					sprintf(
 						/* translators: %s: group label */
-						__( 'Selection required for %s.', 'woo-spiegelloft-configurator' ),
+						__( 'Bitte treffen Sie eine Auswahl für „%s“.', 'woo-spiegelloft-configurator' ),
 						(string) ( $group_def['label'] ?? $group_def['slug'] ?? '' )
 					)
 				);
@@ -112,7 +112,7 @@ class WCS_Validation_Engine {
 		}
 
 		if ( 'multi' === $type && ! is_array( $value ) ) {
-			return new WP_Error( 'wcs_invalid_multi', __( 'Invalid multi-select value.', 'woo-spiegelloft-configurator' ) );
+			return new WP_Error( 'wcs_invalid_multi', __( 'Ungültiger Wert für die Mehrfachauswahl.', 'woo-spiegelloft-configurator' ) );
 		}
 
 		return true;
@@ -216,7 +216,7 @@ class WCS_Validation_Engine {
 				$rule,
 				sprintf(
 					/* translators: %s: target group */
-					__( 'Required selection missing for %s.', 'woo-spiegelloft-configurator' ),
+					__( 'Bitte treffen Sie die erforderliche Auswahl für „%s“.', 'woo-spiegelloft-configurator' ),
 					$target
 				)
 			);
@@ -227,7 +227,7 @@ class WCS_Validation_Engine {
 				$rule,
 				sprintf(
 					/* translators: %s: target group */
-					__( 'Selection is not allowed for %s.', 'woo-spiegelloft-configurator' ),
+					__( 'Diese Auswahl ist für „%s“ nicht zulässig.', 'woo-spiegelloft-configurator' ),
 					$target
 				)
 			);
@@ -238,7 +238,7 @@ class WCS_Validation_Engine {
 				$rule,
 				sprintf(
 					/* translators: 1: target value, 2: target group */
-					__( 'Selection "%1$s" is required for %2$s.', 'woo-spiegelloft-configurator' ),
+					__( 'Die Auswahl „%1$s“ ist für „%2$s“ erforderlich.', 'woo-spiegelloft-configurator' ),
 					$target_value,
 					$target
 				)
@@ -250,7 +250,7 @@ class WCS_Validation_Engine {
 				$rule,
 				sprintf(
 					/* translators: 1: target value, 2: target group */
-					__( 'Selection "%1$s" is not allowed for %2$s.', 'woo-spiegelloft-configurator' ),
+					__( 'Die Auswahl „%1$s“ ist für „%2$s“ nicht zulässig.', 'woo-spiegelloft-configurator' ),
 					$target_value,
 					$target
 				)
@@ -262,7 +262,7 @@ class WCS_Validation_Engine {
 
 	private function rule_error( array $rule, string $fallback ): WP_Error {
 		$message = (string) ( $rule['message'] ?? '' );
-		return new WP_Error( 'wcs_rule_failed', '' !== $message ? $message : $fallback );
+		return new WP_Error( 'wcs_rule_failed', WCS_Storefront_Text::message( '' !== $message ? $message : $fallback ) );
 	}
 
 	/**
@@ -288,7 +288,7 @@ class WCS_Validation_Engine {
 					'wcs_invalid_selection',
 					sprintf(
 						/* translators: 1: selected value, 2: group slug */
-						__( 'Selection "%1$s" is not available for %2$s.', 'woo-spiegelloft-configurator' ),
+						__( 'Die Auswahl „%1$s“ ist für „%2$s“ nicht verfügbar.', 'woo-spiegelloft-configurator' ),
 						(string) $selected,
 						$group_slug
 					)
@@ -318,7 +318,7 @@ class WCS_Validation_Engine {
 			if ( $this->is_superseded_by_customer_field( $selections, $target_path, (array) ( $template['_option_lookup'] ?? array() ) ) ) {
 				return true;
 			}
-			return $this->range_error( $target_path, $rule, __( 'Invalid numeric value for %s.', 'woo-spiegelloft-configurator' ) );
+			return $this->range_error( $target_path, $rule, __( 'Ungültiger Zahlenwert für „%s“.', 'woo-spiegelloft-configurator' ) );
 		}
 
 		$context = $this->build_formula_context( $selections, $template );
@@ -327,11 +327,11 @@ class WCS_Validation_Engine {
 		$value   = (float) $actual;
 
 		if ( null !== $min && $value < $min ) {
-			return $this->range_error( $target_path, $rule, __( 'Value for %s is below the allowed minimum.', 'woo-spiegelloft-configurator' ) );
+			return $this->range_error( $target_path, $rule, __( 'Der Wert für „%s“ liegt unter dem zulässigen Mindestwert.', 'woo-spiegelloft-configurator' ) );
 		}
 
 		if ( null !== $max && $value > $max ) {
-			return $this->range_error( $target_path, $rule, __( 'Value for %s is above the allowed maximum.', 'woo-spiegelloft-configurator' ) );
+			return $this->range_error( $target_path, $rule, __( 'Der Wert für „%s“ liegt über dem zulässigen Höchstwert.', 'woo-spiegelloft-configurator' ) );
 		}
 
 		return true;
@@ -350,7 +350,7 @@ class WCS_Validation_Engine {
 			$message = sprintf( $fallback, $target_path );
 		}
 
-		return new WP_Error( 'wcs_rule_failed', $message );
+		return new WP_Error( 'wcs_rule_failed', WCS_Storefront_Text::message( $message ) );
 	}
 
 	/**

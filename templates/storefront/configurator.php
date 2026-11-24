@@ -27,10 +27,13 @@ foreach ( $steps as $step ) {
 	}
 }
 ?>
-<form class="cart wcs-configurator wcs-configurator--<?php echo esc_attr( str_replace( '_', '-', $layout ) ); ?>" method="post" enctype="multipart/form-data" data-layout="<?php echo esc_attr( $layout ); ?>" data-base-price="<?php echo esc_attr( (string) $base_price ); ?>" data-rules="<?php echo esc_attr( wp_json_encode( (array) ( $config['behavior_rules'] ?? $config['validation_rules'] ?? array() ) ) ); ?>">
+<form class="cart wcs-configurator wcs-configurator--<?php echo esc_attr( str_replace( '_', '-', $layout ) ); ?>" method="post" enctype="multipart/form-data" data-layout="<?php echo esc_attr( $layout ); ?>" data-none-label="<?php esc_attr_e( 'Keine Auswahl', 'woo-spiegelloft-configurator' ); ?>" data-base-price="<?php echo esc_attr( (string) $base_price ); ?>" data-rules="<?php echo esc_attr( wp_json_encode( (array) ( $config['behavior_rules'] ?? $config['validation_rules'] ?? array() ) ) ); ?>">
 	<script type="application/json" class="wcs-pricing-payload"><?php echo wp_json_encode( array( 'pricing' => $config['pricing'] ?? WCS_Pricing::defaults( $side_measurements ), 'fields' => $pricing_fields, 'decimals' => wc_get_price_decimals() ), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?></script>
 	<input type="hidden" name="wcs_selections" class="wcs-selections-input" value="">
 	<input type="hidden" name="quantity" value="1">
+	<input type="hidden" name="product_id" value="<?php echo esc_attr( (string) $product->get_id() ); ?>">
+	<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'wcs_add_to_cart' ) ); ?>">
+	<input type="hidden" class="wcs-cart-endpoint" value="<?php echo esc_url( WC_AJAX::get_endpoint( 'wcs_add_to_cart' ) ); ?>">
 
 	<div class="wcs-configurator__panel">
 		<header class="wcs-configurator__header">
@@ -83,10 +86,10 @@ foreach ( $steps as $step ) {
 								<small><?php echo esc_html( (string) $side_min ); ?> - <?php echo esc_html( (string) $side_max ); ?> mm</small>
 							</span>
 							<span class="wcs-size-control">
-								<button type="button" class="wcs-size-step wcs-size-step--minus" data-step="-1" aria-label="<?php esc_attr_e( 'Decrease value', 'woo-spiegelloft-configurator' ); ?>">-</button>
+								<button type="button" class="wcs-size-step wcs-size-step--minus" data-step="-1" aria-label="<?php esc_attr_e( 'Wert verringern', 'woo-spiegelloft-configurator' ); ?>">-</button>
 								<input type="number" class="wcs-dimension-input" data-key="<?php echo esc_attr( 'side_' . str_replace( '-', '_', $side_key ) ); ?>" data-label="<?php echo esc_attr( $side_label ); ?>" min="<?php echo esc_attr( (string) $side_min ); ?>" max="<?php echo esc_attr( (string) $side_max ); ?>" step="<?php echo esc_attr( (string) $side_step ); ?>" value="<?php echo esc_attr( (string) $side_min ); ?>">
 								<em><?php esc_html_e( 'mm', 'woo-spiegelloft-configurator' ); ?></em>
-								<button type="button" class="wcs-size-step wcs-size-step--plus" data-step="1" aria-label="<?php esc_attr_e( 'Increase value', 'woo-spiegelloft-configurator' ); ?>">+</button>
+								<button type="button" class="wcs-size-step wcs-size-step--plus" data-step="1" aria-label="<?php esc_attr_e( 'Wert erhöhen', 'woo-spiegelloft-configurator' ); ?>">+</button>
 							</span>
 						</label>
 					</div>
@@ -98,27 +101,27 @@ foreach ( $steps as $step ) {
 				<div class="wcs-size-box">
 					<label>
 						<span>
-							<?php esc_html_e( 'Width', 'woo-spiegelloft-configurator' ); ?>
+							<?php esc_html_e( 'Breite', 'woo-spiegelloft-configurator' ); ?>
 							<small><?php echo esc_html( (string) ( $config['min_width'] ?? 200 ) ); ?> - <?php echo esc_html( (string) ( $config['max_width'] ?? 2500 ) ); ?> mm</small>
 						</span>
 						<span class="wcs-size-control">
-							<button type="button" class="wcs-size-step wcs-size-step--minus" data-step="-1" aria-label="<?php esc_attr_e( 'Decrease width', 'woo-spiegelloft-configurator' ); ?>">-</button>
+							<button type="button" class="wcs-size-step wcs-size-step--minus" data-step="-1" aria-label="<?php esc_attr_e( 'Breite verringern', 'woo-spiegelloft-configurator' ); ?>">-</button>
 							<input type="number" class="wcs-dimension-input" data-key="width" min="<?php echo esc_attr( (string) ( $config['min_width'] ?? 200 ) ); ?>" max="<?php echo esc_attr( (string) ( $config['max_width'] ?? 2500 ) ); ?>" value="<?php echo esc_attr( (string) ( $config['min_width'] ?? 200 ) ); ?>">
 							<em><?php esc_html_e( 'mm', 'woo-spiegelloft-configurator' ); ?></em>
-							<button type="button" class="wcs-size-step wcs-size-step--plus" data-step="1" aria-label="<?php esc_attr_e( 'Increase width', 'woo-spiegelloft-configurator' ); ?>">+</button>
+							<button type="button" class="wcs-size-step wcs-size-step--plus" data-step="1" aria-label="<?php esc_attr_e( 'Breite erhöhen', 'woo-spiegelloft-configurator' ); ?>">+</button>
 						</span>
 					</label>
 					<span class="wcs-size-box__times">x</span>
 					<label>
 						<span>
-							<?php esc_html_e( 'Height', 'woo-spiegelloft-configurator' ); ?>
+							<?php esc_html_e( 'Höhe', 'woo-spiegelloft-configurator' ); ?>
 							<small><?php echo esc_html( (string) ( $config['min_height'] ?? 200 ) ); ?> - <?php echo esc_html( (string) ( $config['max_height'] ?? 2500 ) ); ?> mm</small>
 						</span>
 						<span class="wcs-size-control">
-							<button type="button" class="wcs-size-step wcs-size-step--minus" data-step="-1" aria-label="<?php esc_attr_e( 'Decrease height', 'woo-spiegelloft-configurator' ); ?>">-</button>
+							<button type="button" class="wcs-size-step wcs-size-step--minus" data-step="-1" aria-label="<?php esc_attr_e( 'Höhe verringern', 'woo-spiegelloft-configurator' ); ?>">-</button>
 							<input type="number" class="wcs-dimension-input" data-key="height" min="<?php echo esc_attr( (string) ( $config['min_height'] ?? 200 ) ); ?>" max="<?php echo esc_attr( (string) ( $config['max_height'] ?? 2500 ) ); ?>" value="<?php echo esc_attr( (string) ( $config['min_height'] ?? 200 ) ); ?>">
 							<em><?php esc_html_e( 'mm', 'woo-spiegelloft-configurator' ); ?></em>
-							<button type="button" class="wcs-size-step wcs-size-step--plus" data-step="1" aria-label="<?php esc_attr_e( 'Increase height', 'woo-spiegelloft-configurator' ); ?>">+</button>
+							<button type="button" class="wcs-size-step wcs-size-step--plus" data-step="1" aria-label="<?php esc_attr_e( 'Höhe erhöhen', 'woo-spiegelloft-configurator' ); ?>">+</button>
 						</span>
 					</label>
 				</div>
@@ -151,7 +154,7 @@ foreach ( $steps as $step ) {
 					<label class="wcs-option-select <?php echo $hide_parent_select ? 'wcs-option-select--hidden-parent' : ''; ?>">
 						<select class="wcs-choice-select" data-group="<?php echo esc_attr( $group_slug ); ?>" <?php echo ! empty( $group['required'] ) ? 'data-required="1" aria-required="true"' : ''; ?>>
 							<?php if ( ! $hide_parent_select ) : ?>
-								<option value=""><?php esc_html_e( 'Please select', 'woo-spiegelloft-configurator' ); ?></option>
+								<option value=""><?php esc_html_e( 'Keine Auswahl', 'woo-spiegelloft-configurator' ); ?></option>
 							<?php endif; ?>
 							<?php foreach ( $options as $option ) : ?>
 								<option value="<?php echo esc_attr( (string) ( $option['value'] ?? '' ) ); ?>" data-price="<?php echo esc_attr( (string) ( $option['price'] ?? 0 ) ); ?>" data-image="<?php echo esc_attr( (string) ( $option['image'] ?? '' ) ); ?>" data-customer-fields="<?php echo esc_attr( wp_json_encode( (array) ( $option['customer_fields'] ?? array() ) ) ); ?>" <?php selected( $hide_parent_select ); ?>>
@@ -212,7 +215,7 @@ foreach ( $steps as $step ) {
 						<label class="wcs-option-select <?php echo $hide_parent_select ? 'wcs-option-select--hidden-parent' : ''; ?>">
 							<select class="wcs-choice-select" data-group="<?php echo esc_attr( $group_slug ); ?>" <?php echo ! empty( $group['required'] ) ? 'data-required="1" aria-required="true"' : ''; ?>>
 								<?php if ( ! $hide_parent_select ) : ?>
-									<option value=""><?php esc_html_e( 'Please select', 'woo-spiegelloft-configurator' ); ?></option>
+									<option value=""><?php esc_html_e( 'Keine Auswahl', 'woo-spiegelloft-configurator' ); ?></option>
 								<?php endif; ?>
 								<?php foreach ( $options as $option ) : ?>
 									<option value="<?php echo esc_attr( (string) ( $option['value'] ?? '' ) ); ?>" data-price="<?php echo esc_attr( (string) ( $option['price'] ?? 0 ) ); ?>" data-image="<?php echo esc_attr( (string) ( $option['image'] ?? '' ) ); ?>" data-customer-fields="<?php echo esc_attr( wp_json_encode( (array) ( $option['customer_fields'] ?? array() ) ) ); ?>" <?php selected( $hide_parent_select ); ?>>
@@ -243,10 +246,10 @@ foreach ( $steps as $step ) {
 			</section>
 		</div>
 
-		<nav class="wcs-configurator__footer" aria-label="<?php esc_attr_e( 'Configurator navigation', 'woo-spiegelloft-configurator' ); ?>">
+		<nav class="wcs-configurator__footer" aria-label="<?php esc_attr_e( 'Konfigurator-Navigation', 'woo-spiegelloft-configurator' ); ?>">
 			<button type="button" class="button wcs-step-back"><?php esc_html_e( 'Zurück', 'woo-spiegelloft-configurator' ); ?></button>
 			<div class="wcs-configurator__footer-total" aria-live="polite">
-				<span><?php esc_html_e( 'Current', 'woo-spiegelloft-configurator' ); ?></span>
+				<span><?php esc_html_e( 'Gesamtpreis', 'woo-spiegelloft-configurator' ); ?></span>
 				<strong class="wcs-configurator__footer-price"><?php echo wp_kses_post( wc_price( $base_price ) ); ?></strong>
 			</div>
 			<button type="button" class="button alt wcs-step-next"><?php esc_html_e( 'Weiter', 'woo-spiegelloft-configurator' ); ?></button>
