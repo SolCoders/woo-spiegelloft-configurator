@@ -113,6 +113,8 @@ const serverError = await evaluate('(async()=>{const w=jQuery(".wcs-configurator
 check(serverError.success===false && serverError.data.messages.length>0, 'Server dimension validation returns JSON messages');
 check(serverError.data.messages[0].includes('Bitte geben Sie'), 'Server measurement error is German');
 check(await evaluate('jQuery(".wcs-customer-number-input").filter(function(){return String(jQuery(this).data("key")).endsWith("empty_distance")}).val()===""'), 'Optional number begins empty');
+check(await evaluate('jQuery(".wcs-customer-number-input").filter(function(){return String(jQuery(this).data("key")).endsWith("minimum_distance")}).val()==="150"'), 'Numeric field starts at its configured minimum');
+check(await evaluate('jQuery(".wcs-customer-number-input").filter(function(){return String(jQuery(this).data("key")).endsWith("zero_minimum")}).val()==="0"'), 'A zero minimum also initializes the field');
 await evaluate('window.addedEvents=0;jQuery(document.body).on("added_to_cart.feedback",()=>window.addedEvents++);jQuery(".wcs-configurator").trigger("submit");jQuery(".wcs-configurator").trigger("submit");void 0');
 await waitFor('!jQuery(".wcs-configurator").data("wcsSubmitting")');
 check(await evaluate('window.addedEvents===1'), 'Valid configuration adds once despite repeated submit');
@@ -121,6 +123,7 @@ check(cart.items?.some(item=>item.id===fixture.product_id && item.quantity===1),
 const attributes = cart.items.find(item=>item.id===fixture.product_id).item_data;
 check(attributes.some(row=>row.key==='Breite') && attributes.some(row=>row.key==='Höhe'), 'Real cart measurement attributes are German');
 check(!attributes.some(row=>row.key==='Zusätzlicher Hinweis'||row.key==='Zusätzlicher Abstand'), 'Real cart omits blank text and numeric options');
+check(attributes.some(row=>row.key==='Seitenabstand' && row.value==='150') && attributes.some(row=>row.key==='Nullwert' && row.value==='0'), 'Real cart retains initialized minimum values');
 check(!attributes.some(row=>String(row.value).includes('Zusatzoption')), 'Real cart omits the internal parent option and keeps the visible field labels');
 await navigate(fixture.product_url);
 check(await evaluate('!document.querySelector(".woocommerce-error")'), 'Handled errors are not queued for the next page load');

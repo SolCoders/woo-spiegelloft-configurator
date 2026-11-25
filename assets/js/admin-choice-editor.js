@@ -326,11 +326,15 @@
 				$option.children('.wcs-customer-field-option-image').find('[name]').each(function () {
 					replaceCustomerFieldName($(this), optionName, 'option');
 				});
+				$option.children('.wcs-option-default-control').find('.wcs-option-preselected').each(function () {
+					replaceCustomerFieldName($(this), optionName, 'option');
+				});
 				$option.children('.wcs-customer-option-position').find('.wcs-customer-option-position-toggle').each(function () {
 					replaceCustomerFieldName($(this), optionName, 'option');
 				});
 				reindexCustomerFieldList($option.find('> .wcs-customer-option-position-fields > .wcs-customer-field-list'), optionName + '[customer_fields]');
 			});
+			$field.children('.wcs-customer-field-box').children('.wcs-customer-field-options').children('.wcs-customer-field-option').children('.wcs-option-default-control').find('.wcs-option-preselected:checked').slice(1).prop('checked', false);
 			refreshCustomerFieldRow($field);
 		});
 	}
@@ -353,6 +357,7 @@
 			else if ($input.hasClass('wcs-customer-field-option-value')) suffix = '[value]';
 			else if ($input.hasClass('wcs-image-url')) suffix = '[image]';
 			else if ($input.hasClass('wcs-customer-field-option-price')) suffix = '[price]';
+			else if ($input.hasClass('wcs-option-preselected')) suffix = '[preselected]';
 			else suffix = '[nested_enabled]';
 		}
 		$input.attr('name', baseName + suffix);
@@ -390,6 +395,7 @@
 
 	function duplicateCustomerOption($option) {
 		var $clone = $option.clone();
+		$clone.children('.wcs-option-default-control').find('.wcs-option-preselected').prop('checked', false);
 		var fieldTypes = [];
 		$clone.removeClass('wcs-row-actions-active').css({
 			'--wcs-row-action-x': '',
@@ -475,6 +481,7 @@
 				label: $option.children('.wcs-customer-field-option-label').val() || '',
 				image: $option.children('.wcs-customer-field-option-image').find('.wcs-image-url').val() || '',
 				price: $option.children('.wcs-customer-field-option-price').val() || '',
+				preselected: $option.children('.wcs-option-default-control').find('.wcs-option-preselected').is(':checked'),
 				nested_enabled: $option.children('.wcs-customer-option-position').find('.wcs-customer-option-position-toggle').is(':checked'),
 				customer_fields: []
 			};
@@ -521,6 +528,7 @@
 			$option.children('.wcs-customer-field-option-label').val(option.label || '');
 			$option.children('.wcs-customer-field-option-value').val(option.value || '');
 			$option.children('.wcs-customer-field-option-price').val(option.price || '');
+			$option.children('.wcs-option-default-control').find('.wcs-option-preselected').prop('checked', !!option.preselected);
 			$option.children('.wcs-customer-field-option-image').find('.wcs-image-url').val(option.image || '').each(function () {
 				updateImagePreview($(this));
 			});
@@ -1047,6 +1055,11 @@
 	}
 
 	$(function () {
+		$(document).on('change', '.wcs-option-preselected', function () {
+			if (this.checked) {
+				$(this).closest('.wcs-customer-field-options').children('.wcs-customer-field-option').children('.wcs-option-default-control').find('.wcs-option-preselected').not(this).prop('checked', false);
+			}
+		});
 		if (!$('.wcs-choice-details').length) {
 			return;
 		}

@@ -99,7 +99,7 @@ class WCS_Choice_Meta {
 			'wcs-admin-choice-editor',
 			WCS_PLUGIN_URL . 'assets/js/admin-choice-editor.js',
 			array( 'jquery', 'jquery-ui-sortable' ),
-			WCS_VERSION,
+			WCS_Loader::asset_version( 'assets/js/admin-choice-editor.js' ),
 			true
 		);
 
@@ -248,6 +248,8 @@ class WCS_Choice_Meta {
 		update_post_meta( $post_id, '_wcs_option_slug', $value );
 		update_post_meta( $post_id, '_wcs_price', $price );
 		update_post_meta( $post_id, '_wcs_legacy_id', $legacy_id );
+		// save_post invalidation runs before these fields are written.
+		( new WCS_Cache() )->bump_version();
 	}
 
 	/**
@@ -353,6 +355,7 @@ class WCS_Choice_Meta {
 		}
 
 		$options = array();
+		$has_preselected = false;
 		foreach ( $raw as $option ) {
 			if ( ! is_array( $option ) ) {
 				continue;
@@ -367,7 +370,10 @@ class WCS_Choice_Meta {
 				continue;
 			}
 
+			$preselected = ! $has_preselected && ! empty( $option['preselected'] );
+			$has_preselected = $has_preselected || $preselected;
 			$options[] = array(
+				'preselected' => $preselected,
 				'label' => $label ?: $value,
 				'value' => $value,
 				'image' => esc_url_raw( (string) ( $option['image'] ?? '' ) ),

@@ -10,7 +10,9 @@ if ( 'setup' === ( $argv[2] ?? '' ) ) {
 	$option['customer_fields'][0]['label'] = 'Oberfläche';
 	$option['customer_fields'][0]['options'][0]['label'] = 'Messing poliert';
 	$option['customer_fields'][] = array( 'key' => 'empty_note', 'label' => 'Zusätzlicher Hinweis', 'type' => 'text', 'required' => false );
-	$option['customer_fields'][] = array( 'key' => 'empty_distance', 'label' => 'Zusätzlicher Abstand', 'type' => 'number', 'min' => 0, 'required' => false );
+	$option['customer_fields'][] = array( 'key' => 'empty_distance', 'label' => 'Zusätzlicher Abstand', 'type' => 'number', 'required' => false );
+	$option['customer_fields'][] = array( 'key' => 'minimum_distance', 'label' => 'Seitenabstand', 'type' => 'number', 'min' => 150, 'required' => false );
+	$option['customer_fields'][] = array( 'key' => 'zero_minimum', 'label' => 'Nullwert', 'type' => 'number', 'min' => 0, 'required' => false );
 	update_post_meta( $fixture['option_id'], '_wcs_option_data', $option );
 	( new WCS_Cache() )->bump_version();
 	$config = wcs_get_config_builder()->build_for_product( $fixture['product_id'] );

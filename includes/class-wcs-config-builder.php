@@ -272,9 +272,12 @@ class WCS_Config_Builder {
 	 */
 	private function format_shopify_option( array $option, array $group_def ): array {
 		$meta        = (array) ( $option['meta'] ?? array() );
-		$option_data = isset( $meta['_wcs_option_data'] ) && is_array( $meta['_wcs_option_data'] )
+		// Catalogue lists may predate the last editor save. The saved customer
+		// fields (including defaults) are authoritative for the storefront.
+		$saved_data = ! empty( $option['id'] ) ? get_post_meta( (int) $option['id'], '_wcs_option_data', true ) : null;
+		$option_data = is_array( $saved_data ) ? $saved_data : ( isset( $meta['_wcs_option_data'] ) && is_array( $meta['_wcs_option_data'] )
 			? $meta['_wcs_option_data']
-			: array();
+			: array() );
 
 		$legacy_id = (int) ( $meta['_wcs_legacy_id'] ?? 0 );
 		if ( $legacy_id <= 0 ) {
@@ -535,6 +538,12 @@ class WCS_Config_Builder {
 
 		if ( 'dropdown' === $type ) {
 			$row['options']       = array_values( array_filter( array_map( array( $this, 'normalize_customer_field_option' ), (array) ( $field['options'] ?? array() ) ) ) );
+			$has_preselected = false;
+			foreach ( $row['options'] as &$dropdown_option ) {
+				$dropdown_option['preselected'] = ! $has_preselected && $dropdown_option['preselected'];
+				$has_preselected = $has_preselected || $dropdown_option['preselected'];
+			}
+			unset( $dropdown_option );
 			if ( empty( $row['options'] ) ) {
 				return null;
 			}
@@ -575,6 +584,7 @@ class WCS_Config_Builder {
 		$row = array(
 			'label' => $label,
 			'value' => $value,
+			'preselected' => ! empty( $option['preselected'] ),
 			'image' => (string) ( $option['image'] ?? '' ),
 			'price' => (float) ( $option['price'] ?? 0 ),
 		);

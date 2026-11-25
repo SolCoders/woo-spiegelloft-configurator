@@ -110,6 +110,7 @@ if ( ! function_exists( 'wcs_render_customer_field_rows' ) ) {
 					<div class="wcs-customer-field-option-head column-head" aria-hidden="true">
 						<span><?php esc_html_e( 'Nested', 'woo-spiegelloft-configurator' ); ?></span>
 						<span><?php esc_html_e( 'Label', 'woo-spiegelloft-configurator' ); ?></span>
+						<span><?php esc_html_e( 'Preselected', 'woo-spiegelloft-configurator' ); ?></span>
 						<span><?php esc_html_e( 'Image', 'woo-spiegelloft-configurator' ); ?></span>
 						<span><?php esc_html_e( 'Price', 'woo-spiegelloft-configurator' ); ?></span>
 					</div>
@@ -133,6 +134,11 @@ if ( ! function_exists( 'wcs_render_customer_field_rows' ) ) {
 								<input type="hidden" class="wcs-customer-field-option-value" name="<?php echo esc_attr( $option_name ); ?>[value]" value="<?php echo esc_attr( (string) ( $field_option['value'] ?? '' ) ); ?>">
 							<?php endif; ?>
 							<input type="text" class="wcs-customer-field-option-label" name="<?php echo esc_attr( $option_name ); ?>[label]" value="<?php echo esc_attr( (string) ( $field_option['label'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'Option label', 'woo-spiegelloft-configurator' ); ?>">
+							<label class="wcs-option-default-control" title="<?php esc_attr_e( 'Preselected option', 'woo-spiegelloft-configurator' ); ?>">
+								<input type="checkbox" role="switch" class="wcs-option-preselected" name="<?php echo esc_attr( $option_name ); ?>[preselected]" value="1" <?php checked( ! empty( $field_option['preselected'] ) ); ?>>
+								<span class="wcs-option-default-slider" aria-hidden="true"></span>
+								<span class="screen-reader-text"><?php esc_html_e( 'Preselected option', 'woo-spiegelloft-configurator' ); ?></span>
+							</label>
 							<div class="wcs-customer-field-option-image wcs-image-field">
 								<input type="hidden" class="wcs-image-url" name="<?php echo esc_attr( $option_name ); ?>[image]" value="<?php echo esc_attr( (string) ( $field_option['image'] ?? '' ) ); ?>">
 									<button type="button" class="button image-btn wcs-upload-image wcs-image-square <?php echo ! empty( $field_option['image'] ) ? 'has-image' : ''; ?>" aria-label="<?php esc_attr_e( 'Choose image', 'woo-spiegelloft-configurator' ); ?>">

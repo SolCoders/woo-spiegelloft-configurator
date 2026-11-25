@@ -494,7 +494,7 @@
 			if (field.type === 'text') {
 				html += '<input id="wcs-field-' + escapeHtml(key) + '" type="text" class="wcs-customer-field-input" data-key="' + escapeHtml(key) + '" data-price="' + escapeHtml(field.price_enabled ? (parseFloat(field.price) || 0) : 0) + '"' + placeholder + requiredAttr + behaviorAttr + '>';
 			} else if (field.type === 'number') {
-				var defaultNumberValue = required || field.read_only ? (field.min !== undefined && field.min !== '' ? field.min : '0') : '';
+				var defaultNumberValue = field.min !== undefined && field.min !== null && field.min !== '' ? field.min : (required || field.read_only ? '0' : '');
 				var buttonAttr = field.disabled ? ' disabled aria-disabled="true"' : '';
 				html += '<span class="wcs-size-control wcs-customer-number-control' + (field.read_only ? ' is-readonly' : '') + (field.disabled ? ' is-disabled' : '') + '">';
 				if (!field.read_only) {
@@ -517,11 +517,14 @@
 				html += '</span>';
 			} else {
 				html += '<select id="wcs-field-' + escapeHtml(key) + '" class="wcs-customer-field-input wcs-customer-field-select" data-key="' + escapeHtml(key) + '"' + requiredAttr + (field.disabled ? ' disabled' : '') + '>';
-				html += '<option value="">Keine Auswahl</option>';
+				var preselected = (field.options || []).filter(function (option) { return option.preselected; })[0];
+				if (!preselected) {
+					html += '<option value="">Keine Auswahl</option>';
+				}
 				(field.options || []).forEach(function (option) {
 					var price = parseFloat(option.price) || 0;
 					var nestedFields = option.customer_fields ? JSON.stringify(option.customer_fields || []) : '';
-					html += '<option value="' + escapeHtml(option.value || '') + '" data-price="' + escapeHtml(price) + '"';
+					html += '<option value="' + escapeHtml(option.value || '') + '" data-price="' + escapeHtml(price) + '"' + (option === preselected ? ' selected' : '');
 					if (option.image) {
 						html += ' data-image="' + escapeHtml(option.image) + '"';
 					}

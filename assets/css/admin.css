@@ -2554,7 +2554,7 @@
 .wcs-choice-field-builder .wcs-customer-field-option-head,
 .wcs-choice-field-builder .wcs-customer-field-option,
 .wcs-choice-field-builder .wcs-customer-option-position-fields .wcs-customer-field-option {
-	grid-template-columns: 32px 18px minmax(120px, 1fr) 42px 72px;
+	grid-template-columns: 32px 18px minmax(120px, 1fr) 64px 42px 72px;
 	gap: 10px;
 }
 
@@ -2573,6 +2573,60 @@
 
 .wcs-choice-field-builder .wcs-customer-field-option-head span:nth-child(4) {
 	grid-column: 5;
+}
+
+.wcs-choice-field-builder .wcs-customer-field-option-head span:nth-child(5) {
+	grid-column: 6;
+}
+
+.wcs-option-default-control {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 44px;
+	width: 100%;
+	cursor: pointer;
+}
+
+.wcs-option-default-control input.wcs-option-preselected {
+	position: absolute;
+	opacity: 0;
+	width: 32px;
+	height: 20px;
+	margin: 0;
+}
+
+.wcs-option-default-slider {
+	position: relative;
+	width: 32px;
+	height: 20px;
+	border-radius: 12px;
+	background: #94a3b8;
+}
+
+.wcs-option-default-slider::before {
+	content: '';
+	position: absolute;
+	left: 3px;
+	top: 3px;
+	width: 14px;
+	height: 14px;
+	border-radius: 50%;
+	background: #fff;
+}
+
+.wcs-option-preselected:checked + .wcs-option-default-slider {
+	background: #2271b1;
+}
+
+.wcs-option-preselected:checked + .wcs-option-default-slider::before {
+	transform: translateX(12px);
+}
+
+.wcs-option-preselected:focus-visible + .wcs-option-default-slider {
+	outline: 2px solid #2271b1;
+	outline-offset: 3px;
 }
 
 .wcs-choice-field-builder .wcs-customer-field-option {
