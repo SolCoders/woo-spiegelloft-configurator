@@ -5,6 +5,8 @@ define( 'WP_HTTP_BLOCK_EXTERNAL', true );
 define( 'DISABLE_WP_CRON', true );
 if ( empty( $argv[1] ) ) { exit( 1 ); }
 require $argv[1];
+$admins = get_users( array( 'role' => 'administrator', 'number' => 1 ) );
+wp_set_current_user( $admins[0]->ID );
 $count = 0;
 $check = static function ( bool $valid, string $message ) use ( &$count ): void {
 	if ( ! $valid ) { throw new RuntimeException( $message ); }
@@ -61,6 +63,9 @@ try {
 	$package = new WCS_Layout_Package();
 	$export = ( new WCS_Layout_Exporter( $template, new WCS_Extras_Registry(), $catalog, $package ) )->export( $layout_id );
 	$check( ! is_wp_error( $export ), 'Layout exports with preselected options' );
+	$document = json_decode( $export, true );
+	$document['template']['title'] .= ' imported ' . wp_generate_uuid4();
+	$export = wp_json_encode( $document );
 	$import = ( new WCS_Layout_Importer( $package, $cache ) )->import( $export );
 	$check( ! is_wp_error( $import ), 'Layout imports with preselected options' );
 	$imported_id = $import['template_id'];

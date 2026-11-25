@@ -96,11 +96,12 @@ if ( ! empty( $choice_order ) && ! empty( $flat_options ) ) {
 						<tbody>
 							<?php foreach ( $flat_options as $option ) : ?>
 								<?php
-								$option_id    = (int) ( $option['id'] ?? 0 );
-								$option_title = (string) ( $option['title'] ?? '' );
-								$option_slug  = (string) ( $option['slug'] ?? '' );
-								$option_image = (string) ( $option['meta']['_wcs_image'] ?? '' );
-								$option_step  = max( 1, absint( $choice_step_map[ $option_id ] ?? $flat_step ) );
+								$option_id       = (int) ( $option['id'] ?? 0 );
+								$option_title    = (string) ( $option['title'] ?? '' );
+								$option_slug     = (string) ( $option['slug'] ?? '' );
+								$option_image    = (string) ( $option['meta']['_wcs_image'] ?? '' );
+								$option_step     = max( 1, absint( $choice_step_map[ $option_id ] ?? $flat_step ) );
+								$option_edit_url = get_edit_post_link( $option_id, 'raw' );
 								?>
 								<tr data-choice-id="<?php echo esc_attr( (string) $option_id ); ?>" data-choice-search="<?php echo esc_attr( strtolower( $option_title . ' ' . $option_slug ) ); ?>">
 									<td class="wcs-option-table-sort">
@@ -119,7 +120,13 @@ if ( ! empty( $choice_order ) && ! empty( $flat_options ) ) {
 													<span aria-hidden="true"></span>
 												<?php endif; ?>
 											</span>
-											<strong><?php echo esc_html( $option_title ); ?></strong>
+											<strong>
+												<?php if ( $option_edit_url ) : ?>
+													<a href="<?php echo esc_url( $option_edit_url ); ?>"><?php echo esc_html( $option_title ); ?></a>
+												<?php else : ?>
+													<?php echo esc_html( $option_title ); ?>
+												<?php endif; ?>
+											</strong>
 										</div>
 									</td>
 									<td><code><?php echo esc_html( $option_slug ); ?></code></td>

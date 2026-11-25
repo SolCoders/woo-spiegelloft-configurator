@@ -16,5 +16,5 @@ defined( 'ABSPATH' ) || exit;
 	<?php endif; ?>
 </p>
 <p class="description"><?php esc_html_e( 'Export includes saved settings only. Save your changes before exporting.', 'woo-spiegelloft-configurator' ); ?></p>
-<p class="description"><?php esc_html_e( 'Images are excluded. Upload them separately after importing.', 'woo-spiegelloft-configurator' ); ?></p>
-<p class="description"><?php esc_html_e( 'Import creates a new layout and new customer options. It does not replace this layout.', 'woo-spiegelloft-configurator' ); ?></p>
+<p class="description"><?php esc_html_e( 'Images are excluded from JSON. Updating a matching layout preserves its existing images.', 'woo-spiegelloft-configurator' ); ?></p>
+<p class="description"><?php esc_html_e( 'Import updates a layout with the same name, including its options and settings. A new layout is created only when no name matches.', 'woo-spiegelloft-configurator' ); ?></p>

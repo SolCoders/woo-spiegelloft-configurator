@@ -179,8 +179,22 @@ class WCS_Layout_Transfer_Admin {
 				wp_die( esc_html__( 'You cannot create imported layouts and customer options.', 'woo-spiegelloft-configurator' ), '', array( 'response' => 403 ) );
 			}
 		}
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Uploaded transport is checked below; JSON is validated by the package service.
-		$file = $_FILES['layout_json'] ?? array();
+		if ( isset( $_POST['pending_token'] ) ) {
+			if ( ! is_string( $_POST['pending_token'] ) ) {
+				$this->finish( array( 'error' => __( 'Invalid pending import. Please upload the JSON again.', 'woo-spiegelloft-configurator' ) ) );
+			}
+			$token = sanitize_key( wp_unslash( (string) $_POST['pending_token'] ) );
+			$key   = $this->pending_key( $token );
+			$json  = get_transient( $key );
+			if ( ! is_string( $json ) ) {
+				$this->finish( array( 'error' => __( 'This pending import has expired. Please upload the JSON again.', 'woo-spiegelloft-configurator' ) ) );
+			}
+			$target_id = absint( $_POST['target_template_id'] ?? 0 );
+			$result    = $this->importer->import( $json, $target_id );
+			delete_transient( $key );
+			$this->finish( is_wp_error( $result ) ? array( 'error' => $result->get_error_message() ) : $result );
+		}
+		$file = $_FILES['layout_json'] ?? array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Verified PHP upload; package contents are validated below.
 		if ( ! is_array( $file ) || UPLOAD_ERR_OK !== ( $file['error'] ?? null ) || ! is_string( $file['tmp_name'] ?? null ) || ! is_string( $file['name'] ?? null ) || ! is_uploaded_file( $file['tmp_name'] ) || 'json' !== strtolower( pathinfo( $file['name'], PATHINFO_EXTENSION ) ) ) {
 			$this->finish( array( 'error' => __( 'Choose a valid .json upload. Check the server upload limit if the upload failed.', 'woo-spiegelloft-configurator' ) ) );
 		}
@@ -194,7 +208,29 @@ class WCS_Layout_Transfer_Admin {
 			$this->finish( array( 'error' => __( 'Unable to read the JSON upload.', 'woo-spiegelloft-configurator' ) ) );
 		}
 		$result = $this->importer->import( $json );
+		if ( is_wp_error( $result ) && 'wcs_layout_ambiguous' === $result->get_error_code() ) {
+			$token = wp_generate_uuid4();
+			if ( ! set_transient( $this->pending_key( $token ), $json, 15 * MINUTE_IN_SECONDS ) ) {
+				$this->finish( array( 'error' => __( 'Unable to retain the upload for target selection. Please try again.', 'woo-spiegelloft-configurator' ) ) );
+			}
+			$this->finish(
+				array(
+					'pending_token' => $token,
+					'matches'       => $result->get_error_data()['matches'],
+				)
+			);
+		}
 		$this->finish( is_wp_error( $result ) ? array( 'error' => $result->get_error_message() ) : $result );
+	}
+
+	/**
+	 * Pending uploads are bound to their uploading user and expire automatically.
+	 *
+	 * @param string $token Random upload token.
+	 * @return string
+	 */
+	private function pending_key( string $token ): string {
+		return 'wcs_layout_pending_' . get_current_user_id() . '_' . md5( $token );
 	}
 
 	/**

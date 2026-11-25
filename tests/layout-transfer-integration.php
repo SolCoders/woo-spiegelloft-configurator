@@ -87,6 +87,8 @@ try {
 	$document = $expect( $package->decode( $json ) );
 	$check( 2 === count( $document['options'] ) && ! isset( $document['media'] ), 'Export captures selected/uncategorized options without a media section' );
 	$check( 2 === $document['version'] && false === strpos( $json, $image_url ), 'New exports use schema version 2 and contain no source image URLs' );
+	$document['template']['title'] .= ' imported';
+	$json = wp_json_encode( $document );
 	$imported = $expect( $importer->import( $json ) );
 	$check( 2 === $imported['options'] && ! isset( $imported['images'] ), 'Import creates a template and options without media processing' );
 	$new_id = $imported['template_id'];
@@ -101,10 +103,11 @@ try {
 	$cache->bump_version();
 	$check( $original_count === count( $catalog->get_options_by_group( 'transfer_fixture' ) ) && $original_data === get_post_meta( $layout, '_wcs_template_data', true ) && $original_option === get_post_meta( $one, '_wcs_option_data', true ), 'Existing content and automatic category membership remain unchanged' );
 	$again = $expect( $importer->import( $json ) );
-	$check( $again['template_id'] !== $new_id && $template->get_template_data( $again['template_id'] )['slug'] !== $new_data['slug'], 'Repeated imports create independent copies with unique slugs' );
+	$check( $again['template_id'] === $new_id && $template->get_template_data( $again['template_id'] )['choice_order'] === $new_data['choice_order'], 'Repeated imports update the same layout and reuse its option IDs' );
 	$check( ! is_wp_error( $exporter->export( $new_id ) ), 'Imported layouts can be exported again' );
 	$draft_document = $document;
 	$draft_document['template']['status'] = 'draft';
+	$draft_document['template']['title'] .= ' draft';
 	$draft_result = $expect( $importer->import( wp_json_encode( $draft_document ) ) );
 	$check( 'draft' === get_post_status( $draft_result['template_id'] ), 'Draft status is preserved' );
 	$product = new WC_Product_Simple();
@@ -118,6 +121,7 @@ try {
 	$legacy = $expect( wp_insert_post( array( 'post_type' => 'wcs_template', 'post_title' => 'WCS transfer legacy fixture', 'post_status' => 'publish' ), true ) );
 	$template->save_template_data( $legacy, array( 'panel_template' => 'Legacy', 'slug' => 'legacy-transfer', 'enabled_groups' => array( 'transfer_fixture', 'edge' ), 'extra_option_map' => array(), 'group_order' => array( 'transfer_fixture', 'edge' ) ) );
 	$legacy_document = $expect( $package->decode( $expect( $exporter->export( $legacy ) ) ) );
+	$legacy_document['template']['title'] .= ' imported';
 	$check( array( $one ) === $legacy_document['template']['data']['extra_option_map']['transfer_fixture'], 'Implicit all-options groups export their effective selection explicitly' );
 	$legacy_document['positions']['transfer_fixture'] = array( 'enabled' => true, 'label' => 'Fixture position', 'show_when' => '', 'options' => array( array( 'title' => 'Left', 'image' => 'https://example.invalid/position.png' ) ) );
 	$legacy_import = $expect( $importer->import( wp_json_encode( $legacy_document ) ) );
@@ -153,6 +157,7 @@ try {
 	$flat_html = ob_get_clean();
 	$check( 2 === preg_match_all( '/type="checkbox"[^>]*checked=/', $flat_html ), 'Legacy flat editor checks its effective options even without category membership' );
 	$flat_document = $expect( $package->decode( $expect( $flat_exporter->export( $flat_layout ) ) ) );
+	$flat_document['template']['title'] .= ' imported';
 	$check( 2 === count( $flat_document['options'] ) && ! isset( $flat_document['media'] ) && array( $two, $one ) === $flat_document['template']['data']['extra_option_map']['suspension_plates'], 'Legacy flat export includes checked options, order and steps without media' );
 	$flat_result = $expect( $importer->import( wp_json_encode( $flat_document ) ) );
 	$check( 2 === $flat_result['options'] && ! isset( $flat_result['images'] ), 'Legacy flat import creates its actual customer options without media' );
@@ -205,15 +210,18 @@ try {
 	$check( is_wp_error( $importer->import( wp_json_encode( $bad ) ) ), 'Unresolved rule references are rejected before writes' );
 	$check( is_wp_error( $package->decode( str_repeat( ' ', WCS_Layout_Package::MAX_BYTES + 1 ) ) ), 'Oversized JSON is rejected' );
 	$check( is_wp_error( $package->decode( str_repeat( '[', 40 ) . '0' . str_repeat( ']', 40 ) ) ), 'Excessive nesting is rejected' );
-	$failure_filter = static function ( array $data ): array {
-		if ( 'wcs_template' === ( $data['post_type'] ?? '' ) ) {
+	$failure_count = 0;
+	$failure_filter = static function ( array $data ) use ( &$failure_count ): array {
+		if ( 'wcs_extra_option' === ( $data['post_type'] ?? '' ) && ++$failure_count === 2 ) {
 			throw new RuntimeException( 'Simulated template insert failure' );
 		}
 		return $data;
 	};
 	$before = array_keys( $created );
 	add_filter( 'wp_insert_post_data', $failure_filter );
-	$failure = $importer->import( $json );
+	$failure_document = $document;
+	$failure_document['template']['title'] .= ' failure';
+	$failure = $importer->import( wp_json_encode( $failure_document ) );
 	remove_filter( 'wp_insert_post_data', $failure_filter );
 	$rolled_back = array_diff( array_keys( $created ), $before );
 	$check( is_wp_error( $failure ) && count( $rolled_back ) >= 2 && ! array_filter( $rolled_back, 'get_post' ), 'Handled failure removes new options: ' . wp_json_encode( array( 'result' => is_wp_error( $failure ) ? $failure->get_error_message() : $failure, 'created' => $rolled_back, 'remaining' => array_filter( $rolled_back, 'get_post' ) ) ) );

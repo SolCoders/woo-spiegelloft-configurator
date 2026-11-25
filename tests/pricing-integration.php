@@ -3,6 +3,8 @@
 declare(strict_types=1);
 if ( 'cli' !== PHP_SAPI || empty( $argv[1] ) ) { exit( 1 ); }
 require $argv[1];
+$admins = get_users( array( 'role' => 'administrator', 'number' => 1 ) );
+wp_set_current_user( $admins[0]->ID );
 $checks = 0;
 $check = static function ( bool $condition, string $message ) use ( &$checks ): void {
 	if ( ! $condition ) { throw new RuntimeException( $message ); }
@@ -73,6 +75,9 @@ try {
 	$exporter = new WCS_Layout_Exporter( $template, new WCS_Extras_Registry(), new WCS_Extras_Catalog( $cache ), $package );
 	$json = $exporter->export( $id );
 	$check( ! is_wp_error( $json ), 'Custom pricing exports' );
+	$document = json_decode( $json, true );
+	$document['template']['title'] .= ' imported ' . wp_generate_uuid4();
+	$json = wp_json_encode( $document );
 	$importer = new WCS_Layout_Importer( $package, $cache ); $import = $importer->import( $json );
 	$check( ! is_wp_error( $import ), 'Custom pricing imports' );
 	$imported_id = $import['template_id'];

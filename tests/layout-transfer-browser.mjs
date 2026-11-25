@@ -96,34 +96,64 @@ try {
 	check( await evaluate( '!!document.querySelector("label[for=wcs-layout-json]") && !!document.querySelector("input[type=file][required]")' ), 'Shared import page has a labelled required JSON upload' );
 	const invalidImport = await evaluate( '(async () => {const f=new FormData();f.set("action","wcs_import_layout");f.set("_wpnonce","invalid");return (await fetch(' + JSON.stringify( fixture.base + 'wp-admin/admin-post.php' ) + ',{method:"POST",body:f})).status;})()' );
 	check( invalidImport === 403, 'Import with an invalid nonce is rejected' );
-	await evaluate( '(() => {document.querySelector("#wcs-layout-transfer-result")?.remove();const transfer=new DataTransfer();transfer.items.add(new File([' + JSON.stringify( download.body ) + '],"layout.json",{type:"application/json"}));const input=document.querySelector("#wcs-layout-json");input.files=transfer.files;input.form.requestSubmit();})()' );
-	const importedUrl = await waitFor( 'document.readyState === "complete" && document.querySelector("#wcs-layout-transfer-result.notice-success a")?.href' );
-	const importedId = Number( new URL( importedUrl ).searchParams.get( 'post' ) );
-	fixture.imports.push( importedId );
-	check( importedId && importedId !== fixture.layout_id, 'Real multipart upload creates a new layout and redirects to a success notice' );
-	check( await evaluate( 'document.querySelector("#wcs-layout-transfer-result").textContent.includes("Upload the images separately")' ), 'Import feedback asks the client to upload images separately' );
-	await navigate( importedUrl );
-	check( await evaluate( 'document.querySelector("#title").value === ' + JSON.stringify( fixture.marker ) ), 'Success link opens the imported layout editor' );
-	const saveUrl = await evaluate( 'document.querySelector("#post").action' );
-	await evaluate( 'document.querySelector("#post").addEventListener("submit",e=>{window.wcsTestSubmitted=true;setTimeout(()=>window.wcsTestPrevented=e.defaultPrevented,0)});document.querySelector("#publish").click()' );
-	await waitFor( 'document.readyState === "complete" && !!document.querySelector("#message.updated")' );
-	check( !! saveUrl, 'Imported layout saves through the real WordPress editor' );
-	const importedOptionId = await evaluate( 'Number(document.querySelector(".wcs-option-table input[type=checkbox]:checked")?.value)' );
-	await navigate( fixture.base + 'wp-admin/post.php?post=' + importedOptionId + '&action=edit' );
-	check( await evaluate( 'document.querySelector(".wcs-customer-field-key")?.value === "finish" && document.querySelector(".wcs-customer-field-option-value")?.value === "brass"' ), 'Imported option editor preserves semantic keys independently of labels' );
-	await evaluate( 'document.querySelector("#publish").click()' );
-	await waitFor( 'document.readyState === "complete" && !!document.querySelector("#message.updated")' );
-	check( await evaluate( 'document.querySelector(".wcs-customer-field-key")?.value === "finish" && document.querySelector(".wcs-customer-field-option-value")?.value === "brass"' ), 'Real option editor save retains imported field keys and dropdown values' );
-	php( 'assign', fixture );
-	await send( 'Page.navigate', { url: fixture.product_url } );
-	await waitFor( 'document.readyState === "complete" && !!document.querySelector(".wcs-configurator")' );
-	check( await evaluate( '!!document.querySelector(".wcs-configurator") && document.body.textContent.includes("Surface finish")' ), 'Assigned product renders the imported configurator in the browser' );
-	check( exceptions.length === 0, 'No uncaught JavaScript exceptions in transfer and storefront flow' );
-	console.log( 'Completed ' + checks + ' browser checks. Screenshot: ' + join( directory, 'layout-editor.png' ) );
+	const upload = async (document) => {
+		await navigate(fixture.base+'wp-admin/admin.php?page=wcs-layout-transfer');
+		await evaluate('(()=>{const transfer=new DataTransfer();transfer.items.add(new File(['+JSON.stringify(JSON.stringify(document))+'],"layout.json",{type:"application/json"}));const input=document.querySelector("#wcs-layout-json");input.files=transfer.files;input.form.requestSubmit()})()');
+		return await waitFor('document.readyState==="complete" && (document.querySelector("#wcs-layout-transfer-result.notice-success") ? "success" : document.querySelector("#wcs-layout-target") ? "choose" : false)');
+	};
+	const document = JSON.parse(download.body);
+	document.options[0].meta._wcs_option_data.price=45;
+	document.options[0].meta._wcs_price=45;
+	document.options[0].meta._wcs_option_data.customer_fields[0].options[0].preselected=true;
+	check(await upload(document)==='success','Real multipart upload updates the sole matching template');
+	const importedUrl = await evaluate('document.querySelector("#wcs-layout-transfer-result a").href');
+	const importedId = Number(new URL(importedUrl).searchParams.get('post'));
+	check(importedId===fixture.layout_id,'Update keeps the existing template ID');
+	check(await evaluate('document.querySelector("#wcs-layout-transfer-result").textContent.includes("Layout updated")'),'Success notice identifies an update');
+	let state = php('inspect',fixture);
+	check(state.option.price===45 && state.assigned===fixture.layout_id,'Saved option price changes while product assignment stays connected');
+	const originalOption=state.option_id;
+	check(await upload(document)==='success' && php('inspect',fixture).option_id===originalOption,'Repeated multipart upload reuses the existing option');
+	const duplicate=php('duplicate',fixture).id;
+	fixture.imports.push(duplicate);
+	document.options[0].meta._wcs_option_data.price=62;
+	document.options[0].meta._wcs_price=62;
+	check(await upload(document)==='choose','Duplicate names require target selection');
+	check(await evaluate('document.querySelectorAll("#wcs-layout-target option").length===3'),'Target selector lists both matching templates and their IDs');
+	check(php('inspect',fixture).option.price===45,'Pending duplicate-name upload has not changed the template');
+	const pendingToken = await evaluate('document.querySelector("input[name=pending_token]").value');
+	const nonce = await evaluate('document.querySelector("#wcs-layout-target").form.querySelector("input[name=_wpnonce]").value');
+	await evaluate('(()=>{const s=document.querySelector("#wcs-layout-target");s.value='+fixture.layout_id+';s.form.requestSubmit()})()');
+	await waitFor('document.readyState==="complete" && !!document.querySelector("#wcs-layout-transfer-result.notice-success")');
+	state=php('inspect',fixture);
+	const other=php('inspect',{...fixture,template_id:duplicate});
+	check(state.option.price===62 && other.option.price===45 && state.option_id!==other.option_id,'Selected template receives a private updated option; duplicate stays unchanged');
+	const replay = await evaluate('(async()=>{const f=new FormData();f.set("action","wcs_import_layout");f.set("_wpnonce",'+JSON.stringify(nonce)+');f.set("pending_token",'+JSON.stringify(pendingToken)+');f.set("target_template_id",'+JSON.stringify(String(fixture.layout_id))+');const r=await fetch('+JSON.stringify(fixture.base+'wp-admin/admin-post.php')+',{method:"POST",body:f});const d=new DOMParser().parseFromString(await r.text(),"text/html");return d.querySelector("#wcs-layout-transfer-result")?.textContent||""})()');
+	check(replay.includes('expired'),'Consumed pending upload cannot be replayed');
+	// Actual server-rendered configurator, independent of the local product theme.
+	await navigate(fixture.base);
+	await evaluate('document.body.innerHTML='+JSON.stringify(state.html));
+	await evaluate('(async()=>{const base='+JSON.stringify(fixture.base)+';for(const src of ["wp-includes/js/jquery/jquery.min.js","wp-content/plugins/woo-spiegelloft-configurator/assets/js/storefront-rules.js","wp-content/plugins/woo-spiegelloft-configurator/assets/js/pricing.js","wp-content/plugins/woo-spiegelloft-configurator/assets/js/storefront.js"]){await new Promise((resolve,reject)=>{const s=document.createElement("script");s.src=base+src;s.onload=resolve;s.onerror=reject;document.head.append(s)})}})()');
+	await waitFor('jQuery(".wcs-configurator").data("current-total")>=162');
+	check(await evaluate('jQuery(".wcs-customer-field-select").first().val()==="brass"'),'Assigned product renders the imported default immediately');
+	check(await evaluate('Object.values(JSON.parse(jQuery(".wcs-selections-input").val())).includes("browser-fixture")'),'Updated option is included in the actual storefront selections');
+	document.template.title=fixture.marker+' New';
+	check(await upload(document)==='success','Unmatched name still creates a template through real upload');
+	const newId=Number(new URL(await evaluate('document.querySelector("#wcs-layout-transfer-result a").href')).searchParams.get('post'));
+	fixture.imports.push(newId);
+	check(newId!==fixture.layout_id && newId!==duplicate,'New-name import creates an independent layout');
+	check(await evaluate('document.querySelector("#wcs-layout-transfer-result").textContent.includes("Layout created")'),'Success notice distinguishes creation from update');
+	check(exceptions.length===0,'No uncaught browser exceptions');
+	console.log('Completed '+checks+' transfer browser checks.');
 } finally {
 	if ( fixture ) { php( 'cleanup', fixture ); }
 	if ( socket ) { socket.close(); }
 	if ( browser ) { browser.kill(); }
 	// Retain the screenshot for inspection; remove the disposable browser profile.
-	if ( directory ) { await pause( 500 ); await rm( join( directory, 'profile' ), { recursive: true, force: true, maxRetries: 5, retryDelay: 200 } ); }
+	if ( directory ) {
+		const profile=join(directory,'profile');
+		if(dirname(profile)!==directory || !directory.startsWith(tmpdir())) { throw new Error('Unexpected temporary browser path'); }
+		await pause(500);
+		await rm(profile,{recursive:true,force:true,maxRetries:5,retryDelay:200});
+	}
 }

@@ -6,6 +6,8 @@
  * @package WooSpiegelloftConfigurator
  */
 declare(strict_types=1);
+define( 'WP_HTTP_BLOCK_EXTERNAL', true );
+define( 'DISABLE_WP_CRON', true );
 
 if ( 'cli' !== PHP_SAPI || empty( $argv[1] ) || ! is_file( $argv[1] ) ) {
 	exit( 1 );
@@ -16,6 +18,24 @@ if ( ! in_array( wp_parse_url( home_url(), PHP_URL_HOST ), array( 'localhost', '
 	exit( 1 );
 }
 $mode = $argv[2] ?? 'setup';
+if ( in_array( $mode, array( 'inspect', 'duplicate' ), true ) ) {
+	$data = json_decode( stream_get_contents( STDIN ), true );
+	$id = (int) ( $data['template_id'] ?? $data['layout_id'] );
+	if ( 'wcs_template' !== get_post_type( $id ) || 0 !== strpos( get_the_title( $id ), $data['marker'] ) ) { exit( 1 ); }
+	if ( 'duplicate' === $mode ) {
+		$copy = wp_insert_post( array( 'post_type' => 'wcs_template', 'post_title' => $data['marker'], 'post_status' => 'draft' ) );
+		foreach ( array( '_wcs_template_data', '_wcs_template_dependencies' ) as $key ) {
+			if ( metadata_exists( 'post', $id, $key ) ) { update_post_meta( $copy, $key, get_post_meta( $id, $key, true ) ); }
+		}
+		echo wp_json_encode( array( 'id' => $copy ) );
+	} else {
+		$settings = ( new WCS_Template( new WCS_Cache() ) )->get_template_data( $id );
+		$option_id = $settings['choice_order'][0];
+		wp_set_current_user( 0 );
+		echo wp_json_encode( array( 'settings' => $settings, 'option_id' => $option_id, 'option' => get_post_meta( $option_id, '_wcs_option_data', true ), 'assigned' => (int) get_post_meta( $data['product_id'], '_wcs_template_id', true ), 'html' => do_shortcode( '[wcs_configurator product_id="' . (int) $data['product_id'] . '"]' ) ) );
+	}
+	exit;
+}
 if ( 'cleanup' === $mode || 'assign' === $mode ) {
 	$data = json_decode( stream_get_contents( STDIN ), true );
 	$ids = array( $data['layout_id'], $data['option_id'], $data['product_id'] );
@@ -25,7 +45,7 @@ if ( 'cleanup' === $mode || 'assign' === $mode ) {
 	}
 	foreach ( array_unique( $imports ) as $id ) {
 		$post = get_post( $id );
-		if ( $post && $data['marker'] === $post->post_title && 'wcs_template' === $post->post_type ) {
+		if ( $post && 0 === strpos( $post->post_title, $data['marker'] ) && 'wcs_template' === $post->post_type ) {
 			if ( 'assign' === $mode ) {
 				update_post_meta( $data['product_id'], '_wcs_template_id', (int) $id );
 				echo wp_json_encode( array( 'ok' => true ) );

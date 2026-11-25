@@ -20,6 +20,7 @@ class WCS_Loader {
 	 * @var array<string, string>
 	 */
 	private array $class_map = array(
+		'WCS_Layout_Import_Images'    => 'includes/transfer/class-wcs-layout-import-images.php',
 		'WCS_Storefront_Text'         => 'includes/class-wcs-storefront-text.php',
 		'WCS_Pricing'                 => 'includes/class-wcs-pricing.php',
 		'WCS_Layout_Package'          => 'includes/transfer/class-wcs-layout-package.php',
