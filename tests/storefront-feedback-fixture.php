@@ -1,6 +1,8 @@
 <?php
 /** Render the real shortcode for checking feedback independently of theme templates. */
 declare(strict_types=1);
+define( 'WP_HTTP_BLOCK_EXTERNAL', true );
+define( 'DISABLE_WP_CRON', true );
 ob_start();
 require __DIR__ . '/pricing-browser-fixture.php';
 $fixture = json_decode( ob_get_clean(), true );
@@ -11,9 +13,21 @@ if ( 'setup' === ( $argv[2] ?? '' ) ) {
 	$option['customer_fields'][0]['options'][0]['label'] = 'Messing poliert';
 	$option['customer_fields'][] = array( 'key' => 'empty_note', 'label' => 'Zusätzlicher Hinweis', 'type' => 'text', 'required' => false );
 	$option['customer_fields'][] = array( 'key' => 'empty_distance', 'label' => 'Zusätzlicher Abstand', 'type' => 'number', 'required' => false );
-	$option['customer_fields'][] = array( 'key' => 'minimum_distance', 'label' => 'Seitenabstand', 'type' => 'number', 'min' => 150, 'required' => false );
+	$option['customer_fields'][] = array( 'key' => 'minimum_distance', 'label' => 'Seitenabstand', 'type' => 'number', 'min' => 150, 'required' => true );
 	$option['customer_fields'][] = array( 'key' => 'zero_minimum', 'label' => 'Nullwert', 'type' => 'number', 'min' => 0, 'required' => false );
 	update_post_meta( $fixture['option_id'], '_wcs_option_data', $option );
+	$settings = get_post_meta( $fixture['layout_id'], '_wcs_template_data', true );
+	$path = 'bluetooth__choice_' . $fixture['option_id'] . '.browser-fixture.';
+	$rule = array(
+		'rule_type' => 'required_field', 'match' => 'all',
+		'conditions' => array( array( 'source' => 'nested', 'path' => $path . 'finish', 'field' => 'value', 'type' => 'selection', 'operator' => 'equals', 'value' => 'brass' ) ),
+		'actions' => array( array( 'action' => 'validate_range', 'target_type' => 'nested', 'target' => $path . 'minimum_distance', 'value' => '{width} - 100' ) ),
+		'message' => 'Glass shelf length must fit inside the mirror width.', 'error_seconds' => 5, 'restore' => true,
+		'then' => 'validate_range', 'target_type' => 'nested', 'target' => $path . 'minimum_distance', 'target_value' => '', 'min' => '', 'max' => '{width} - 100',
+	);
+	$settings['validation_rules'] = array( $rule );
+	$settings['behavior_rules'] = array( $rule );
+	update_post_meta( $fixture['layout_id'], '_wcs_template_data', $settings );
 	( new WCS_Cache() )->bump_version();
 	$config = wcs_get_config_builder()->build_for_product( $fixture['product_id'] );
 	$fixture['config_error'] = is_wp_error( $config ) ? $config->get_error_message() : '';

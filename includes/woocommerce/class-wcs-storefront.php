@@ -253,7 +253,7 @@ class WCS_Storefront {
 			'wcs-storefront-rules',
 			WCS_PLUGIN_URL . 'assets/js/storefront-rules.js',
 			array( 'jquery' ),
-			WCS_VERSION,
+			WCS_Loader::asset_version( 'assets/js/storefront-rules.js' ),
 			true
 		);
 

@@ -1971,7 +1971,8 @@
 	font-size: 16px;
 }
 
-.wcs-configurator .wcs-popup-anchor {
+.wcs-configurator .wcs-popup-anchor,
+.wcs-configurator .wcs-customer-field.wcs-popup-anchor {
 	position: relative;
 }
 
@@ -1990,6 +1991,7 @@
 	font-weight: 700;
 	line-height: 1.35;
 	white-space: pre-line;
+	overflow-wrap: anywhere;
 	box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
 }
 
@@ -2004,6 +2006,22 @@
 
 .wcs-configurator .wcs-range-popup[hidden] {
 	display: none !important;
+}
+
+.wcs-configurator .wcs-range-popup--below {
+	top: calc(100% + 8px);
+	bottom: auto;
+}
+
+.wcs-configurator .wcs-range-popup--scrollable {
+	overflow-y: auto;
+}
+
+.wcs-configurator .wcs-range-popup--below::after {
+	top: auto;
+	bottom: 100%;
+	border-top-color: transparent;
+	border-bottom-color: #fff7f7;
 }
 
 .wcs-configurator--compact-dropdown .wcs-custom-select__button {

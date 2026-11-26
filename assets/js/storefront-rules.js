@@ -143,7 +143,10 @@
 			}];
 		}
 		actions = actions.map(function (action) {
-			return $.extend({}, action, { message: action.message || rule.message || '' });
+			return $.extend({}, action, {
+				message: action.message || rule.message || '',
+				error_seconds: action.error_seconds !== undefined ? action.error_seconds : rule.error_seconds
+			});
 		});
 		return $.extend({}, rule, { conditions: conditions, actions: actions, match: rule.match === 'any' ? 'any' : 'all' });
 	}
@@ -455,14 +458,18 @@
 		}
 	}
 
-	function applyNumericConstraint($field, attr, value, message) {
+	function applyNumericConstraint($field, attr, value, message, errorSeconds) {
 		var current = parseFloat($field.val());
 		var changed = false;
+		if ($field.is('input[type="number"]')) {
+			value = Math.max(0, value);
+		}
 
 		$field.attr(attr, value);
-		if (message) {
-			$field.data('wcs-rule-range-message', String(message));
-		}
+		$field.data('wcs-rule-range-message', String(message || ''));
+		$field.data('wcs-rule-' + attr + '-message', String(message || ''));
+		$field.removeData('wcs-rule-' + attr + '-seconds');
+		if (errorSeconds !== undefined) { $field.data('wcs-rule-' + attr + '-seconds', errorSeconds); }
 		if (isNaN(current)) {
 			return;
 		}
@@ -476,6 +483,7 @@
 		}
 		if (changed) {
 			$field.triggerHandler('change');
+			$field.trigger('wcs:range-invalid', [{ message: message || '', seconds: errorSeconds }]);
 		}
 	}
 
@@ -508,9 +516,9 @@
 		} else if (name === 'clear' && matched) {
 			$field.val('').triggerHandler('change');
 		} else if (matched && computed !== null && (name === 'set_max' || name === 'validate_range')) {
-			applyNumericConstraint($field, 'max', computed, action.message || '');
+			applyNumericConstraint($field, 'max', computed, action.message || '', action.error_seconds);
 		} else if (matched && computed !== null && name === 'set_min') {
-			applyNumericConstraint($field, 'min', computed, action.message || '');
+			applyNumericConstraint($field, 'min', computed, action.message || '', action.error_seconds);
 		}
 	}
 

@@ -500,6 +500,13 @@ class WCS_Validation_Engine {
 		foreach ( $selections as $key => $value ) {
 			if ( is_numeric( $value ) ) {
 				$context[ sanitize_key( (string) $key ) ] = (float) $value;
+				// Match storefront formula aliases for sidewise measurement inputs.
+				if ( 0 === strpos( (string) $key, 'side_' ) ) {
+					$alias = substr( (string) $key, 5 );
+					if ( '' !== $alias && ! array_key_exists( $alias, $selections ) ) {
+						$context[ sanitize_key( $alias ) ] = (float) $value;
+					}
+				}
 			}
 		}
 

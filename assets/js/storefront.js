@@ -149,11 +149,26 @@
 	}
 
 	function rangeMessage($input, min, max) {
-		var label = $input.data('label') || $input.closest('label').find('> span:first-child').clone().children().remove().end().text() || 'dieses Ma?';
-		return 'Bitte geben Sie für ' + String(label).trim() + ' einen Wert zwischen ' + min + ' und ' + max + ' mm ein.';
+		var label = $input.data('label') || $input.closest('label').find('> span:first-child').clone().children().remove().end().text() || 'dieses Maß';
+		var unit = $input.hasClass('wcs-dimension-input') ? ' mm' : '';
+		label = String(label).trim();
+		if (isNaN(min)) { return 'Bitte geben Sie für ' + label + ' einen Wert von höchstens ' + max + unit + ' ein.'; }
+		if (isNaN(max)) { return 'Bitte geben Sie für ' + label + ' einen Wert von mindestens ' + min + unit + ' ein.'; }
+		return 'Bitte geben Sie für ' + label + ' einen Wert zwischen ' + min + ' und ' + max + unit + ' ein.';
 	}
 
-	function showDimensionRangeError($input, message) {
+	function schedulePopupHide($error, errorSeconds) {
+		window.clearTimeout($error.data('wcsPopupTimer'));
+		var seconds = Number(errorSeconds);
+		var delay = errorSeconds !== undefined && isFinite(seconds) && seconds >= 0 ? seconds * 1000 : 3200;
+		if (delay > 0) {
+			$error.data('wcsPopupTimer', window.setTimeout(function () {
+				$error.prop('hidden', true);
+			}, Math.min(delay, 2147483647)));
+		}
+	}
+
+	function showDimensionRangeError($input, message, errorSeconds) {
 		var $control = $input.closest('.wcs-size-control');
 		var $error = $control.find('.wcs-range-popup').first();
 
@@ -162,18 +177,73 @@
 			$control.append($error);
 		}
 
-		$error.text(message).prop('hidden', false);
-		window.clearTimeout($input.data('wcsRangeTimer'));
-		$input.data('wcsRangeTimer', window.setTimeout(function () {
-			$error.prop('hidden', true);
-		}, 3200));
+		$error.attr('data-wcs-popup-type', 'range').text(message).prop('hidden', false);
+		$input.data('wcsRangeValue', String($input.val()));
+		positionFieldPopup($error);
+		schedulePopupHide($error, errorSeconds);
 	}
 
-	function hideFieldPopup($field) {
-		$field.find('> .wcs-range-popup, > .wcs-size-control > .wcs-range-popup, > .wcs-custom-select > .wcs-range-popup').prop('hidden', true);
+	function hideFieldPopup($field, type) {
+		$field.find('> .wcs-range-popup, > .wcs-size-control > .wcs-range-popup, > .wcs-custom-select > .wcs-range-popup').filter(function () {
+			return !type || $(this).attr('data-wcs-popup-type') === type;
+		}).each(function () {
+			window.clearTimeout($(this).data('wcsPopupTimer'));
+			$(this).prop('hidden', true);
+		});
 	}
 
-	function showFieldPopup($field, message) {
+	function positionFieldPopup($error) {
+		var anchor = $error.parent()[0];
+		if (!anchor || $error.prop('hidden')) {
+			return;
+		}
+		$error.removeClass('wcs-range-popup--below wcs-range-popup--scrollable').css({ left: '', right: '', maxWidth: '', maxHeight: '' });
+		var bounds = { top: 8, left: 8, bottom: window.innerHeight - 8, right: window.innerWidth - 8 };
+		$error.parents().each(function () {
+			if (this === document.body || this === document.documentElement) { return; }
+			var style = window.getComputedStyle(this);
+			var rect = this.getBoundingClientRect();
+			if (/auto|scroll|hidden|clip/.test(style.overflowY)) {
+				bounds.top = Math.max(bounds.top, rect.top + this.clientTop + 4);
+				bounds.bottom = Math.min(bounds.bottom, rect.top + this.clientTop + this.clientHeight - 4);
+			}
+			if (/auto|scroll|hidden|clip/.test(style.overflowX)) {
+				bounds.left = Math.max(bounds.left, rect.left + this.clientLeft + 4);
+				bounds.right = Math.min(bounds.right, rect.left + this.clientLeft + this.clientWidth - 4);
+			}
+		});
+		var field = anchor.getBoundingClientRect();
+		if (field.bottom < bounds.top || field.top > bounds.bottom || bounds.right <= bounds.left) {
+			return;
+		}
+		$error.css('maxWidth', Math.max(0, Math.min(320, bounds.right - bounds.left)) + 'px');
+		var rect = $error[0].getBoundingClientRect();
+		var left = Math.max(bounds.left, Math.min(rect.left, bounds.right - rect.width));
+		if (Math.abs(left - rect.left) > 1) {
+			$error.css({ left: (left - field.left + anchor.scrollLeft - anchor.clientLeft) + 'px', right: 'auto' });
+		}
+		var above = Math.max(0, field.top - bounds.top - 8);
+		var below = Math.max(0, bounds.bottom - field.bottom - 8);
+		var openBelow = rect.height > above && below > above;
+		$error.toggleClass('wcs-range-popup--below', openBelow);
+		var available = openBelow ? below : above;
+		if (available > 0 && rect.height > available) {
+			$error.addClass('wcs-range-popup--scrollable').css('maxHeight', available + 'px');
+		}
+	}
+
+	var popupPositionFrame;
+	function schedulePopupPosition() {
+		if (popupPositionFrame) { return; }
+		popupPositionFrame = window.requestAnimationFrame(function () {
+			popupPositionFrame = null;
+			$('.wcs-configurator .wcs-range-popup:visible').each(function () {
+				positionFieldPopup($(this));
+			});
+		});
+	}
+
+	function showFieldPopup($field, message, type) {
 		var $anchor = $field.children('.wcs-size-control, .wcs-custom-select').first();
 		var $error;
 
@@ -188,11 +258,9 @@
 			$anchor.append($error);
 		}
 
-		$error.text(message).prop('hidden', false);
-		window.clearTimeout($field.data('wcsPopupTimer'));
-		$field.data('wcsPopupTimer', window.setTimeout(function () {
-			$error.prop('hidden', true);
-		}, 3200));
+		$error.attr('data-wcs-popup-type', type || 'field').text(message).prop('hidden', false);
+		positionFieldPopup($error);
+		schedulePopupHide($error);
 	}
 
 	function scrollToFirstIssue($wrap) {
@@ -217,11 +285,15 @@
 
 	function clampDimensionInput($input, showError) {
 		var min = parseFloat($input.attr('min'));
+		min = Math.max(0, isNaN(min) ? 0 : min);
 		var max = parseFloat($input.attr('max'));
 		var value = parseFloat($input.val());
 		var clamped = value;
 
 		if (isNaN(value)) {
+			if ($input.hasClass('wcs-customer-number-input') && $input.val() === '') {
+				$input.val(min);
+			}
 			return;
 		}
 		if (!isNaN(min)) {
@@ -230,10 +302,14 @@
 		if (!isNaN(max)) {
 			clamped = Math.min(max, clamped);
 		}
+		clamped = Math.max(min, clamped);
 		if (clamped !== value) {
 			$input.val(clamped);
-			if (showError && !isNaN(min) && !isNaN(max)) {
-				showDimensionRangeError($input, $input.data('wcs-rule-range-message') || rangeMessage($input, min, max));
+			if (showError) {
+				var boundary = value > clamped ? 'max' : 'min';
+				var message = $input.data('wcs-rule-' + boundary + '-message');
+				if (message === undefined) { message = $input.data('wcs-rule-range-message'); }
+				showDimensionRangeError($input, message || rangeMessage($input, min, max), $input.data('wcs-rule-' + boundary + '-seconds'));
 			}
 		}
 	}
@@ -494,16 +570,15 @@
 			if (field.type === 'text') {
 				html += '<input id="wcs-field-' + escapeHtml(key) + '" type="text" class="wcs-customer-field-input" data-key="' + escapeHtml(key) + '" data-price="' + escapeHtml(field.price_enabled ? (parseFloat(field.price) || 0) : 0) + '"' + placeholder + requiredAttr + behaviorAttr + '>';
 			} else if (field.type === 'number') {
-				var defaultNumberValue = field.min !== undefined && field.min !== null && field.min !== '' ? field.min : (required || field.read_only ? '0' : '');
+				var minimum = Math.max(0, parseFloat(field.min) || 0);
+				var defaultNumberValue = minimum;
 				var buttonAttr = field.disabled ? ' disabled aria-disabled="true"' : '';
 				html += '<span class="wcs-size-control wcs-customer-number-control' + (field.read_only ? ' is-readonly' : '') + (field.disabled ? ' is-disabled' : '') + '">';
 				if (!field.read_only) {
 					html += '<button type="button" class="wcs-size-step wcs-size-step--minus" data-step="-1" aria-label="' + escapeHtml('Wert verringern') + '"' + buttonAttr + '>-</button>';
 				}
 				html += '<input id="wcs-field-' + escapeHtml(key) + '" type="number" class="wcs-customer-field-input wcs-customer-number-input" data-key="' + escapeHtml(key) + '" data-label="' + escapeHtml(label) + '" data-price="' + escapeHtml(field.price_enabled ? (parseFloat(field.price) || 0) : 0) + '"';
-				if (field.min !== undefined && field.min !== '') {
-					html += ' min="' + escapeHtml(field.min) + '"';
-				}
+				html += ' min="' + escapeHtml(minimum) + '"';
 				if (field.max !== undefined && field.max !== '') {
 					html += ' max="' + escapeHtml(field.max) + '"';
 				}
@@ -665,10 +740,10 @@
 			if (empty) {
 				hasErrors = true;
 				if (showErrors) {
-					showFieldPopup($group, message);
+					showFieldPopup($group, message, 'required');
 				}
 			} else {
-				hideFieldPopup($group);
+				hideFieldPopup($group, 'required');
 			}
 		});
 		$scope.find('.wcs-customer-field.is-required').each(function () {
@@ -687,10 +762,10 @@
 			if (empty) {
 				hasErrors = true;
 				if (showErrors) {
-					showFieldPopup($field, message);
+					showFieldPopup($field, message, 'required');
 				}
 			} else {
-				hideFieldPopup($field);
+				hideFieldPopup($field, 'required');
 			}
 		});
 		$scope.find('.wcs-customer-nested-box').each(function () {
@@ -791,10 +866,15 @@
 	}
 
 	$(function () {
+		$(window).on('resize.wcsPopup scroll.wcsPopup', schedulePopupPosition);
+		$(document).on('wcs:range-invalid', '.wcs-configurator input', function (event, violation) {
+			showDimensionRangeError($(this), violation.message || rangeMessage($(this), parseFloat(this.min), parseFloat(this.max)), violation.seconds);
+		});
 		$('.wcs-configurator').each(function () {
 			var $wrap = $(this);
 			// Handle native constraints through the same popup as server validation.
 			this.noValidate = true;
+			$wrap.find('.wcs-configurator__content').on('scroll.wcsPopup', schedulePopupPosition);
 
 			activateStep($wrap, 0, false);
 			buildCustomSelect($wrap.find('.wcs-choice-select'));
@@ -819,12 +899,20 @@
 		});
 
 		$(document).on('input change', '.wcs-configurator input, .wcs-configurator select', function (e) {
-			hideFieldPopup($(this).closest('.wcs-customer-field'));
+			var numeric = $(this).hasClass('wcs-dimension-input') || $(this).hasClass('wcs-customer-number-input');
+			if (e.type === 'input' || !numeric || String($(this).val()) !== $(this).data('wcsRangeValue')) {
+				hideFieldPopup($(this).closest('.wcs-size-control, .wcs-customer-field'));
+			}
 			if ($(this).hasClass('wcs-dimension-input') || $(this).hasClass('wcs-customer-number-input')) {
 				var $dimension = $(this);
 				var $dimensionWrap = $dimension.closest('.wcs-configurator');
 				window.clearTimeout($dimension.data('wcsClampTimer'));
 				if (e.type === 'input') {
+					if (parseFloat($dimension.val()) < 0) {
+						clampDimensionInput($dimension, true);
+						collect($dimensionWrap);
+						return;
+					}
 					$dimension.data('wcsClampTimer', window.setTimeout(function () {
 						clampDimensionInput($dimension, true);
 						var engine = $dimensionWrap.data('wcsRuleEngine');
@@ -929,6 +1017,7 @@
 				String($input.val()).split('.')[1] ? String($input.val()).split('.')[1].length : 0
 			);
 			var min = parseFloat($input.attr('min'));
+			min = Math.max(0, isNaN(min) ? 0 : min);
 			var max = parseFloat($input.attr('max'));
 			var value = parseFloat($input.val());
 
@@ -949,6 +1038,7 @@
 			if (!isNaN(max)) {
 				value = Math.min(max, value);
 			}
+			value = Math.max(min, value);
 
 			value = Number(value.toFixed(Math.min(precision, 6)));
 			$input.val(value).trigger('change');

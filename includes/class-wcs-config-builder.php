@@ -661,7 +661,7 @@ class WCS_Config_Builder {
 
 			if ( 'number' === (string) $field['type'] && '' !== (string) $value ) {
 				$number = (float) $value;
-				$min    = '' !== (string) ( $field['min'] ?? '' ) ? (float) $field['min'] : null;
+				$min    = max( 0.0, (float) ( $field['min'] ?? 0 ) );
 				$max    = '' !== (string) ( $field['max'] ?? '' ) ? (float) $field['max'] : null;
 				if ( ! is_numeric( $value ) || ( null !== $min && $number < $min ) || ( null !== $max && $number > $max ) ) {
 					return new WP_Error(
