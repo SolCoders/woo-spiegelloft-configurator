@@ -87,6 +87,21 @@ await evaluate('(async()=>{const base='+JSON.stringify(fixture.base)+';const lin
 await waitFor('!!window.jQuery && !!jQuery(".wcs-cart-endpoint").length');
 await evaluate('document.body.style.padding="40px";document.querySelector(".wcs-configurator").style.width="620px"');
 check(await evaluate('document.querySelector(".wcs-configurator").noValidate'), 'Native validation uses popup handling');
+await evaluate('window.mirrorField=jQuery(".wcs-customer-field-select").filter(function(){return String(jQuery(this).data("key")).endsWith(".make-up-mirror")});window.litButton=mirrorField.next(".wcs-custom-select").find("[data-value=beleuchtet]");window.widthField=jQuery(".wcs-dimension-input").first();window.heightField=jQuery(".wcs-dimension-input").eq(1);void 0');
+check(await evaluate('mirrorField.find("option[value=beleuchtet]").prop("disabled") && litButton.prop("disabled") && litButton.hasClass("is-disabled") && litButton.attr("aria-disabled")==="true"'), 'Unavailable mirror option is visibly and natively disabled on first load');
+await evaluate('litButton[0].click();litButton.trigger("click");void 0');
+check(await evaluate('mirrorField.val()==="" && mirrorField.next(".wcs-custom-select").find(".wcs-custom-select__value").text()==="Keine Auswahl"'), 'Clicking an unavailable option cannot select it or change the placeholder');
+await evaluate('widthField.val(600).trigger("change");void 0');
+check(await evaluate('litButton.prop("disabled")'), 'Valid width cannot override an invalid height restriction');
+await evaluate('heightField.val(600).trigger("change");void 0');
+check(await evaluate('!litButton.prop("disabled") && !litButton.hasClass("is-disabled")'), 'Option becomes available once both minimum dimensions are satisfied');
+await evaluate('litButton[0].click();void 0');
+check(await evaluate('mirrorField.val()==="beleuchtet"'), 'An available mirror option can be selected');
+await evaluate('widthField.val(400).trigger("change");void 0');
+check(await evaluate('mirrorField.val()==="" && litButton.prop("disabled")'), 'Reducing width clears an unavailable selection and keeps it disabled');
+await evaluate('widthField.val(600).trigger("change");heightField.val(400).trigger("change");void 0');
+check(await evaluate('litButton.prop("disabled")'), 'Height restriction also works after changing the width');
+await evaluate('widthField.val(400).trigger("change");void 0');
 check(await evaluate('jQuery(".wcs-size-box,.wcs-size-sidewise").text().includes("Breite") && jQuery(".wcs-size-box,.wcs-size-sidewise").text().includes("Höhe")'), 'Stored English measurement labels display in German');
 check(await evaluate('!Array.from(document.querySelectorAll(".wcs-custom-select__value")).some(el=>el.textContent==="None")'), 'Empty dropdowns use German text');
 await evaluate('window.feedbackTestMarker = true');
@@ -129,6 +144,7 @@ check(await evaluate('positionField.val()==="" && positionField.next(".wcs-custo
 await evaluate('positionField.val("bottom-left").trigger("change");void 0');
 await evaluate('window.testEngine=jQuery(".wcs-configurator").data("wcsRuleEngine");testEngine.rules.push({conditions:[{source:"nested",path:finishField.data("key"),operator:"equals",value:"brass"}],actions:[{action:"clear",target:finishField.data("key")+".brass.inactive-position"}],match:"all"});testEngine.evaluate();testEngine.rules.pop();void 0');
 check(await evaluate('finishField.val()==="brass" && positionField.val()==="bottom-left"'), 'A clear rule for a missing nested field cannot clear its parent dropdown');
+check(await evaluate('jQuery(".wcs-customer-number-input").filter(function(){return String(jQuery(this).data("key")).endsWith("distance-to-the-side-mm")}).closest(".wcs-customer-field").hasClass("is-required")'), 'A rule using the older distance path marks the visible nested distance field as required');
 await evaluate('jQuery(".wcs-configurator input[name=nonce]").val("expired");jQuery(".wcs-configurator").trigger("submit");void 0');
 await waitFor('!jQuery(".wcs-configurator").data("wcsSubmitting") && jQuery(".wcs-configurator__footer .wcs-range-popup:not([hidden])").length');
 check(await evaluate('jQuery(".wcs-configurator__footer .wcs-range-popup").text().includes("Sitzung") && !!window.feedbackTestMarker'), 'Expired nonce appears in German without navigation');
@@ -172,6 +188,7 @@ check(await evaluate('window.addedEvents===1'), 'Valid configuration adds once d
 const cart = await evaluate('(async()=>{const r=await fetch('+JSON.stringify(fixture.base+'wp-json/wc/store/v1/cart')+');return await r.json()})()');
 check(cart.items?.some(item=>item.id===fixture.product_id && item.quantity===1), 'Real guest cart contains the configured product');
 const attributes = cart.items.find(item=>item.id===fixture.product_id).item_data;
+check(attributes.some(row=>row.key==='Abstand zur Seitenkante des Spiegels (mm)' && row.value==='150'), 'Real cart accepts and retains the visible distance despite the older rule path');
 check(await evaluate('jQuery(".wcs-configurator").data("current-total")===133'), 'Product page shows 83 plus the selected 50 option');
 const itemPrice = cart.items.find(item=>item.id===fixture.product_id).prices;
 check(Number(itemPrice.price) / Math.pow(10, itemPrice.currency_minor_unit)===133, 'Real guest cart charges 133 despite an identical option in another template: '+JSON.stringify(itemPrice));

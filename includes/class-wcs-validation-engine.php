@@ -467,7 +467,22 @@ class WCS_Validation_Engine {
 				$value = $value[ $part ];
 				continue;
 			}
-			return null;
+			// Older rules can omit dropdown levels added around an existing field.
+			// Match only a unique submitted descendant within the original branch.
+			$boundary = strrpos( $path, '.' );
+			if ( false === $boundary ) {
+				return null;
+			}
+			$prefix = substr( $path, 0, $boundary + 1 );
+			$suffix = substr( $path, $boundary );
+			$matches = array();
+			foreach ( $selections as $key => $selection ) {
+				$key = (string) $key;
+				if ( 0 === strpos( $key, $prefix ) && substr( $key, -strlen( $suffix ) ) === $suffix ) {
+					$matches[] = $selection;
+				}
+			}
+			return 1 === count( $matches ) ? $matches[0] : null;
 		}
 
 		return $value;

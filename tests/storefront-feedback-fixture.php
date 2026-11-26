@@ -13,12 +13,14 @@ if ( 'setup' === ( $argv[2] ?? '' ) ) {
 	$option['customer_fields'][0]['price_enabled'] = true;
 	$option['customer_fields'][0]['options'][0]['price'] = 50;
 	$option['customer_fields'][0]['options'][0]['customer_fields'] = array( array( 'key' => 'sensor-position', 'label' => 'Position des Schalters/Sensors', 'type' => 'dropdown', 'options' => array( array( 'label' => 'Unten Links', 'value' => 'bottom-left' ) ) ) );
+	$option['customer_fields'][0]['options'][0]['customer_fields'][0]['options'][0]['customer_fields'] = array( array( 'key' => 'distance-to-the-side-mm', 'label' => 'Abstand zur Seitenkante des Spiegels (mm)', 'type' => 'number', 'min' => 150 ) );
 	$option['customer_fields'][0]['label'] = 'Oberfläche';
 	$option['customer_fields'][0]['options'][0]['label'] = 'Messing poliert';
 	$option['customer_fields'][] = array( 'key' => 'empty_note', 'label' => 'Zusätzlicher Hinweis', 'type' => 'text', 'required' => false );
 	$option['customer_fields'][] = array( 'key' => 'empty_distance', 'label' => 'Zusätzlicher Abstand', 'type' => 'number', 'required' => false );
 	$option['customer_fields'][] = array( 'key' => 'minimum_distance', 'label' => 'Seitenabstand', 'type' => 'number', 'min' => 150, 'required' => true );
 	$option['customer_fields'][] = array( 'key' => 'zero_minimum', 'label' => 'Nullwert', 'type' => 'number', 'min' => 0, 'required' => false );
+	$option['customer_fields'][] = array( 'key' => 'make-up-mirror', 'label' => 'Schminkspiegel', 'type' => 'dropdown', 'options' => array( array( 'label' => 'Unbeleuchtet', 'value' => 'unbeleuchtet' ), array( 'label' => 'Beleuchtet', 'value' => 'beleuchtet', 'price' => 67.99 ) ) );
 	update_post_meta( $fixture['option_id'], '_wcs_option_data', $option );
 	$duplicate = wp_insert_post( array( 'post_type' => 'wcs_extra_option', 'post_status' => 'publish', 'post_title' => $fixture['marker'] . ' Other template option' ) );
 	update_post_meta( $duplicate, '_wcs_option_data', $option );
@@ -40,6 +42,17 @@ if ( 'setup' === ( $argv[2] ?? '' ) ) {
 	$clear['actions'][0]['action'] = 'clear';
 	$settings['validation_rules'] = array( $rule, $required, $clear );
 	$settings['behavior_rules'] = array( $rule, $required, $clear );
+	$moved_distance = array( 'conditions' => array( array( 'source' => 'nested', 'path' => $path . 'finish.brass.sensor-position', 'operator' => 'equals', 'value' => 'bottom-left' ) ), 'actions' => array( array( 'action' => 'require', 'target_type' => 'nested', 'target' => $path . 'finish.brass.distance-to-the-side-mm' ) ), 'message' => 'Distance to the side is required' );
+	$settings['validation_rules'][] = $moved_distance;
+	$settings['behavior_rules'][] = $moved_distance;
+	foreach ( array( 'side_width', 'side_height' ) as $dimension ) {
+		$availability = array( 'match' => 'all', 'conditions' => array(
+			array( 'source' => 'dimension', 'path' => $dimension, 'type' => 'number', 'operator' => 'less_than', 'value' => '500' ),
+			array( 'source' => 'nested', 'path' => $path . 'make-up-mirror', 'operator' => 'equals', 'value' => 'beleuchtet' ),
+		), 'actions' => array( array( 'action' => 'disable', 'target_type' => 'nested', 'target' => $path . 'make-up-mirror', 'target_value' => 'beleuchtet' ) ) );
+		$settings['validation_rules'][] = $availability;
+		$settings['behavior_rules'][] = $availability;
+	}
 	update_post_meta( $fixture['layout_id'], '_wcs_template_data', $settings );
 	( new WCS_Cache() )->bump_version();
 	$config = wcs_get_config_builder()->build_for_product( $fixture['product_id'] );

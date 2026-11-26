@@ -180,6 +180,20 @@
 				return $field;
 			}
 		}
+		// A field may have moved below a selected nested dropdown since the rule
+		// was saved. Resolve only one matching descendant in the same branch.
+		var boundary = raw.lastIndexOf('.');
+		if (boundary > 0) {
+			var prefix = raw.slice(0, boundary + 1);
+			var suffix = raw.slice(boundary);
+			var $descendants = $wrap.find('[data-key]').filter(function () {
+				var key = String($(this).data('key') || '');
+				return key.indexOf(prefix) === 0 && key.slice(-suffix.length) === suffix;
+			});
+			if ($descendants.length === 1) {
+				return $descendants;
+			}
+		}
 		if (exact) {
 			return $field;
 		}
@@ -420,7 +434,8 @@
 		$option.prop('disabled', disabled);
 		$field.next('.wcs-custom-select').find('.wcs-custom-select__option' + optionSelector(targetValue))
 			.toggleClass('is-disabled', disabled)
-			.prop('disabled', disabled);
+			.prop('disabled', disabled)
+			.attr('aria-disabled', disabled ? 'true' : 'false');
 		$field.next('.wcs-image-choice-list').find('.wcs-image-choice-card' + optionSelector(targetValue))
 			.toggleClass('is-disabled', disabled)
 			.prop('disabled', disabled)
@@ -490,12 +505,12 @@
 		}
 	}
 
-	function executeAction($wrap, action, matched, values) {
+	function executeAction($wrap, action, matched, values, availability) {
 		var name = action.action || action.then || '';
 		var target = ['require_value', 'disallow_value'].indexOf(name) !== -1 ? (action.target || '') : (action.target || action.target_value || '');
 		var isDisableAction = name === 'disable' || name === 'disable_option' || name === 'enable';
 		var optionTarget = isDisableAction ? findOptionTarget($wrap, target, action.target_value || '') : { field: $(), value: '' };
-		var $field = optionTarget.field.length ? optionTarget.field : findField($wrap, target, name === 'clear');
+		var $field = optionTarget.field.length ? optionTarget.field : findField($wrap, target, name === 'clear' || (name === 'require' && action.target_type === 'nested'));
 		var targetValue = optionTarget.value || inferTargetValue($field, target, action.target_value || '');
 		var value = action.value || action.max || '';
 		var computed = String(value).indexOf('{') !== -1 || /^[\d\s+\-*/().,a-z]+$/i.test(String(value)) ? parseFormula(value, values) : null;
@@ -507,6 +522,10 @@
 			return;
 		}
 		if (isDisableAction) {
+			if (availability) {
+				availability.push({ field: $field, value: targetValue, disabled: name === 'enable' ? !matched : matched });
+				return;
+			}
 			if (targetValue) {
 				setOptionDisabled($field, targetValue, name === 'enable' ? !matched : matched);
 			} else {
@@ -569,6 +588,13 @@
 		if (!indexes.length) {
 			indexes = this.rules.map(function (rule, index) { return index; });
 		}
+		// Availability can depend on multiple rules and newly rendered fields.
+		this.rules.forEach(function (rule, index) {
+			if (rule.actions.some(function (action) { return ['disable', 'disable_option', 'enable'].indexOf(action.action || action.then) !== -1; })) {
+				indexes.push(index);
+			}
+		});
+		var availability = [];
 		var seen = {};
 		indexes.forEach(function (index) {
 			if (seen[index]) {
@@ -591,9 +617,36 @@
 				if ((action.action || action.then) === 'clear' && !sourceChanged) {
 					return;
 				}
-				executeAction(this.$wrap, action, matched, values);
+				var actionMatched = matched;
+				if (['disable', 'disable_option', 'enable'].indexOf(action.action || action.then) !== -1) {
+					var option = findOptionTarget(this.$wrap, action.target || '', action.target_value || '');
+					if (option.field.length && option.value) {
+						// Test the candidate before the customer attempts to select it.
+						var candidate = $.extend({}, values);
+						candidate[option.field.data('key') || option.field.data('group')] = option.value;
+						var candidateResults = rule.conditions.map(function (condition) {
+							var resolved = resolveCondition(condition, candidate);
+							return compare(resolved.actual, resolved.expected, condition.operator, condition.type);
+						});
+						actionMatched = rule.match === 'any' ? candidateResults.indexOf(true) !== -1 : candidateResults.indexOf(false) === -1;
+					}
+				}
+				executeAction(this.$wrap, action, actionMatched, values, availability);
 			}, this);
 		}, this);
+		var targets = [];
+		availability.forEach(function (request) {
+			var target = targets.filter(function (item) { return item.field[0] === request.field[0] && item.value === request.value; })[0];
+			if (target) {
+				target.disabled = target.disabled || request.disabled;
+			} else {
+				targets.push(request);
+			}
+		});
+		targets.forEach(function (target) {
+			if (target.value) { setOptionDisabled(target.field, target.value, target.disabled); }
+			else { setDisabled(target.field, target.disabled); }
+		});
 	};
 
 	window.WCSRuleEngine = RuleEngine;
