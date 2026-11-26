@@ -160,10 +160,12 @@ class WCS_Layout_Transfer_Admin {
 		if ( is_wp_error( $json ) ) {
 			$this->finish( array( 'error' => $json->get_error_message() ) );
 		}
+		$layout_name = sanitize_file_name( html_entity_decode( wp_strip_all_tags( $post->post_title ), ENT_QUOTES, 'UTF-8' ) );
+		$filename    = ( '' !== $layout_name ? $layout_name : 'layout-' . $id ) . '.json';
 		nocache_headers();
 		header( 'Content-Type: application/json; charset=utf-8' );
 		header( 'X-Content-Type-Options: nosniff' );
-		header( 'Content-Disposition: attachment; filename="mirror-layout-' . $id . '.json"' );
+		header( 'Content-Disposition: attachment; filename="' . $filename . '"; filename*=UTF-8\'\'' . rawurlencode( $filename ) );
 		echo $json; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON download, not HTML.
 		exit;
 	}
