@@ -99,8 +99,9 @@
 		return 'Bitte geben Sie einen gültigen Wert ein.';
 	}
 
-	function cleanOptionText(text) {
-		return String(text || '').replace(/\s+\+.*/, '').replace(/\s+/g, ' ').trim();
+	function cleanOptionText($option) {
+		var label = $option.attr('data-option-label');
+		return String(label === undefined ? $option.text() : label).replace(/\s+/g, ' ').trim();
 	}
 
 	function optionDisplayPrice(price) {
@@ -358,13 +359,13 @@
 				return;
 			}
 			var title = $select.closest('.wcs-step-option-group').find('.wcs-option-heading h3, > h3').first().text();
-			var optionText = cleanOptionText($select.find(':selected').text());
+			var optionText = cleanOptionText($select.find(':selected'));
 			var price = parseFloat($select.find(':selected').data('price')) || 0;
 			var group = $select.data('group');
 			var lines = [{ label: optionText, value: '', price: price ? '+' + money(price) : '' }];
 			var $position = $select.closest('.wcs-step-option-group').find('.wcs-position-choice');
 			if ($position.length && $position.val()) {
-				lines.push({ label: $select.closest('.wcs-step-option-group').find('.wcs-position-select h3').text() || 'Position', value: cleanOptionText($position.find(':selected').text()) });
+				lines.push({ label: $select.closest('.wcs-step-option-group').find('.wcs-position-select h3').text() || 'Position', value: cleanOptionText($position.find(':selected')) });
 			}
 			$select.closest('.wcs-step-option-group').find('.wcs-customer-field-input').each(function () {
 				var $field = $(this);
@@ -373,7 +374,7 @@
 					return;
 				}
 				var fieldLabel = $field.closest('.wcs-customer-field').find('.wcs-customer-field__label').first().text();
-				var displayValue = $field.is('select') ? cleanOptionText($field.find(':selected').text()) : fieldValue;
+				var displayValue = $field.is('select') ? cleanOptionText($field.find(':selected')) : fieldValue;
 				var fieldPrice = $field.is('select') ? (parseFloat($field.find(':selected').data('price')) || 0) : (parseFloat($field.data('price')) || 0);
 				lines.push({ label: fieldLabel || group, value: displayValue, price: fieldPrice ? '+' + money(fieldPrice) : '' });
 			});
@@ -599,7 +600,7 @@
 				(field.options || []).forEach(function (option) {
 					var price = parseFloat(option.price) || 0;
 					var nestedFields = option.customer_fields ? JSON.stringify(option.customer_fields || []) : '';
-					html += '<option value="' + escapeHtml(option.value || '') + '" data-price="' + escapeHtml(price) + '"' + (option === preselected ? ' selected' : '');
+					html += '<option value="' + escapeHtml(option.value || '') + '" data-option-label="' + escapeHtml(option.label || option.value || '') + '" data-price="' + escapeHtml(price) + '"' + (option === preselected ? ' selected' : '');
 					if (option.image) {
 						html += ' data-image="' + escapeHtml(option.image) + '"';
 					}
@@ -675,7 +676,7 @@
 		if (!$custom.length) {
 			return;
 		}
-		var text = cleanOptionText($select.find(':selected').text()) || 'Keine Auswahl';
+		var text = cleanOptionText($select.find(':selected')) || 'Keine Auswahl';
 		var price = optionDisplayPrice($select.find(':selected').data('price'));
 		$custom.find('.wcs-custom-select__selected-price').text(price).prop('hidden', !price);
 		$custom.find('.wcs-custom-select__value').text(text);
@@ -701,7 +702,7 @@
 			var $option = $(this);
 			var value = String($option.val() || '');
 			var image = $option.data('image') || '';
-			var label = cleanOptionText($option.text()) || '---';
+			var label = cleanOptionText($option) || '---';
 			var price = optionDisplayPrice($option.data('price'));
 			var disabled = $option.is(':disabled') || $option.data('required-message');
 			if (!value) {
@@ -801,7 +802,7 @@
 				var price = optionDisplayPrice($option.data('price'));
 				optionsHtml += '<button type="button" class="wcs-custom-select__option' + (image ? ' wcs-custom-select__option--has-image' : ' wcs-custom-select__option--no-image') + (disabled ? ' is-disabled' : '') + '" data-value="' + escapeHtml($option.val()) + '">' +
 					(image ? '<img src="' + escapeHtml(image) + '" alt="">' : '') +
-					'<span>' + escapeHtml(cleanOptionText($option.text()) || '---') + '</span>' +
+					'<span>' + escapeHtml(cleanOptionText($option) || '---') + '</span>' +
 					(price ? '<small class="wcs-custom-select__price">' + escapeHtml(price) + '</small>' : '') +
 					'</button>';
 			});

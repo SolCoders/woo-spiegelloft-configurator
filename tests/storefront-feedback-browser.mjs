@@ -87,6 +87,7 @@ await evaluate('(async()=>{const base='+JSON.stringify(fixture.base)+';const lin
 await waitFor('!!window.jQuery && !!jQuery(".wcs-cart-endpoint").length');
 await evaluate('document.body.style.padding="40px";document.querySelector(".wcs-configurator").style.width="620px"');
 check(await evaluate('document.querySelector(".wcs-configurator").noValidate'), 'Native validation uses popup handling');
+check(await evaluate('jQuery(".wcs-custom-select__option[data-value=brass] > span").first().text()==="Klemmprofil + Stabilisationsstange 900 mm, kürzbar, hell verchromt"'), 'Dropdown retains the full option name including its plus sign without appending the price to the label');
 await evaluate('window.mirrorField=jQuery(".wcs-customer-field-select").filter(function(){return String(jQuery(this).data("key")).endsWith(".make-up-mirror")});window.litButton=mirrorField.next(".wcs-custom-select").find("[data-value=beleuchtet]");window.widthField=jQuery(".wcs-dimension-input").first();window.heightField=jQuery(".wcs-dimension-input").eq(1);void 0');
 check(await evaluate('mirrorField.find("option[value=beleuchtet]").prop("disabled") && litButton.prop("disabled") && litButton.hasClass("is-disabled") && litButton.attr("aria-disabled")==="true"'), 'Unavailable mirror option is visibly and natively disabled on first load');
 await evaluate('litButton[0].click();litButton.trigger("click");void 0');
@@ -136,6 +137,7 @@ await evaluate('jQuery(".wcs-configurator").trigger("submit");void 0');
 check(await evaluate('jQuery(".wcs-range-popup:not([hidden])").text().includes("Switch/sensor position is required")'), 'Missing nested switch position produces its required warning');
 await evaluate('window.positionField=jQuery(".wcs-customer-field-select").filter(function(){return String(jQuery(this).data("key")).endsWith("sensor-position")});positionField.val("bottom-left").trigger("change");void 0');
 check(await evaluate('!positionField.closest(".wcs-customer-field").hasClass("is-empty")'), 'Selected switch position clears required state');
+check(await evaluate('jQuery(".wcs-customer-field-select").filter(function(){return String(jQuery(this).data("key")).endsWith(".finish")}).next(".wcs-custom-select").find(".wcs-custom-select__value").text()==="Klemmprofil + Stabilisationsstange 900 mm, kürzbar, hell verchromt"'), 'Selected dropdown value also retains the complete name including plus');
 check(await evaluate('positionField.val()==="bottom-left" && JSON.parse(jQuery(".wcs-selections-input").val())[positionField.data("key")]==="bottom-left"'), 'Clear-on-parent-change rule preserves a newly selected position in the submitted data');
 await evaluate('jQuery(".wcs-configurator").data("wcsRuleEngine").evaluate();void 0');
 check(await evaluate('positionField.val()==="bottom-left"'), 'Repeated rule evaluation preserves the selected position');

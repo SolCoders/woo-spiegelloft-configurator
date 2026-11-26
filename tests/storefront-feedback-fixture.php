@@ -15,7 +15,7 @@ if ( 'setup' === ( $argv[2] ?? '' ) ) {
 	$option['customer_fields'][0]['options'][0]['customer_fields'] = array( array( 'key' => 'sensor-position', 'label' => 'Position des Schalters/Sensors', 'type' => 'dropdown', 'options' => array( array( 'label' => 'Unten Links', 'value' => 'bottom-left' ) ) ) );
 	$option['customer_fields'][0]['options'][0]['customer_fields'][0]['options'][0]['customer_fields'] = array( array( 'key' => 'distance-to-the-side-mm', 'label' => 'Abstand zur Seitenkante des Spiegels (mm)', 'type' => 'number', 'min' => 150 ) );
 	$option['customer_fields'][0]['label'] = 'Oberfläche';
-	$option['customer_fields'][0]['options'][0]['label'] = 'Messing poliert';
+	$option['customer_fields'][0]['options'][0]['label'] = 'Klemmprofil + Stabilisationsstange 900 mm, kürzbar, hell verchromt';
 	$option['customer_fields'][] = array( 'key' => 'empty_note', 'label' => 'Zusätzlicher Hinweis', 'type' => 'text', 'required' => false );
 	$option['customer_fields'][] = array( 'key' => 'empty_distance', 'label' => 'Zusätzlicher Abstand', 'type' => 'number', 'required' => false );
 	$option['customer_fields'][] = array( 'key' => 'minimum_distance', 'label' => 'Seitenabstand', 'type' => 'number', 'min' => 150, 'required' => true );
