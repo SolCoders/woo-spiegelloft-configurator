@@ -19,6 +19,7 @@ $mode = $argv[2] ?? 'setup';
 if ( 'cleanup' === $mode || 'assign' === $mode ) {
 	$data = json_decode( stream_get_contents( STDIN ), true );
 	$ids = array( $data['layout_id'], $data['option_id'], $data['product_id'] );
+	$ids = array_merge( $ids, (array) ( $data['extra_option_ids'] ?? array() ) );
 	if ( 'cleanup' === $mode ) {
 		$cart_key = '_woocommerce_persistent_cart_' . get_current_blog_id();
 		if ( ! empty( $data['cart_existed'] ) ) { update_user_meta( $data['user_id'], $cart_key, $data['cart_backup'] ); } else { delete_user_meta( $data['user_id'], $cart_key ); }

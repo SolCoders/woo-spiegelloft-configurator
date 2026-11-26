@@ -117,6 +117,18 @@ await evaluate('jQuery(".wcs-dimension-input").first().val("");jQuery(".wcs-conf
 check(await evaluate('!!document.querySelector(".wcs-range-popup:not([hidden])") && !!window.feedbackTestMarker && !document.querySelector(".woocommerce-error")'), 'Missing measurement shows a popup without page reload');
 await evaluate('jQuery(".wcs-dimension-input").each(function(){jQuery(this).val(this.min||400).trigger("change")});jQuery(".wcs-choice-select").each(function(){this.selectedIndex=this.options.length-1;jQuery(this).trigger("change")});jQuery(".wcs-customer-field-select").each(function(){this.selectedIndex=this.options.length-1;jQuery(this).trigger("change")});void 0');
 // Exercise server-only rejection through the real AJAX transport.
+await evaluate('jQuery(".wcs-configurator").trigger("submit");void 0');
+check(await evaluate('jQuery(".wcs-range-popup:not([hidden])").text().includes("Switch/sensor position is required")'), 'Missing nested switch position produces its required warning');
+await evaluate('window.positionField=jQuery(".wcs-customer-field-select").filter(function(){return String(jQuery(this).data("key")).endsWith("sensor-position")});positionField.val("bottom-left").trigger("change");void 0');
+check(await evaluate('!positionField.closest(".wcs-customer-field").hasClass("is-empty")'), 'Selected switch position clears required state');
+check(await evaluate('positionField.val()==="bottom-left" && JSON.parse(jQuery(".wcs-selections-input").val())[positionField.data("key")]==="bottom-left"'), 'Clear-on-parent-change rule preserves a newly selected position in the submitted data');
+await evaluate('jQuery(".wcs-configurator").data("wcsRuleEngine").evaluate();void 0');
+check(await evaluate('positionField.val()==="bottom-left"'), 'Repeated rule evaluation preserves the selected position');
+await evaluate('window.finishField=jQuery(".wcs-customer-field-select").filter(function(){return String(jQuery(this).data("key")).endsWith(".finish")});finishField.val("");jQuery(".wcs-configurator").data("wcsRuleEngine").evaluate();finishField.val("brass");jQuery(".wcs-configurator").data("wcsRuleEngine").evaluate();void 0');
+check(await evaluate('positionField.val()==="" && positionField.next(".wcs-custom-select").find(".wcs-custom-select__value").text()==="Keine Auswahl"'), 'Changing the source condition still clears the position and its visible dropdown label');
+await evaluate('positionField.val("bottom-left").trigger("change");void 0');
+await evaluate('window.testEngine=jQuery(".wcs-configurator").data("wcsRuleEngine");testEngine.rules.push({conditions:[{source:"nested",path:finishField.data("key"),operator:"equals",value:"brass"}],actions:[{action:"clear",target:finishField.data("key")+".brass.inactive-position"}],match:"all"});testEngine.evaluate();testEngine.rules.pop();void 0');
+check(await evaluate('finishField.val()==="brass" && positionField.val()==="bottom-left"'), 'A clear rule for a missing nested field cannot clear its parent dropdown');
 await evaluate('jQuery(".wcs-configurator input[name=nonce]").val("expired");jQuery(".wcs-configurator").trigger("submit");void 0');
 await waitFor('!jQuery(".wcs-configurator").data("wcsSubmitting") && jQuery(".wcs-configurator__footer .wcs-range-popup:not([hidden])").length');
 check(await evaluate('jQuery(".wcs-configurator__footer .wcs-range-popup").text().includes("Sitzung") && !!window.feedbackTestMarker'), 'Expired nonce appears in German without navigation');
@@ -160,6 +172,9 @@ check(await evaluate('window.addedEvents===1'), 'Valid configuration adds once d
 const cart = await evaluate('(async()=>{const r=await fetch('+JSON.stringify(fixture.base+'wp-json/wc/store/v1/cart')+');return await r.json()})()');
 check(cart.items?.some(item=>item.id===fixture.product_id && item.quantity===1), 'Real guest cart contains the configured product');
 const attributes = cart.items.find(item=>item.id===fixture.product_id).item_data;
+check(await evaluate('jQuery(".wcs-configurator").data("current-total")===133'), 'Product page shows 83 plus the selected 50 option');
+const itemPrice = cart.items.find(item=>item.id===fixture.product_id).prices;
+check(Number(itemPrice.price) / Math.pow(10, itemPrice.currency_minor_unit)===133, 'Real guest cart charges 133 despite an identical option in another template: '+JSON.stringify(itemPrice));
 check(attributes.some(row=>row.key==='Breite') && attributes.some(row=>row.key==='Höhe'), 'Real cart measurement attributes are German');
 check(!attributes.some(row=>row.key==='Zusätzlicher Hinweis') && attributes.some(row=>row.key==='Zusätzlicher Abstand' && row.value==='0'), 'Real cart omits blank text and retains numeric fields initialized to zero');
 check(attributes.some(row=>row.key==='Seitenabstand' && row.value==='150') && attributes.some(row=>row.key==='Nullwert' && row.value==='0'), 'Real cart retains initialized minimum values');

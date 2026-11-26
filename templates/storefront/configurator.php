@@ -36,21 +36,6 @@ foreach ( $steps as $step ) {
 	<input type="hidden" class="wcs-cart-endpoint" value="<?php echo esc_url( WC_AJAX::get_endpoint( 'wcs_add_to_cart' ) ); ?>">
 
 	<div class="wcs-configurator__panel">
-		<header class="wcs-configurator__header">
-			<div>
-				<h2><?php esc_html_e( 'Konfigurieren Sie Ihren Spiegel', 'woo-spiegelloft-configurator' ); ?></h2>
-				<p class="wcs-configurator__delivery">
-					<!-- <span class="wcs-configurator__delivery-icon" aria-hidden="true">
-						<svg viewBox="0 0 24 24" focusable="false">
-							<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7zM6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM3 11h4M1 14h4" />
-						</svg>
-					</span> -->
-					<?php esc_html_e( 'Passen Sie die Optionen an, um Ihren perfekten Spiegel zu gestalten.', 'woo-spiegelloft-configurator' ); ?>
-				</p>
-			</div>
-			<strong class="wcs-configurator__price"><?php echo wp_kses_post( wc_price( $base_price ) ); ?></strong>
-		</header>
-
 		<p class="wcs-configurator__notice">
 			<span><?php esc_html_e( 'Bitte beachten: Der Konfigurator dient nur zur visuellen Darstellung.', 'woo-spiegelloft-configurator' ); ?></span>
 		</p>

@@ -10,6 +10,17 @@ $check = static function ( bool $condition, string $message ) use ( &$checks ): 
 	if ( ! $condition ) { throw new RuntimeException( $message ); }
 	++$checks;
 };
+$configured_decimals = 0;
+$decimal_setting = static function () use ( &$configured_decimals ) { return $configured_decimals; };
+add_filter( 'pre_option_woocommerce_price_num_decimals', $decimal_setting );
+try {
+	foreach ( array( 0 => 2, 1 => 2, 2 => 2, 3 => 3 ) as $configured_decimals => $expected_decimals ) {
+		$check( wc_get_price_decimals() === $expected_decimals, 'Currency precision keeps at least two decimal places' );
+		$check( 122.99 === wcs_get_config_builder()->calculate_price( 122.99, array() ), 'Configured price preserves cents with a whole-number store setting' );
+	}
+} finally {
+	remove_filter( 'pre_option_woocommerce_price_num_decimals', $decimal_setting );
+}
 $fields = array( array( 'key' => 'width', 'label' => 'Width', 'min' => 400, 'max' => 2600 ), array( 'key' => 'height', 'label' => 'Height', 'min' => 400, 'max' => 2600 ) );
 $pricing = WCS_Pricing::defaults( $fields );
 $rules = WCS_Pricing::default_rules();

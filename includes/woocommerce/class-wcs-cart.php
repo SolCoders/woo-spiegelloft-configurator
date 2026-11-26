@@ -34,6 +34,7 @@ class WCS_Cart {
 	 * Register cart hooks.
 	 */
 	public function register(): void {
+		add_filter( 'wc_get_price_decimals', array( WCS_Pricing::class, 'price_decimals' ) );
 		add_action( 'wc_ajax_wcs_add_to_cart', array( $this, 'ajax_add_to_cart' ) );
 		add_filter( 'woocommerce_add_cart_item_data', array( $this, 'add_cart_item_data' ), 10, 3 );
 		add_filter( 'woocommerce_get_cart_item_from_session', array( $this, 'get_cart_item_from_session' ), 10, 2 );

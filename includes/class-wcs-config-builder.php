@@ -322,9 +322,23 @@ class WCS_Config_Builder {
 	 */
 	public function calculate_price( float $base_price, array $selections, array $template = array() ): float {
 		$total = $base_price;
+		$lookup = $template ? $this->build_option_lookup( $template ) : array();
 
 		foreach ( $selections as $group_slug => $selected ) {
 			if ( false !== strpos( (string) $group_slug, '.' ) ) {
+				continue;
+			}
+
+			$slugs   = $this->selection_to_slugs( $selected );
+			if ( $template ) {
+				// Identical values in other templates must never contribute a price.
+				foreach ( array_unique( $slugs ) as $slug ) {
+					$option = $lookup[ $group_slug ][ $slug ] ?? null;
+					if ( $option ) {
+						$total += (float) $option['price'];
+						$total += $this->calculate_customer_field_prices( (string) $group_slug, (string) $slug, $option['data'], $selections );
+					}
+				}
 				continue;
 			}
 
@@ -332,7 +346,6 @@ class WCS_Config_Builder {
 				$this->extras_catalog->get_options_by_group( (string) $group_slug ),
 				$this->extras_catalog->get_uncategorized_options()
 			);
-			$slugs   = $this->selection_to_slugs( $selected );
 
 			foreach ( $slugs as $slug ) {
 				foreach ( $options as $option ) {
@@ -343,6 +356,7 @@ class WCS_Config_Builder {
 						$price = (float) ( $data['price'] ?? $meta['_wcs_price'] ?? 0 );
 						$total += $price;
 						$total += $this->calculate_customer_field_prices( (string) $group_slug, (string) $slug, $data, $selections );
+						break;
 					}
 				}
 			}
@@ -407,7 +421,7 @@ class WCS_Config_Builder {
 			return $valid;
 		}
 
-		$valid = $this->validate_customer_fields( $selections );
+		$valid = $this->validate_customer_fields( $selections, $template['_option_lookup'] );
 		if ( is_wp_error( $valid ) ) {
 			return $valid;
 		}
@@ -456,7 +470,8 @@ class WCS_Config_Builder {
 				}
 
 				$meta        = (array) ( $option['meta'] ?? array() );
-				$option_data = (array) ( $meta['_wcs_option_data'] ?? array() );
+				$saved_data  = get_post_meta( $option_id, '_wcs_option_data', true );
+				$option_data = is_array( $saved_data ) ? $saved_data : (array) ( $meta['_wcs_option_data'] ?? array() );
 				$slug        = (string) ( $option_data['value'] ?? $option['slug'] ?? '' );
 
 				if ( '' === $slug ) {
@@ -614,15 +629,16 @@ class WCS_Config_Builder {
 	 * Validate required fields and dropdown values from trusted option metadata.
 	 *
 	 * @param array<string, mixed> $selections Sanitized selections.
+	 * @param array<string, array<string, array<string, mixed>>> $lookup Template options.
 	 * @return true|WP_Error
 	 */
-	private function validate_customer_fields( array $selections ) {
+	private function validate_customer_fields( array $selections, array $lookup ) {
 		foreach ( $selections as $group_slug => $selected ) {
 			if ( false !== strpos( (string) $group_slug, '.' ) ) {
 				continue;
 			}
 
-			$option = $this->find_catalog_option_data( (string) $group_slug, (string) $selected );
+			$option = $lookup[ $group_slug ][ (string) $selected ]['data'] ?? array();
 			if ( empty( $option ) ) {
 				continue;
 			}
@@ -761,31 +777,6 @@ class WCS_Config_Builder {
 
 		return $total;
 	}
-	/**
-	 * Find an option's saved data by group and selected slug.
-	 *
-	 * @param string $group_slug Group slug.
-	 * @param string $selected   Selected slug.
-	 * @return array<string, mixed>
-	 */
-	private function find_catalog_option_data( string $group_slug, string $selected ): array {
-		$options = array_merge(
-			$this->extras_catalog->get_options_by_group( $group_slug ),
-			$this->extras_catalog->get_uncategorized_options()
-		);
-
-		foreach ( $options as $option ) {
-			$meta        = (array) ( $option['meta'] ?? array() );
-			$option_data = (array) ( $meta['_wcs_option_data'] ?? array() );
-			$slug        = (string) ( $option_data['value'] ?? $option['slug'] ?? '' );
-			if ( $slug === $selected ) {
-				return $option_data;
-			}
-		}
-
-		return array();
-	}
-
 	/**
 	 * Find a dropdown value inside a customer field.
 	 *

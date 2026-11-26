@@ -7,7 +7,7 @@
 	}
 
 	function escapeHtml(value) {
-		return String(value || '')
+		return String(value === null || value === undefined ? '' : value)
 			.replace(/&/g, '&amp;')
 			.replace(/</g, '&lt;')
 			.replace(/>/g, '&gt;')
@@ -79,7 +79,7 @@
 		var pricing = $wrap.data('pricing');
 		if (pricing && window.WCSPricing) {
 			total += window.WCSPricing.calculate(pricing, $wrap.data('pricingFields') || [], selections, parseFloat($wrap.data('base-price')) || 0).total;
-			var precision = Math.pow(10, Number($wrap.data('priceDecimals')) || 0);
+			var precision = Math.pow(10, Math.max(2, Number($wrap.data('priceDecimals')) || 2));
 			total = Math.round((total + 1e-9) * precision) / precision;
 		}
 		$wrap.find('.wcs-selections-input').val(JSON.stringify(selections));

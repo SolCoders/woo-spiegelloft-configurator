@@ -166,7 +166,7 @@
 		return values;
 	}
 
-	function findField($wrap, path) {
+	function findField($wrap, path, exact) {
 		var raw = String(path || '');
 		var variants = [raw, raw.replace(/-/g, '_'), raw.replace(/_/g, '-')];
 		var $field = $();
@@ -179,6 +179,9 @@
 			if ($field.length) {
 				return $field;
 			}
+		}
+		if (exact) {
+			return $field;
 		}
 
 		raw.split('.').some(function (part, index, parts) {
@@ -492,12 +495,12 @@
 		var target = ['require_value', 'disallow_value'].indexOf(name) !== -1 ? (action.target || '') : (action.target || action.target_value || '');
 		var isDisableAction = name === 'disable' || name === 'disable_option' || name === 'enable';
 		var optionTarget = isDisableAction ? findOptionTarget($wrap, target, action.target_value || '') : { field: $(), value: '' };
-		var $field = optionTarget.field.length ? optionTarget.field : findField($wrap, target);
+		var $field = optionTarget.field.length ? optionTarget.field : findField($wrap, target, name === 'clear');
 		var targetValue = optionTarget.value || inferTargetValue($field, target, action.target_value || '');
 		var value = action.value || action.max || '';
 		var computed = String(value).indexOf('{') !== -1 || /^[\d\s+\-*/().,a-z]+$/i.test(String(value)) ? parseFormula(value, values) : null;
 
-		if (!$field.length && targetValue) {
+		if (!$field.length && targetValue && name !== 'clear') {
 			$field = findFieldByOptionValue($wrap, targetValue);
 		}
 		if (!$field.length) {
@@ -514,7 +517,9 @@
 		} else if (name === 'show' || name === 'hide') {
 			setVisible($field, name === 'show' ? matched : !matched);
 		} else if (name === 'clear' && matched) {
-			$field.val('').triggerHandler('change');
+			if (String($field.val() || '') !== '') {
+				$field.val('').trigger('change');
+			}
 		} else if (matched && computed !== null && (name === 'set_max' || name === 'validate_range')) {
 			applyNumericConstraint($field, 'max', computed, action.message || '', action.error_seconds);
 		} else if (matched && computed !== null && name === 'set_min') {
@@ -525,6 +530,7 @@
 	function RuleEngine($wrap) {
 		this.$wrap = $wrap;
 		this.rules = parseRules($wrap).map(normalizeRule);
+		this.conditionStates = {};
 		this.dependents = {};
 		this.rules.forEach(function (rule, index) {
 			rule.conditions.forEach(function (condition) {
@@ -570,12 +576,21 @@
 			}
 			seen[index] = true;
 			var rule = this.rules[index];
+			var conditionValues = [];
 			var results = rule.conditions.map(function (condition) {
 				var resolved = resolveCondition(condition, values);
+				conditionValues.push([resolved.actual, resolved.expected]);
 				return compare(resolved.actual, resolved.expected, condition.operator, condition.type);
 			});
 			var matched = rule.match === 'any' ? results.indexOf(true) !== -1 : results.indexOf(false) === -1;
+			var signature = JSON.stringify(conditionValues);
+			var sourceChanged = this.conditionStates[index] !== signature;
+			this.conditionStates[index] = signature;
 			rule.actions.forEach(function (action) {
+				// Clearing reacts to its source, not to edits in the target field.
+				if ((action.action || action.then) === 'clear' && !sourceChanged) {
+					return;
+				}
 				executeAction(this.$wrap, action, matched, values);
 			}, this);
 		}, this);

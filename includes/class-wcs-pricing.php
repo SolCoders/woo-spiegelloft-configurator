@@ -11,6 +11,15 @@ defined( 'ABSPATH' ) || exit;
 /** Evaluates trusted template pricing without accepting customer-supplied amounts. */
 class WCS_Pricing {
 
+	/**
+	 * Preserve cents in configured amounts and WooCommerce totals.
+	 *
+	 * @param mixed $decimals WooCommerce decimal setting.
+	 */
+	public static function price_decimals( $decimals ): int {
+		return max( 2, absint( $decimals ) );
+	}
+
 	/** Complete cumulative surcharge table, in ascending threshold order. */
 	public static function default_rules(): array {
 		$amounts = array( 26, 3, 3.5, 3.5, 3.5, 3.5, 4, 4.5, 4, 4.5, 4.5, 5, 5.5, 5, 5, 5.5, 5.5, 6, 6, 6, 6.5, 6, 6.5, 7, 27.5, 7.5, 7.5, 7.5, 8, 8.5, 8, 8.5, 8.5, 9, 9, 29.5, 9.5, 9.5, 10, 10, 9.5, 10, 0 );
